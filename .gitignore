@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment & Config (SECURITY: Never commit credentials!)
+api/config.php
+config.php
+.env
+.env.local
+.env.production
+
+# Uploads (user-generated content)
+api/uploads/
+uploads/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+error.log
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# PHP
+vendor/
+composer.lock
