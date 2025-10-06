@@ -203,12 +203,10 @@ function AuthorHomepageContent() {
       <div className="relative h-screen w-full">
         {/* Fixed background layer */}
         <div
-          className="fixed inset-0 w-full h-full -z-10"
+          className="fixed inset-0 -z-10 bg-no-repeat bg-top [background-size:auto_100%] md:[background-size:100%_auto]"
           style={{
             backgroundImage: `url('${backgroundImage}')`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center center',
-            backgroundRepeat: 'no-repeat'
+            backgroundColor: theme === 'light' ? '#f7f7f7' : '#0a0a0a',
           }}
         />
         {/* overlay */}
