@@ -15,6 +15,9 @@ config.php
 api/uploads/
 uploads/
 
+# Personal notes and learning materials
+learnings/
+
 # IDE
 .vscode/
 .idea/
