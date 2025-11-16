@@ -48,7 +48,7 @@ try {
   $total = (int)$stc->fetch()['c'];
 
   // Page (alphabetical by Title if present, else by filename)
-  $sql = "SELECT id, title, filename, original_path, thumbnail_path, prompt, parameters, checkpoint, loras, file_size, width, height, sort_order, uploaded_by, created_at, updated_at
+  $sql = "SELECT id, title, filename, original_path, thumbnail_path, media_type, mime_type, poster_path, prompt, parameters, checkpoint, loras, file_size, width, height, sort_order, uploaded_by, created_at, updated_at
           FROM images
           $where
           ORDER BY
@@ -101,6 +101,7 @@ try {
     
     $orig = $r['original_path'];
     $thumb = $r['thumbnail_path'];
+    $poster = $r['poster_path'] ?? null;
     
     // Fix paths to point to /api/uploads/ instead of /uploads/
     if ($orig !== null && $orig !== '') {
@@ -116,6 +117,13 @@ try {
         $thumb = '/api' . $thumb;
       } elseif ($thumb[0] !== '/') {
         $thumb = '/' . ltrim($thumb, '/');
+      }
+    }
+    if ($poster !== null && $poster !== '') {
+      if (strpos($poster, '/uploads/') === 0) {
+        $poster = '/api' . $poster;
+      } elseif ($poster[0] !== '/') {
+        $poster = '/' . ltrim($poster, '/');
       }
     }
 
@@ -135,6 +143,9 @@ try {
       'title' => $r['title'],
       'src' => $orig,
       'thumb' => $thumb,
+      'media_type' => isset($r['media_type']) && $r['media_type'] ? $r['media_type'] : 'image',
+      'mime_type' => $r['mime_type'] ?? null,
+      'poster' => $poster,
       'prompt' => $p,
       'parameters' => $n,
       'checkpoint' => $r['checkpoint'],

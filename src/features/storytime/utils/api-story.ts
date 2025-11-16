@@ -41,6 +41,8 @@ export interface Story {
   blurb?: string;
   cover: string;
   breakImage?: string;
+  enableDropCap?: boolean;
+  dropCapFont?: string;
   startIndex: number;
   status?: string;
   // SEO fields from database
@@ -48,6 +50,12 @@ export interface Story {
   primary_keywords?: string;
   longtail_keywords?: string;
   target_audience?: string;
+  // External platform links
+  external_links?: { label: string; url: string }[];
+  // Aggregates
+  chapter_count?: number;
+  total_likes?: number;
+  total_words?: number;
 }
 
 export interface Chapter {
@@ -60,6 +68,7 @@ export interface Chapter {
 }
 
 export interface ChapterDetails extends Chapter {
+  soundtrack_url?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -117,7 +126,13 @@ export async function getAllStories(): Promise<Story[]> {
         genres: story.genres || [],
         primary_keywords: story.primary_keywords,
         longtail_keywords: story.longtail_keywords,
-        target_audience: story.target_audience
+        target_audience: story.target_audience,
+        // External platform links
+        external_links: Array.isArray(story.external_links) ? story.external_links : [],
+        // Aggregates
+        chapter_count: story.chapter_count || 0,
+        total_likes: story.total_likes || 0,
+        total_words: story.total_words || 0
       }));
       return transformedStories;
     } else {
@@ -152,13 +167,21 @@ export async function getStory(storySlug: string): Promise<Story | null> {
         blurb: story.description,
         cover: story.cover_image ? (getImagePath(story.cover_image) || '/images/default-cover.jpg') : '/images/default-cover.jpg',
         breakImage: story.break_image ? (getImagePath(story.break_image) || undefined) : undefined,
+        enableDropCap: !!story.enable_drop_cap,
+        dropCapFont: story.drop_cap_font || 'serif',
         startIndex: 1,
         status: story.status,
         // SEO fields
         genres: story.genres || [],
         primary_keywords: story.primary_keywords,
         longtail_keywords: story.longtail_keywords,
-        target_audience: story.target_audience
+        target_audience: story.target_audience,
+        // External platform links
+        external_links: Array.isArray(story.external_links) ? story.external_links : [],
+        // Aggregates
+        chapter_count: story.chapter_count || 0,
+        total_likes: story.total_likes || 0,
+        total_words: story.total_words || 0
       };
       
       storiesCache.set(storySlug, transformedStory);
@@ -265,13 +288,14 @@ export async function getChapterDetails(story: Story, chapterId: string): Promis
   try {
     const response = await fetch(`${API_BASE_URL}/chapters/list.php?story_slug=${encodeURIComponent(story.id)}&chapter_number=${chapterId}`);
     const data = await response.json();
-    
+
     if (data.success && data.chapters && data.chapters.length > 0) {
       const chapter = data.chapters[0];
       return {
         id: chapter.id,
         num: chapter.chapter_number,
         title: chapter.title,
+        soundtrack_url: chapter.soundtrack_url || null,
         status: chapter.status,
         like_count: chapter.like_count || 0,
         comment_count: chapter.comment_count || 0,

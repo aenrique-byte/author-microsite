@@ -25,17 +25,18 @@ if (!$input || !isset($input['id'])) {
 }
 
 try {
-    // Check if story exists
-    $stmt = $pdo->prepare("SELECT id FROM stories WHERE id = ?");
+    // Check if story exists and get current values
+    $stmt = $pdo->prepare("SELECT id, slug FROM stories WHERE id = ?");
     $stmt->execute([$input['id']]);
-    if (!$stmt->fetch()) {
+    $story = $stmt->fetch();
+    if (!$story) {
         http_response_code(404);
         echo json_encode(['error' => 'Story not found']);
         exit;
     }
 
     // Check if slug is being changed and if it conflicts
-    if (isset($input['slug'])) {
+    if (isset($input['slug']) && $input['slug'] !== $story['slug']) {
         $stmt = $pdo->prepare("SELECT id FROM stories WHERE slug = ? AND id != ?");
         $stmt->execute([$input['slug'], $input['id']]);
         if ($stmt->fetch()) {
@@ -45,31 +46,71 @@ try {
         }
     }
 
-    // Prepare genres as JSON if provided
-    $genres_json = null;
-    if (isset($input['genres']) && is_array($input['genres'])) {
-        $genres_json = json_encode($input['genres']);
+    // Build dynamic UPDATE query based on provided fields
+    $updateFields = [];
+    $updateValues = [];
+
+    // Handle genres specially (needs JSON encoding)
+    if (isset($input['genres'])) {
+        if (is_array($input['genres'])) {
+            $updateFields[] = "genres = ?";
+            $updateValues[] = json_encode($input['genres']);
+        } else {
+            $updateFields[] = "genres = ?";
+            $updateValues[] = $input['genres'];
+        }
     }
 
-    $stmt = $pdo->prepare("
-        UPDATE stories 
-        SET title = ?, slug = ?, description = ?, genres = ?, primary_keywords = ?, longtail_keywords = ?, target_audience = ?, cover_image = ?, break_image = ?, status = ?, updated_at = NOW()
-        WHERE id = ?
-    ");
-    
-    $stmt->execute([
-        $input['title'],
-        $input['slug'],
-        $input['description'] ?? null,
-        $genres_json,
-        $input['primary_keywords'] ?? null,
-        $input['longtail_keywords'] ?? null,
-        $input['target_audience'] ?? null,
-        $input['cover_image'] ?? null,
-        $input['break_image'] ?? null,
-        $input['status'] ?? 'draft',
-        $input['id']
-    ]);
+    // Handle external_links specially (array of {label,url} -> JSON)
+    if (isset($input['external_links'])) {
+        if (is_array($input['external_links'])) {
+            $sanitized = array_values(array_filter(array_map(function($item) {
+                if (!is_array($item)) return null;
+                $label = isset($item['label']) ? (string)$item['label'] : '';
+                $url = isset($item['url']) ? (string)$item['url'] : '';
+                if ($label === '' || $url === '') return null;
+                return ['label' => $label, 'url' => $url];
+            }, $input['external_links'])));
+            $updateFields[] = "external_links = ?";
+            $updateValues[] = !empty($sanitized) ? json_encode($sanitized) : null;
+        } else {
+            // Allow raw JSON string pass-through (admin tools)
+            $updateFields[] = "external_links = ?";
+            $updateValues[] = $input['external_links'];
+        }
+    }
+
+    // Handle enable_drop_cap as boolean/int
+    if (isset($input['enable_drop_cap'])) {
+        $updateFields[] = "enable_drop_cap = ?";
+        $updateValues[] = (int)$input['enable_drop_cap'];
+    }
+
+    // Simple fields that can be directly updated
+    $simpleFields = ['title', 'slug', 'description', 'primary_keywords', 'longtail_keywords',
+                     'target_audience', 'cover_image', 'break_image', 'drop_cap_font', 'status'];
+
+    foreach ($simpleFields as $field) {
+        if (isset($input[$field])) {
+            $updateFields[] = "$field = ?";
+            $updateValues[] = $input[$field];
+        }
+    }
+
+    if (empty($updateFields)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'No fields to update']);
+        exit;
+    }
+
+    // Always update the timestamp
+    $updateFields[] = "updated_at = NOW()";
+
+    $sql = "UPDATE stories SET " . implode(', ', $updateFields) . " WHERE id = ?";
+    $updateValues[] = $input['id'];
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($updateValues);
 
     echo json_encode(['success' => true]);
 

@@ -13,6 +13,10 @@ $limit = min(100, max(1, intval($_GET['limit'] ?? 24)));
 $offset = ($page - 1) * $limit;
 $search = trim((string)($_GET['search'] ?? ''));
 
+// Optional scoping by collection
+$collectionId = isset($_GET['collection_id']) ? (int)$_GET['collection_id'] : null;
+$collectionSlug = isset($_GET['collection_slug']) ? trim((string)$_GET['collection_slug']) : null;
+
 try {
   $pdo = db();
 
@@ -27,6 +31,29 @@ try {
     $conditions[] = "(title LIKE ? OR description LIKE ? OR slug LIKE ?)";
     $like = '%' . $search . '%';
     $params = [$like, $like, $like];
+  }
+
+  // Resolve collection by slug if provided
+  if ($collectionSlug !== null && $collectionSlug !== '') {
+    $stc = $pdo->prepare("SELECT id FROM collections WHERE slug = ? LIMIT 1");
+    $stc->execute([$collectionSlug]);
+    $cid = $stc->fetchColumn();
+    if ($cid) {
+      $collectionId = (int)$cid;
+    } else {
+      // No matching collection -> return empty result fast
+      json_response([
+        'page' => $page,
+        'limit' => $limit,
+        'total' => 0,
+        'galleries' => []
+      ]);
+    }
+  }
+
+  if ($collectionId !== null) {
+    $conditions[] = "collection_id = ?";
+    $params[] = $collectionId;
   }
 
   // By default (public), show only published
@@ -49,7 +76,7 @@ try {
   $total = (int)$stmt->fetch()['c'];
 
   // Page of galleries
-  $sql = "SELECT id, slug, title, description, status, rating, sort_order, created_by, created_at, updated_at
+  $sql = "SELECT id, slug, collection_id, title, description, status, rating, sort_order, created_by, created_at, updated_at
           FROM galleries
           $where
           ORDER BY sort_order ASC, id DESC
@@ -131,6 +158,7 @@ try {
     return [
       'id' => $id,
       'slug' => $r['slug'],
+      'collection_id' => isset($r['collection_id']) ? (int)$r['collection_id'] : null,
       'title' => $r['title'],
       'description' => $r['description'],
       'status' => $r['status'],

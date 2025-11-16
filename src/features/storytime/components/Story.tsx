@@ -8,6 +8,7 @@ import ThemeToggle from '../../../components/ThemeToggle';
 import { useTheme } from '../contexts/ThemeContext';
 import { API_BASE } from '../../../lib/apiBase';
 import { analytics } from '../../../lib/analytics';
+import { getRandomBackground } from '../../../utils/backgroundUtils';
 
 import type { Story, Chapter, Progress, AuthorProfile } from '../utils/api-story';
 
@@ -23,6 +24,7 @@ export function Story() {
   const [totalChapters, setTotalChapters] = useState(0);
   const [loadingMoreChapters, setLoadingMoreChapters] = useState(false);
   const [hasMoreChapters, setHasMoreChapters] = useState(false);
+  const [enlargedImage, setEnlargedImage] = useState<{ src: string; title: string } | null>(null);
 
 
   // Load chapters with pagination
@@ -105,6 +107,12 @@ export function Story() {
     setProgress(null);
   };
 
+  const handleImageClick = (e: React.MouseEvent, imageSrc: string, title: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setEnlargedImage({ src: imageSrc, title });
+  };
+
   // Helper to get chapter display title
   const getChapterDisplayTitle = (ch: Chapter): string => {
     // If custom title exists, use it
@@ -170,10 +178,17 @@ export function Story() {
     : ['Fiction', 'Web Serial']; // fallback genres
 
   // Use author profile background images with smart fallback logic
-  const backgroundImage = authorProfile 
+  // getRandomBackground handles comma-separated filenames and randomly selects one
+  const backgroundImage = authorProfile
     ? (theme === 'light'
-        ? (authorProfile.background_image_light || authorProfile.background_image || '/images/lofi_light_bg.webp')
-        : (authorProfile.background_image_dark || authorProfile.background_image || '/images/lofi_bg.webp'))
+        ? getRandomBackground(
+            authorProfile.background_image_light || authorProfile.background_image,
+            '/images/lofi_light_bg.webp'
+          )
+        : getRandomBackground(
+            authorProfile.background_image_dark || authorProfile.background_image,
+            '/images/lofi_bg.webp'
+          ))
     : (theme === 'light' ? '/images/lofi_light_bg.webp' : '/images/lofi_bg.webp')
   const overlayClass = theme === 'light' ? 'bg-white/60' : 'bg-black/40'
   const cardClass = theme === 'light' ? 'bg-white/70 border-gray-300' : 'bg-black/70 border-white/20'
@@ -237,12 +252,10 @@ export function Story() {
       <div className="relative min-h-screen w-full">
         {/* Fixed background layer */}
         <div
-          className="fixed inset-0 w-full h-full -z-10"
+          className="fixed inset-0 -z-10 bg-no-repeat bg-top [background-size:auto_100%] md:[background-size:100%_auto]"
           style={{
             backgroundImage: `url('${backgroundImage}')`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center center',
-            backgroundRepeat: 'no-repeat'
+            backgroundColor: theme === 'light' ? '#f7f7f7' : '#0a0a0a',
           }}
         />
         {/* overlay */}
@@ -267,12 +280,19 @@ export function Story() {
           </div>
       
           <div className={`${cardClass} rounded-xl p-6 mb-6`}>
-            <div className="flex items-start gap-6">
-              <img src={story.cover} alt={`${story.title} cover`} className="w-32 h-auto rounded-md flex-shrink-0" />
-              <div className="text-left">
+            <div className="flex flex-col lg:flex-row items-start gap-6">
+              <div className="lg:w-48 lg:flex-shrink-0 w-full">
+                <img
+                  src={story.cover}
+                  alt={`${story.title} cover`}
+                  className="w-full aspect-[2/3] object-cover rounded-md cursor-pointer transition-opacity hover:opacity-90"
+                  onClick={(e) => handleImageClick(e, story.cover, story.title)}
+                />
+              </div>
+              <div className="text-left flex-1">
                 <h1 className={`text-3xl font-bold ${textClass}`}>{story.title}</h1>
-                {story.blurb && <RenderedMarkdown 
-                  markdown={story.blurb} 
+                {story.blurb && <RenderedMarkdown
+                  markdown={story.blurb}
                   className={`mt-2 ${subtextClass} prose ${theme === 'light' ? 'prose-gray' : 'prose-invert'}`}
                 />}
               </div>
@@ -367,6 +387,34 @@ export function Story() {
           </footer>
         </div>
       </div>
+
+      {/* Zoom modal */}
+      {enlargedImage && (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-black/90 p-4"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setEnlargedImage(null)}
+        >
+          <div className="relative max-h-[92vh] w-full max-w-5xl" onClick={(e) => e.stopPropagation()}>
+            <img
+              src={enlargedImage.src}
+              alt={enlargedImage.title}
+              className="max-h-[92vh] w-full object-contain"
+            />
+            <button
+              onClick={() => setEnlargedImage(null)}
+              className="absolute -top-3 -right-3 grid h-10 w-10 place-items-center rounded-full bg-white/10 text-white backdrop-blur hover:bg-white/20"
+              aria-label="Close"
+            >
+              ×
+            </button>
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded bg-black/70 px-3 py-1 text-sm text-white">
+              {enlargedImage.title}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

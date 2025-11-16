@@ -11,10 +11,13 @@ type Story = {
   target_audience?: string | null;
   cover_image?: string | null;
   break_image?: string | null;
+  enable_drop_cap?: boolean;
+  drop_cap_font?: string | null;
   status: 'draft' | 'published' | 'archived';
   created_at: string;
   updated_at: string;
   chapter_count?: number;
+  external_links?: { label: string; url: string }[] | null;
 };
 
 type Chapter = {
@@ -23,6 +26,7 @@ type Chapter = {
   title: string;
   slug: string;
   content: string;
+  soundtrack_url?: string | null;
   chapter_number: number;
   status: 'draft' | 'published';
   created_at: string;
@@ -50,7 +54,10 @@ export default function StoryManager() {
     target_audience: "",
     cover_image: "",
     break_image: "",
-    status: "draft" as Story['status']
+    enable_drop_cap: false,
+    drop_cap_font: "serif",
+    status: "draft" as Story['status'],
+    external_links: [] as { label: string; url: string }[]
   });
 
   // Upload states
@@ -157,6 +164,7 @@ export default function StoryManager() {
     title: "",
     slug: "",
     content: "",
+    soundtrack_url: "",
     chapter_number: 1,
     status: "draft" as Chapter['status']
   });
@@ -230,17 +238,20 @@ export default function StoryManager() {
       setSuccess(editingStory ? 'Story updated successfully!' : 'Story created successfully!');
       setShowStoryForm(false);
       setEditingStory(null);
-      setStoryForm({ 
-        title: "", 
-        slug: "", 
-        description: "", 
-        genres: [], 
-        primary_keywords: "", 
-        longtail_keywords: "", 
-        target_audience: "", 
-        cover_image: "", 
-        break_image: "", 
-        status: "draft" 
+      setStoryForm({
+        title: "",
+        slug: "",
+        description: "",
+        genres: [],
+        primary_keywords: "",
+        longtail_keywords: "",
+        target_audience: "",
+        cover_image: "",
+        break_image: "",
+        enable_drop_cap: false,
+        drop_cap_font: "serif",
+        status: "draft",
+        external_links: []
       });
       await loadStories();
     } catch (err: any) {
@@ -279,7 +290,7 @@ export default function StoryManager() {
       setSuccess(editingChapter ? 'Chapter updated successfully!' : 'Chapter created successfully!');
       setShowChapterForm(false);
       setEditingChapter(null);
-      setChapterForm({ title: "", slug: "", content: "", chapter_number: 1, status: "draft" });
+      setChapterForm({ title: "", slug: "", content: "", soundtrack_url: "", chapter_number: 1, status: "draft" });
       await loadChapters(selectedStory.id);
     } catch (err: any) {
       setError(err.message || 'Failed to save chapter');
@@ -350,6 +361,60 @@ export default function StoryManager() {
     }
   };
 
+  // Helper: count chapters not yet published
+  const countNonPublishedChapters = (chs: Chapter[]) =>
+    chs.filter(c => c.status !== 'published').length;
+
+  // Publish all non-published chapters in the selected story
+  const handlePublishAll = async () => {
+    if (!selectedStory) return;
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      // Dry run to show count
+      const dryRes = await fetch('/api/chapters/bulk-publish.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ story_id: selectedStory.id, dry_run: true })
+      });
+      const dry = await dryRes.json().catch(() => ({} as any));
+      const wouldAffect = typeof dry?.would_affect === 'number' ? dry.would_affect : 0;
+
+      if (wouldAffect <= 0) {
+        setSuccess('No drafts to publish for this story.');
+        return;
+      }
+
+      const ok = confirm(`Publish ${wouldAffect} chapter(s) for "${selectedStory.title}"?`);
+      if (!ok) return;
+
+      // Commit
+      const res = await fetch('/api/chapters/bulk-publish.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ story_id: selectedStory.id })
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || 'Failed to publish chapters');
+      }
+      const data = await res.json().catch(() => ({} as any));
+      const affected = typeof data?.affected === 'number' ? data.affected : wouldAffect;
+
+      setSuccess(`Published ${affected} chapter(s).`);
+      await loadChapters(selectedStory.id);
+      await loadStories();
+    } catch (err: any) {
+      setError(err.message || 'Failed to publish chapters');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const startEditStory = (story: Story) => {
     setEditingStory(story);
     setStoryForm({
@@ -362,7 +427,10 @@ export default function StoryManager() {
       target_audience: story.target_audience || "",
       cover_image: story.cover_image || "",
       break_image: story.break_image || "",
-      status: story.status
+      enable_drop_cap: story.enable_drop_cap || false,
+      drop_cap_font: story.drop_cap_font || "serif",
+      status: story.status,
+      external_links: story.external_links || []
     });
     setPageBreakMode('upload');
     loadAvailablePageBreaks();
@@ -375,6 +443,7 @@ export default function StoryManager() {
       title: chapter.title,
       slug: chapter.slug,
       content: chapter.content,
+      soundtrack_url: chapter.soundtrack_url || "",
       chapter_number: chapter.chapter_number,
       status: chapter.status
     });
@@ -443,17 +512,20 @@ export default function StoryManager() {
           onClick={() => {
             setShowStoryForm(true);
             setEditingStory(null);
-            setStoryForm({ 
-              title: "", 
-              slug: "", 
-              description: "", 
-              genres: [], 
-              primary_keywords: "", 
-              longtail_keywords: "", 
-              target_audience: "", 
-              cover_image: "", 
-              break_image: "", 
-              status: "draft" 
+            setStoryForm({
+              title: "",
+              slug: "",
+              description: "",
+              genres: [],
+              primary_keywords: "",
+              longtail_keywords: "",
+              target_audience: "",
+              cover_image: "",
+              break_image: "",
+              enable_drop_cap: false,
+              drop_cap_font: "serif",
+              status: "draft",
+              external_links: []
             });
             setPageBreakMode('upload');
             loadAvailablePageBreaks();
@@ -745,6 +817,73 @@ export default function StoryManager() {
                   </div>
                 </div>
               </div>
+              {/* External Links (platforms) */}
+              <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
+                <h4 className="text-md font-medium text-gray-900 dark:text-white mb-3">External Links</h4>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                  Add links to external platforms where this story is also published (e.g., Amazon, RoyalRoad, ScribbleHub). These will render on the public Stories page as “Find on …” links.
+                </p>
+                <div className="space-y-2">
+                  {(storyForm.external_links || []).map((link, idx) => (
+                    <div key={idx} className="flex flex-col md:flex-row gap-2">
+                      <input
+                        type="text"
+                        value={link.label}
+                        onChange={(e) =>
+                          setStoryForm(prev => {
+                            const arr = [...(prev.external_links || [])];
+                            arr[idx] = { ...arr[idx], label: e.target.value };
+                            return { ...prev, external_links: arr };
+                          })
+                        }
+                        className="w-full md:w-48 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                        placeholder="Platform (e.g., Amazon)"
+                      />
+                      <div className="flex items-center gap-2 w-full">
+                        <input
+                          type="url"
+                          value={link.url}
+                          onChange={(e) =>
+                            setStoryForm(prev => {
+                              const arr = [...(prev.external_links || [])];
+                              arr[idx] = { ...arr[idx], url: e.target.value };
+                              return { ...prev, external_links: arr };
+                            })
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                          placeholder="https://example.com/your-story"
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setStoryForm(prev => ({
+                              ...prev,
+                              external_links: (prev.external_links || []).filter((_, i) => i !== idx)
+                            }))
+                          }
+                          className="px-3 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
+                          title="Remove link"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setStoryForm(prev => ({
+                        ...prev,
+                        external_links: [...(prev.external_links || []), { label: "", url: "" }]
+                      }))
+                    }
+                    className="mt-2 px-3 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 text-sm"
+                  >
+                    + Add Link
+                  </button>
+                </div>
+              </div>
+
               {/* Cover Image Upload */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -909,6 +1048,48 @@ export default function StoryManager() {
                   </div>
                 )}
               </div>
+
+              {/* Drop Cap Options */}
+              <div className="space-y-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={storyForm.enable_drop_cap}
+                    onChange={(e) => setStoryForm(prev => ({ ...prev, enable_drop_cap: e.target.checked }))}
+                    className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Enable Drop Cap (Manuscript Style)
+                  </span>
+                </label>
+                <p className="text-xs text-gray-500 ml-6">
+                  When enabled, the first letter of each chapter will be larger and top-aligned (traditional manuscript style)
+                </p>
+
+                {storyForm.enable_drop_cap && (
+                  <div className="ml-6 mt-3">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Drop Cap Font Style
+                    </label>
+                    <select
+                      value={storyForm.drop_cap_font}
+                      onChange={(e) => setStoryForm(prev => ({ ...prev, drop_cap_font: e.target.value }))}
+                      className="w-full max-w-xs px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                    >
+                      <option value="serif">Classic Serif (Default)</option>
+                      <option value="cinzel">Cinzel (Elegant Roman)</option>
+                      <option value="playfair">Playfair Display (High Contrast)</option>
+                      <option value="cormorant">Cormorant (Delicate Serif)</option>
+                      <option value="unna">Unna (Traditional)</option>
+                      <option value="crimson">Crimson Pro (Editorial)</option>
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Choose a decorative font that matches your story's tone
+                    </p>
+                  </div>
+                )}
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Status
@@ -1015,6 +1196,24 @@ export default function StoryManager() {
                   </select>
                 </div>
               </div>
+
+              {/* Soundtrack Field */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Soundtrack (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter MP3 URL (e.g., /api/uploads/general/soundtrack.mp3)"
+                  value={chapterForm.soundtrack_url}
+                  onChange={(e) => setChapterForm(prev => ({ ...prev, soundtrack_url: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Link to an MP3 file from the uploads (go to Uploads → General to upload MP3 files)
+                </p>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Content (Markdown)
@@ -1171,15 +1370,24 @@ export default function StoryManager() {
                   />
                 </label>
                 <button
+                  onClick={handlePublishAll}
+                  className={`bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors ${countNonPublishedChapters(chapters) === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  disabled={loading || countNonPublishedChapters(chapters) === 0}
+                  title={countNonPublishedChapters(chapters) === 0 ? 'No drafts to publish' : 'Publish all non-published chapters'}
+                >
+                  Publish All{countNonPublishedChapters(chapters) > 0 ? ` (${countNonPublishedChapters(chapters)})` : ''}
+                </button>
+                <button
                   onClick={() => {
                     setShowChapterForm(true);
                     setEditingChapter(null);
-                    setChapterForm({ 
-                      title: "", 
-                      slug: "", 
-                      content: "", 
-                      chapter_number: getNextChapterNumber(), 
-                      status: "draft" 
+                    setChapterForm({
+                      title: "",
+                      slug: "",
+                      content: "",
+                      soundtrack_url: "",
+                      chapter_number: getNextChapterNumber(),
+                      status: "draft"
                     });
                   }}
                   className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"

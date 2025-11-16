@@ -9,12 +9,25 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// Check authentication
-session_start();
+// Check authentication (session already started in bootstrap.php)
 if (!isset($_SESSION['user_id'])) {
     http_response_code(401);
     echo json_encode(['error' => 'Not authenticated']);
     exit;
+}
+
+/**
+ * Compute approximate word count from chapter content.
+ * - No markdown/HTML processing; just whitespace-normalized token count.
+ */
+function compute_word_count(string $content): int {
+    $t = trim($content);
+    if ($t === '') { return 0; }
+    // Collapse any whitespace (spaces, tabs, newlines) to single spaces
+    $t = preg_replace('/\s+/u', ' ', $t);
+    // Split on spaces and count tokens
+    $parts = preg_split('/\s+/u', $t, -1, PREG_SPLIT_NO_EMPTY);
+    return is_array($parts) ? count($parts) : 0;
 }
 
 $input = json_decode(file_get_contents('php://input'), true);
@@ -58,20 +71,39 @@ try {
         }
     }
 
-    $stmt = $pdo->prepare("
-        UPDATE chapters 
-        SET title = ?, slug = ?, content = ?, chapter_number = ?, status = ?, updated_at = NOW()
-        WHERE id = ?
-    ");
-    
-    $stmt->execute([
-        $input['title'],
-        $input['slug'],
-        $input['content'],
-        $input['chapter_number'],
-        $input['status'] ?? 'draft',
-        $input['id']
-    ]);
+    // Build dynamic UPDATE query based on provided fields
+    $updateFields = [];
+    $updateValues = [];
+
+    $allowedFields = ['title', 'slug', 'content', 'soundtrack_url', 'chapter_number', 'status'];
+
+foreach ($allowedFields as $field) {
+    if (isset($input[$field])) {
+        $updateFields[] = "$field = ?";
+        $updateValues[] = $input[$field];
+    }
+}
+// If content provided, recompute and persist word_count
+if (isset($input['content'])) {
+    $wordCount = compute_word_count($input['content']);
+    $updateFields[] = "word_count = ?";
+    $updateValues[] = $wordCount;
+}
+
+    if (empty($updateFields)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'No fields to update']);
+        exit;
+    }
+
+    // Always update the timestamp
+    $updateFields[] = "updated_at = NOW()";
+
+    $sql = "UPDATE chapters SET " . implode(', ', $updateFields) . " WHERE id = ?";
+    $updateValues[] = $input['id'];
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($updateValues);
 
     // Update story's updated_at timestamp
     $stmt = $pdo->prepare("UPDATE stories SET updated_at = NOW() WHERE id = ?");

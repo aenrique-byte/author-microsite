@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { getStory, getChapterContent, saveProgress, loadProgress, findMaxChapterIndex, getAuthorProfile, getChapterDetails } from '../utils/api-story';
+import { getStory, getChapterContent, saveProgress, loadProgress, getAuthorProfile, getChapterDetails } from '../utils/api-story';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { CommentsSection } from './CommentsSection';
@@ -12,8 +12,64 @@ import { useAuth, canEditChapter } from '../../../contexts/AuthContext';
 import { ChapterEditModal } from './ChapterEditModal';
 import { analytics, ChapterDepthTracker } from '../../../lib/analytics';
 import { API_BASE } from '../../../lib/apiBase';
+import { getRandomBackground } from '../../../utils/backgroundUtils';
 
 import type { Story, AuthorProfile, ChapterDetails } from '../utils/api-story';
+
+// Color mapping for custom markdown color syntax
+const COLOR_MAP: Record<string, string> = {
+  yellow: '#FFD700',
+  gold: '#FFD700',
+  gray: '#808080',
+  grey: '#808080',
+  red: '#DC143C',
+  crimson: '#DC143C',
+  purple: '#9370DB',
+  violet: '#9370DB',
+  blue: '#4169E1',
+  royalblue: '#4169E1',
+  green: '#32CD32',
+  lime: '#32CD32',
+  orange: '#FF8C00',
+  darkorange: '#FF8C00',
+  pink: '#FF69B4',
+  hotpink: '#FF69B4',
+  cyan: '#00CED1',
+  darkturquoise: '#00CED1',
+  magenta: '#FF00FF',
+  fuchsia: '#FF00FF',
+  brown: '#8B4513',
+  saddlebrown: '#8B4513',
+  white: '#FFFFFF',
+  black: '#000000',
+  silver: '#C0C0C0',
+  maroon: '#800000',
+  olive: '#808000',
+  navy: '#000080',
+  teal: '#008080',
+  aqua: '#00FFFF',
+  indigo: '#4B0082',
+  coral: '#FF7F50',
+  salmon: '#FA8072',
+  khaki: '#F0E68C',
+  lavender: '#E6E6FA',
+  mint: '#98FF98',
+  peach: '#FFDAB9',
+  rose: '#FFE4E1',
+  sky: '#87CEEB',
+  tan: '#D2B48C',
+};
+
+// Parse custom color syntax: {color}text{/color}
+function parseColorSyntax(text: string): string {
+  return text.replace(/\{(\w+)\}([\s\S]*?)\{\/\1\}/g, (match, color, content) => {
+    const hexColor = COLOR_MAP[color.toLowerCase()];
+    if (hexColor) {
+      return `<span class="story-color" style="--story-color: ${hexColor};">${content}</span>`;
+    }
+    return match; // Return original if color not found
+  });
+}
 
 export function Chapter() {
   const { storyId, chapterId } = useParams<{ storyId: string; chapterId: string }>();
@@ -54,12 +110,9 @@ export function Chapter() {
           setChapterDetails(chapterData);
 
           const nextId = parseInt(chapterId, 10) + 1;
-          const maxChapter = await findMaxChapterIndex(storyData);
-          if (nextId <= maxChapter) {
-            setNextChapterId(nextId);
-          } else {
-            setNextChapterId(null);
-          }
+          // Determine existence of next chapter by querying its details (respects published filter)
+          const nextMeta = await getChapterDetails(storyData, String(nextId));
+          setNextChapterId(nextMeta ? nextId : null);
         } catch (error) {
           setChapterContent('# Chapter not found');
           setNextChapterId(null);
@@ -129,13 +182,43 @@ export function Chapter() {
 
   const sanitizedHtml = useMemo(() => {
     if (!chapterContent) return { __html: '' };
-    const dirtyHtml = marked.parse(chapterContent) as string;
-    
+
+    // First parse markdown
+    let dirtyHtml = marked.parse(chapterContent) as string;
+
     // Replace <hr> with responsive page break images
     const breakImage = story?.breakImage || '/api/uploads/page_break.png';
     const htmlWithBreaks = dirtyHtml.replace(/<hr\s*\/?>/g, `<img src="${breakImage}" alt="" class="page-break" />`);
-    
-    return { __html: DOMPurify.sanitize(htmlWithBreaks, { ADD_TAGS: ["img"], ADD_ATTR: ['src', 'alt', 'title', 'class'] }) };
+
+    // Apply drop cap if enabled for this story
+    if (story?.enableDropCap) {
+      // First, apply drop cap to the very first <p> tag
+      let result = htmlWithBreaks.replace(/(<p[^>]*>)([^<\s])/, (_match, openTag, firstChar) => {
+        return `${openTag}<span class="drop-cap">${firstChar}</span>`;
+      });
+
+      // Then, apply drop cap to any <p> tag that comes immediately after a page break image
+      // Look for pattern: </p> followed by page-break img, followed by <p>
+      result = result.replace(
+        /(class="page-break"[^>]*>\s*)(<p[^>]*>)([^<\s])/g,
+        (_match, beforeP, openTag, firstChar) => {
+          return `${beforeP}${openTag}<span class="drop-cap">${firstChar}</span>`;
+        }
+      );
+
+      dirtyHtml = result;
+    } else {
+      dirtyHtml = htmlWithBreaks;
+    }
+
+    // Then apply custom color syntax to the HTML output
+    const colorParsed = parseColorSyntax(dirtyHtml);
+
+    // Sanitize, allowing style attribute for colored text
+    return { __html: DOMPurify.sanitize(colorParsed, {
+      ADD_TAGS: ["img", "span"],
+      ADD_ATTR: ['src', 'alt', 'title', 'class', 'style']
+    }) };
   }, [chapterContent, story]);
 
   // Effect for restoring scroll position
@@ -178,9 +261,58 @@ export function Chapter() {
   }, [storyId, chapterId, loading]);
 
   useEffect(() => {
+    // Load Google Fonts for drop cap if needed
+    if (story?.enableDropCap && story?.dropCapFont && story.dropCapFont !== 'serif') {
+      const fontMap: Record<string, string> = {
+        cinzel: 'Cinzel:wght@400;600;700',
+        playfair: 'Playfair+Display:wght@400;600;700',
+        cormorant: 'Cormorant:wght@400;600;700',
+        unna: 'Unna:wght@400;700',
+        crimson: 'Crimson+Pro:wght@400;600;700'
+      };
+
+      const fontQuery = fontMap[story.dropCapFont];
+      if (fontQuery && !document.getElementById(`font-${story.dropCapFont}`)) {
+        const link = document.createElement('link');
+        link.id = `font-${story.dropCapFont}`;
+        link.rel = 'stylesheet';
+        link.href = `https://fonts.googleapis.com/css2?family=${fontQuery}&display=swap`;
+        document.head.appendChild(link);
+      }
+    }
+
+    // Get font family for drop cap
+    const getDropCapFont = () => {
+      if (!story?.enableDropCap) return 'serif';
+      const fontFamily = story.dropCapFont || 'serif';
+
+      const fontFamilyMap: Record<string, string> = {
+        serif: 'Georgia, serif',
+        cinzel: '"Cinzel", serif',
+        playfair: '"Playfair Display", serif',
+        cormorant: '"Cormorant", serif',
+        unna: '"Unna", serif',
+        crimson: '"Crimson Pro", serif'
+      };
+
+      return fontFamilyMap[fontFamily] || 'Georgia, serif';
+    };
+
     const style = document.createElement('style');
     style.id = 'story-break-style';
     style.textContent = `
+      /* Drop cap styling */
+      .drop-cap {
+        float: left;
+        font-size: 3.5em;
+        line-height: 0.85;
+        margin-right: 0.1em;
+        margin-top: 0.05em;
+        font-weight: 600;
+        font-family: ${getDropCapFont()};
+        ${theme === 'light' ? 'color: #1a1a1a;' : 'color: #f0f0f0;'}
+      }
+
       .page-break {
         display: block;
         width: 100%;
@@ -188,16 +320,49 @@ export function Chapter() {
         margin: 2rem 0;
         filter: ${theme === 'light' ? 'drop-shadow(0 0 10px rgba(0,0,0,0.45)) drop-shadow(0 0 20px rgba(0,0,0,0.25))' : 'none'};
       }
+
+      /* Base color rule */
+      .story-color,
+      .story-color * {
+        color: var(--story-color) !important;
+      }
+
+      /* Theme-aware contrast adjustments */
+      ${theme === 'light' ? `
+        .story-color,
+        .story-color * {
+          --story-color: color-mix(in oklch, var(--story-color) 65%, black);
+        }
+
+        /* Fallback for browsers without color-mix support */
+        @supports not (color: color-mix(in oklch, black 10%, white)) {
+          .story-color[style*="#FFD700"],
+          .story-color[style*="ffd700"] { --story-color: #b8860b; } /* darker gold */
+          .story-color[style*="#808080"],
+          .story-color[style*="808080"] { --story-color: #4a4a4a; } /* darker gray */
+        }
+      ` : `
+        .story-color,
+        .story-color * {
+          --story-color: color-mix(in oklch, var(--story-color) 90%, white);
+        }
+
+        /* Fallback for browsers without color-mix support */
+        @supports not (color: color-mix(in oklch, black 10%, white)) {
+          .story-color[style*="#FFD700"],
+          .story-color[style*="ffd700"] { --story-color: #ffd24d; } /* brighter gold */
+        }
+      `}
     `;
     document.head.appendChild(style);
-    
+
     return () => {
       const existingStyle = document.getElementById('story-break-style');
       if (existingStyle) {
         document.head.removeChild(existingStyle);
       }
     };
-  }, [theme]);
+  }, [theme, story?.enableDropCap, story?.dropCapFont]);
 
   if (loading) {
     return <div>Loading chapter...</div>;
@@ -269,10 +434,17 @@ export function Chapter() {
     : chapterDescription;
 
   // Use author profile background images with smart fallback logic
-  const backgroundImage = authorProfile 
+  // getRandomBackground handles comma-separated filenames and randomly selects one
+  const backgroundImage = authorProfile
     ? (theme === 'light'
-        ? (authorProfile.background_image_light || authorProfile.background_image || '/images/lofi_light_bg.webp')
-        : (authorProfile.background_image_dark || authorProfile.background_image || '/images/lofi_bg.webp'))
+        ? getRandomBackground(
+            authorProfile.background_image_light || authorProfile.background_image,
+            '/images/lofi_light_bg.webp'
+          )
+        : getRandomBackground(
+            authorProfile.background_image_dark || authorProfile.background_image,
+            '/images/lofi_bg.webp'
+          ))
     : (theme === 'light' ? '/images/lofi_light_bg.webp' : '/images/lofi_bg.webp')
   const overlayClass = theme === 'light' ? 'bg-white/60' : 'bg-black/40'
   const cardClass = theme === 'light' ? 'bg-white/70 border-gray-300' : 'bg-black/70 border-white/20'
@@ -342,19 +514,17 @@ export function Chapter() {
       <div className="relative min-h-screen w-full">
         {/* Fixed background layer */}
         <div
-          className="fixed inset-0 w-full h-full -z-10"
+          className="fixed inset-0 -z-10 bg-no-repeat bg-top [background-size:auto_100%] md:[background-size:100%_auto]"
           style={{
             backgroundImage: `url('${backgroundImage}')`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center center',
-            backgroundRepeat: 'no-repeat'
+            backgroundColor: theme === 'light' ? '#f7f7f7' : '#0a0a0a',
           }}
         />
         {/* overlay */}
         <div className={`fixed inset-0 ${overlayClass} -z-10`} />
         
         <div className="relative z-10 min-h-screen grid grid-rows-[auto,1fr] chapter-layout">
-        <header className={`border-b ${cardClass} ${theme === 'light' ? 'border-gray-300' : 'border-white/20'}`}>
+        <header className={`sticky top-0 z-50 border-b ${cardClass} ${theme === 'light' ? 'border-gray-300' : 'border-white/20'}`}>
           <div className="max-w-5xl mx-auto px-4 py-3">
             <div className={`flex items-center justify-between`}>
               <div className={`flex items-center gap-2 text-sm ${subtextClass}`}>
@@ -372,7 +542,7 @@ export function Chapter() {
                 <span>/</span>
                 <span className={textClass}>{chapterTitle}</span>
               </div>
-              
+
               {/* Edit button - only visible for logged-in users */}
               {canEditChapter(user) && (
                 <button
@@ -387,6 +557,28 @@ export function Chapter() {
               )}
             </div>
           </div>
+
+          {/* Sticky Audio Player - only show if soundtrack exists */}
+          {chapterDetails?.soundtrack_url && (
+            <div className={`border-t ${theme === 'light' ? 'border-gray-300' : 'border-white/20'}`}>
+              <div className="max-w-5xl mx-auto px-4 py-2">
+                <div className="flex items-center gap-3">
+                  <svg className={`w-5 h-5 flex-shrink-0 ${theme === 'light' ? 'text-gray-700' : 'text-white'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                  </svg>
+                  <audio
+                    src={chapterDetails.soundtrack_url}
+                    controls
+                    className={`w-full max-w-2xl rounded-lg ${
+                      theme === 'dark' ? 'bg-neutral-900 border border-neutral-800 p-2' : ''
+                    }`}
+                    style={theme === 'dark' ? { colorScheme: 'dark' } : undefined}
+                    preload="metadata"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </header>
         <main ref={mainRef} className="overflow-y-auto">
           <div className="max-w-4xl lg:max-w-5xl mx-auto px-4 md:px-6 py-8">

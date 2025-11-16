@@ -1,6 +1,7 @@
 import { useEffect, useState, createContext, useContext } from 'react'
 import { Helmet } from 'react-helmet-async'
 import SocialIcons from './SocialIcons'
+import { getRandomBackground } from '../utils/backgroundUtils'
 
 // Theme Context for the main homepage
 const ThemeContext = createContext<{
@@ -52,7 +53,7 @@ const ThemeToggle = () => {
   return (
     <button
       onClick={toggleTheme}
-      className={`fixed top-4 left-4 z-50 p-2 rounded-lg transition-colors duration-200 shadow-lg ${
+      className={`fixed bottom-4 right-4 md:top-4 md:left-4 md:bottom-auto md:right-auto z-50 p-2 h-10 w-10 md:h-auto md:w-auto rounded-full md:rounded-lg transition-colors duration-200 shadow-lg ${
         theme === 'dark'
           ? 'bg-neutral-800 text-neutral-100 hover:bg-neutral-700'
           : 'bg-neutral-200 text-neutral-900 hover:bg-neutral-300'
@@ -161,9 +162,16 @@ function AuthorHomepageContent() {
   }
 
   // Use theme-specific custom background if set, with smart fallback logic
+  // getRandomBackground handles comma-separated filenames and randomly selects one
   const backgroundImage = theme === 'light'
-    ? (profile.background_image_light || profile.background_image || '/images/lofi_light_bg.webp')
-    : (profile.background_image_dark || profile.background_image || '/images/lofi_bg.webp')
+    ? getRandomBackground(
+        profile.background_image_light || profile.background_image,
+        '/images/lofi_light_bg.webp'
+      )
+    : getRandomBackground(
+        profile.background_image_dark || profile.background_image,
+        '/images/lofi_bg.webp'
+      )
   const overlayClass = theme === 'light' ? 'bg-white/60' : 'bg-black/40'
   const cardClass = theme === 'light' ? 'bg-white/70 text-gray-900' : 'bg-black/70 text-white'
   
@@ -229,10 +237,13 @@ function AuthorHomepageContent() {
             </div>
           )}
           <h1 className="text-3xl font-bold mb-2">{profile.name}</h1>
-          <p className="opacity-80 mb-6">
-            {profile.bio} | {profile.tagline}
+          <p className="opacity-90 mb-2 text-sm sm:text-base md:text-lg leading-snug break-words">
+            {profile.bio}
           </p>
-          {/* Navigation Buttons - Only show if content exists */}
+          <p className="opacity-80 mb-6 text-sm sm:text-base md:text-lg leading-snug break-words line-clamp-2 sm:line-clamp-3 md:line-clamp-none">
+            {profile.tagline}
+          </p>
+          {/* Navigation Buttons */}
           {!contentLoading && (hasStories || hasGalleries) && (
             <div className="flex justify-center gap-4 mb-6">
               {hasStories && (

@@ -9,8 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// Check authentication
-session_start();
+// Check authentication (session already started in bootstrap.php)
 if (!isset($_SESSION['user_id'])) {
     http_response_code(401);
     echo json_encode(['error' => 'Not authenticated']);
@@ -25,6 +24,13 @@ if (!$input) {
     exit;
 }
 
+// Validate gallery_rating_filter if provided
+if (isset($input['gallery_rating_filter']) && !in_array($input['gallery_rating_filter'], ['always', 'auto', 'never'])) {
+    http_response_code(400);
+    echo json_encode(['error' => 'Invalid gallery_rating_filter value. Must be: always, auto, or never']);
+    exit;
+}
+
 try {
     // Get current profile or create if doesn't exist
     $stmt = $pdo->prepare("SELECT id FROM author_profile LIMIT 1");
@@ -35,7 +41,7 @@ try {
         // Update existing profile
         $stmt = $pdo->prepare("
             UPDATE author_profile 
-            SET name = ?, bio = ?, tagline = ?, profile_image = ?, background_image_light = ?, background_image_dark = ?, site_domain = ?, updated_at = NOW()
+            SET name = ?, bio = ?, tagline = ?, profile_image = ?, background_image_light = ?, background_image_dark = ?, site_domain = ?, gallery_rating_filter = ?, updated_at = NOW()
             WHERE id = ?
         ");
         $stmt->execute([
@@ -46,13 +52,14 @@ try {
             $input['background_image_light'] ?? null,
             $input['background_image_dark'] ?? null,
             $input['site_domain'] ?? null,
+            $input['gallery_rating_filter'] ?? 'auto',
             $profile['id']
         ]);
     } else {
         // Create new profile
         $stmt = $pdo->prepare("
-            INSERT INTO author_profile (name, bio, tagline, profile_image, background_image_light, background_image_dark, site_domain, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+            INSERT INTO author_profile (name, bio, tagline, profile_image, background_image_light, background_image_dark, site_domain, gallery_rating_filter, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
         ");
         $stmt->execute([
             $input['name'] ?? null,
@@ -61,7 +68,8 @@ try {
             $input['profile_image'] ?? null,
             $input['background_image_light'] ?? null,
             $input['background_image_dark'] ?? null,
-            $input['site_domain'] ?? null
+            $input['site_domain'] ?? null,
+            $input['gallery_rating_filter'] ?? 'auto'
         ]);
     }
 

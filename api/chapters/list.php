@@ -36,22 +36,28 @@ if (!$storyId) {
 try {
 
     $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
-    $limit = isset($_GET['limit']) ? max(1, min(100, intval($_GET['limit']))) : 50;
+    $limit = isset($_GET['limit']) ? max(1, min(10000, intval($_GET['limit']))) : 50;
     $offset = ($page - 1) * $limit;
     
     // Check for specific chapter number filter
     $chapterNumber = isset($_GET['chapter_number']) ? intval($_GET['chapter_number']) : null;
     
+    // Check if user is authenticated (for admin access) - session already started in bootstrap.php
+    $isAdmin = isset($_SESSION['user_id']);
+
+    // Only show published chapters to non-admin users
+    $statusFilter = $isAdmin ? "" : " AND status = 'published'";
+
     if ($chapterNumber) {
         // Get specific chapter
         $stmt = $pdo->prepare("
-            SELECT * FROM chapters 
-            WHERE story_id = ? AND chapter_number = ?
+            SELECT * FROM chapters
+            WHERE story_id = ? AND chapter_number = ?" . $statusFilter . "
             LIMIT 1
         ");
         $stmt->execute([$storyId, $chapterNumber]);
         $chapters = $stmt->fetchAll();
-        
+
         echo json_encode([
             'success' => true,
             'chapters' => $chapters,
@@ -59,14 +65,14 @@ try {
         ]);
     } else {
         // Get total count
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM chapters WHERE story_id = ?");
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM chapters WHERE story_id = ?" . $statusFilter);
         $stmt->execute([$storyId]);
         $total = $stmt->fetchColumn();
 
         // Get chapters
         $stmt = $pdo->prepare("
-            SELECT * FROM chapters 
-            WHERE story_id = ?
+            SELECT * FROM chapters
+            WHERE story_id = ?" . $statusFilter . "
             ORDER BY chapter_number ASC
             LIMIT ? OFFSET ?
         ");

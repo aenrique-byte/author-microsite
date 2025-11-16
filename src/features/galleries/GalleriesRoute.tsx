@@ -1,18 +1,383 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Routes, Route, useNavigate, useParams, Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import type { ImageMeta, Rating, Socials } from "./types";
+import type { ImageMeta, Rating, Socials, CollectionCardItem } from "./types";
 import { ImageCard } from "./components/ImageCard";
 import { API_BASE } from "../../lib/apiBase";
 import ThemeToggle from "../../components/ThemeToggle";
 import SocialIcons from "../../components/SocialIcons";
 import { ApiGalleryCards, type ApiGalleryCardItem } from "./components/ApiGalleryCards";
+import { analytics } from "../../lib/analytics";
+import { useAuth } from "../../contexts/AuthContext";
 
 const PAGE_SIZE = 20;
 
+function CollectionsList() {
+  const navigate = useNavigate();
+  const [error, setError] = useState<string | null>(null);
+  const [socials, setSocials] = useState<Socials | undefined>(undefined);
+  const [collections, setCollections] = useState<CollectionCardItem[] | null>(null);
+  const [authorProfile, setAuthorProfile] = useState<any>(null);
+
+  const openCollection = (slug: string) => {
+    navigate(`/galleries/collection/${encodeURIComponent(slug)}`);
+  };
+
+  // Initial load: socials + collections + author profile
+  useEffect(() => {
+    async function loadBoot() {
+      try {
+        const [authorRes, socialsRes, colRes] = await Promise.allSettled([
+          fetch(`${API_BASE}/author/get.php`, { cache: "no-cache" }),
+          fetch(`${API_BASE}/socials/get.php`, { cache: "no-cache" }),
+          fetch(`${API_BASE}/collections/list.php?status=published&limit=1000`, { cache: "no-cache" })
+        ]);
+
+        if (authorRes.status === 'fulfilled' && authorRes.value.ok) {
+          const authorData = await authorRes.value.json();
+          if (authorData.success) setAuthorProfile(authorData.profile);
+        }
+        if (socialsRes.status === 'fulfilled' && socialsRes.value.ok) {
+          const socialsData = await socialsRes.value.json();
+          setSocials(socialsData.socials || {});
+        }
+        if (colRes.status === 'fulfilled' && colRes.value.ok) {
+          const cj = await colRes.value.json();
+          const items: CollectionCardItem[] = (cj.collections || []).map((c: any) => ({
+            id: Number(c.id),
+            slug: String(c.slug),
+            title: String(c.title || 'Untitled'),
+            description: c.description || undefined,
+            themes: Array.isArray(c.themes) ? c.themes : [],
+            status: (c.status === 'draft' || c.status === 'archived') ? c.status : 'published',
+            cover_hero: c.cover_hero || null,
+            sort_order: typeof c.sort_order === 'number' ? c.sort_order : 0,
+            gallery_count: Number(c.gallery_count || 0)
+          }));
+          setCollections(items);
+          setError(null);
+        } else {
+          throw new Error("Failed to fetch collections list");
+        }
+      } catch (e: any) {
+        console.error(e);
+        setError("Unable to load collections. Ensure the new PHP API is uploaded and database configured.");
+      }
+    }
+    loadBoot();
+  }, []);
+
+  // SEO meta for collections landing
+  const authorName = authorProfile?.name || 'Author Name';
+  const baseDomain = authorProfile?.site_domain || 'example.com';
+  const url = `https://${baseDomain}/galleries`;
+  const description = `Browse ${authorName}'s gallery collections (projects). Drill into each collection to view its galleries.`;
+  const title = `Gallery Collections | ${authorName} | ${authorProfile?.bio || 'Author & Artist'}`;
+
+  return (
+    <div className="min-h-screen bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100 transition-colors duration-200">
+      <Helmet>
+        <title>{title}</title>
+        <meta name="description" content={description} />
+        <link rel="canonical" href={url} />
+        <meta property="og:title" content="Gallery Collections" />
+        <meta property="og:description" content={description} />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={url} />
+        <meta property="og:site_name" content={authorName} />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content="Gallery Collections" />
+        <meta name="twitter:description" content={description} />
+        <meta name="author" content={authorName} />
+      </Helmet>
+      <ThemeToggle />
+      
+      <div className="relative z-10 mx-auto max-w-6xl px-4 py-8">
+        {/* Breadcrumbs */}
+        <div className="mb-6">
+          <div className="bg-white/70 border-gray-300 dark:bg-black/70 dark:border-white/20 rounded-xl p-4">
+            <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-neutral-300">
+              <Link to="/" className="hover:underline hover:text-gray-900 dark:hover:text-neutral-200">
+                Home
+              </Link>
+              <span>/</span>
+              <span className="text-gray-900 dark:text-white">Galleries</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+          <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-white">
+            Collections
+          </h1>
+        </div>
+
+        <main>
+          {error && !collections ? (
+            <p className="text-red-600 dark:text-red-400">{error}</p>
+          ) : !collections ? (
+            <p>Loading…</p>
+          ) : collections.length === 0 ? (
+            <p className="opacity-70">No collections yet.</p>
+          ) : (
+            <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {collections.map(c => (
+                <li key={c.id}>
+                  <button
+                    onClick={() => openCollection(c.slug)}
+                    className="w-full text-left rounded-xl border bg-white/70 dark:bg-black/70 border-gray-300 dark:border-white/20 hover:border-gray-400 dark:hover:border-white/30 hover:bg-white/80 dark:hover:bg-black/80 shadow transition-all"
+                  >
+                    {c.cover_hero && (
+                      <div className="w-full aspect-[16/9] overflow-hidden rounded-t-xl bg-neutral-200 dark:bg-neutral-800">
+                        <img
+                          src={c.cover_hero}
+                          alt={`${c.title} cover`}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+                    )}
+                    <div className="p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                          {c.title}
+                        </h3>
+                        <span className="text-xs text-gray-600 dark:text-neutral-300 whitespace-nowrap">
+                          {c.gallery_count} {c.gallery_count === 1 ? 'gallery' : 'galleries'}
+                        </span>
+                      </div>
+                      {c.description && (
+                        <p className="mt-2 text-sm text-gray-700 dark:text-neutral-300 line-clamp-3">
+                          {c.description}
+                        </p>
+                      )}
+                      {Array.isArray(c.themes) && c.themes.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {c.themes.slice(0, 4).map((t, i) => (
+                            <span
+                              key={i}
+                              className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-gray-200 text-gray-800 dark:bg-white/10 dark:text-neutral-200"
+                            >
+                              {t}
+                            </span>
+                          ))}
+                          {c.themes.length > 4 && (
+                            <span className="text-xs text-gray-600 dark:text-neutral-300">
+                              +{c.themes.length - 4} more
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </main>
+
+        {socials && <SocialIcons socials={socials} variant="footer" />}
+      </div>
+    </div>
+  );
+}
+
+function CollectionGalleries() {
+  const { cslug } = useParams<{ cslug: string }>();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  // Initialize rating from localStorage or default to PG
+  const [rating, setRating] = useState<Rating>(() => {
+    const saved = localStorage.getItem('gallery_rating_filter');
+    return (saved === 'X' ? 'X' : 'PG') as Rating;
+  });
+  const [error, setError] = useState<string | null>(null);
+  const [socials, setSocials] = useState<Socials | undefined>(undefined);
+  const [galleries, setGalleries] = useState<ApiGalleryCardItem[] | null>(null);
+  const [authorProfile, setAuthorProfile] = useState<any>(null);
+  const [collection, setCollection] = useState<CollectionCardItem | null>(null);
+
+  const openGallery = (slug: string) => {
+    navigate(`/galleries/${encodeURIComponent(slug)}`);
+  };
+
+  // Initial load
+  useEffect(() => {
+    async function loadBoot() {
+      try {
+        // Include unpublished galleries when user is authenticated
+        const includeUnpublished = user ? '&include_unpublished=1' : '';
+        const [authorRes, socialsRes, colRes, galRes] = await Promise.allSettled([
+          fetch(`${API_BASE}/author/get.php`, { cache: "no-cache" }),
+          fetch(`${API_BASE}/socials/get.php`, { cache: "no-cache" }),
+          fetch(`${API_BASE}/collections/list.php?slug=${encodeURIComponent(cslug || '')}`, { cache: "no-cache" }),
+          fetch(`${API_BASE}/galleries/list.php?collection_slug=${encodeURIComponent(cslug || '')}&limit=1000${includeUnpublished}`, { cache: "no-cache" }),
+        ]);
+
+        if (authorRes.status === 'fulfilled' && authorRes.value.ok) {
+          const authorData = await authorRes.value.json();
+          if (authorData.success) setAuthorProfile(authorData.profile);
+        }
+        if (socialsRes.status === 'fulfilled' && socialsRes.value.ok) {
+          const socialsData = await socialsRes.value.json();
+          setSocials(socialsData.socials || {});
+        }
+        if (colRes.status === 'fulfilled' && colRes.value.ok) {
+          const cj = await colRes.value.json();
+          const first = Array.isArray(cj.collections) && cj.collections.length > 0 ? cj.collections[0] : null;
+          if (first) {
+            setCollection({
+              id: Number(first.id),
+              slug: String(first.slug),
+              title: String(first.title || 'Untitled'),
+              description: first.description || undefined,
+              themes: Array.isArray(first.themes) ? first.themes : [],
+              status: (first.status === 'draft' || first.status === 'archived') ? first.status : 'published',
+              cover_hero: first.cover_hero || null,
+              sort_order: typeof first.sort_order === 'number' ? first.sort_order : 0,
+              gallery_count: Number(first.gallery_count || 0)
+            });
+          }
+        }
+        if (galRes.status === 'fulfilled' && galRes.value.ok) {
+          const gj = await galRes.value.json();
+          const items: ApiGalleryCardItem[] = (gj.galleries || []).map((g: any) => ({
+            id: Number(g.id) || 0,
+            slug: String(g.slug || ''),
+            title: String(g.title || 'Untitled'),
+            description: g.description ? String(g.description) : undefined,
+            rating: (g.rating === "X" ? "X" : "PG") as "PG" | "X",
+            image_count: Number(g.image_count) || 0,
+            like_count: Number(g.like_count) || 0,
+            comment_count: Number(g.comment_count) || 0,
+            hero_thumb: g.hero_thumb ? String(g.hero_thumb) : null,
+            hero_width: g.hero_width ? Number(g.hero_width) : null,
+            hero_height: g.hero_height ? Number(g.hero_height) : null,
+          }));
+          setGalleries(items);
+        } else {
+          setGalleries([]);
+        }
+        setError(null);
+      } catch (e: any) {
+        console.error(e);
+        setError("Unable to load collection.");
+      }
+    }
+    if (cslug) loadBoot();
+  }, [cslug, user]);
+
+  const visibleGalleries = useMemo(() => {
+    if (!galleries) return [];
+    if (rating === "PG") return galleries.filter((g) => (g.rating ?? "PG") === "PG");
+    return galleries;
+  }, [galleries, rating]);
+
+  // Only show rating filter when configured or when X-rated galleries exist (auto)
+  const shouldShowRatingFilter = useMemo(() => {
+    const filterSetting = authorProfile?.gallery_rating_filter || 'auto';
+    if (filterSetting === 'always') return true;
+    if (filterSetting === 'never') return false;
+    return galleries?.some((g) => g.rating === 'X') ?? false;
+  }, [authorProfile?.gallery_rating_filter, galleries]);
+
+  const authorName = authorProfile?.name || 'Author Name';
+  const baseDomain = authorProfile?.site_domain || 'example.com';
+  const galleriesUrl = `https://${baseDomain}/galleries/collection/${cslug}`;
+  const galleriesDescription = collection?.description || `Explore galleries inside the ${collection?.title || 'collection'} project by ${authorName}.`;
+  const galleriesTitle = `${collection?.title || 'Collection'} | ${authorName} | ${authorProfile?.bio || 'Author & Artist'}`;
+
+  return (
+    <div className="min-h-screen bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100 transition-colors duration-200">
+      <Helmet>
+        <title>{galleriesTitle}</title>
+        <meta name="description" content={galleriesDescription} />
+        <link rel="canonical" href={galleriesUrl} />
+        <meta property="og:title" content={collection?.title || 'Collection'} />
+        <meta property="og:description" content={galleriesDescription} />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={galleriesUrl} />
+        <meta property="og:site_name" content={authorName} />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content={collection?.title || 'Collection'} />
+        <meta name="twitter:description" content={galleriesDescription} />
+      </Helmet>
+      <ThemeToggle />
+      
+      <div className="relative z-10 mx-auto max-w-6xl px-4 py-8">
+        {/* Breadcrumbs */}
+        <div className="mb-6">
+          <div className="bg-white/70 border-gray-300 dark:bg-black/70 dark:border-white/20 rounded-xl p-4">
+            <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-neutral-300">
+              <Link to="/" className="hover:underline hover:text-gray-900 dark:hover:text-neutral-200">
+                Home
+              </Link>
+              <span>/</span>
+              <Link to="/galleries" className="hover:underline hover:text-gray-900 dark:hover:text-neutral-200">
+                Galleries
+              </Link>
+              <span>/</span>
+              <span className="text-gray-900 dark:text-white">{collection?.title || cslug}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+          <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-white">
+            {collection?.title || "Collection"}
+          </h1>
+          
+          {shouldShowRatingFilter && (
+            <div className="flex items-center gap-2">
+              <select
+                aria-label="Rating filter"
+                value={rating}
+                onChange={(e) => {
+                  const newRating = e.target.value as Rating;
+                  setRating(newRating);
+                  localStorage.setItem('gallery_rating_filter', newRating);
+                }}
+                className="rounded-lg border border-gray-300 bg-white text-gray-900 hover:border-gray-400 dark:border-white/30 dark:bg-black/70 dark:text-white dark:hover:border-white/50 px-3 py-2 text-sm transition-colors"
+              >
+                <option value="PG">PG</option>
+                <option value="X">X</option>
+              </select>
+            </div>
+          )}
+        </div>
+
+        {collection?.description && (
+          <p className="mb-6 opacity-80">{collection.description}</p>
+        )}
+
+        <main>
+          {error && !galleries ? (
+            <p className="text-red-600 dark:text-red-400">{error}</p>
+          ) : galleries ? (
+            <ApiGalleryCards
+              items={visibleGalleries}
+              onOpen={openGallery}
+              showAdultBadge={rating === "X"}
+            />
+          ) : (
+            <p>Loading…</p>
+          )}
+        </main>
+
+        {socials && <SocialIcons socials={socials} variant="footer" />}
+      </div>
+    </div>
+  );
+}
+
 function GalleryList() {
   const navigate = useNavigate();
-  const [rating, setRating] = useState<Rating>("PG");
+  const { user } = useAuth();
+  // Initialize rating from localStorage or default to PG
+  const [rating, setRating] = useState<Rating>(() => {
+    const saved = localStorage.getItem('gallery_rating_filter');
+    return (saved === 'X' ? 'X' : 'PG') as Rating;
+  });
   const [error, setError] = useState<string | null>(null);
   const [socials, setSocials] = useState<Socials | undefined>(undefined);
   const [galleries, setGalleries] = useState<ApiGalleryCardItem[] | null>(null);
@@ -26,11 +391,13 @@ function GalleryList() {
   useEffect(() => {
     async function loadBoot() {
       try {
+        // Include unpublished galleries when user is authenticated
+        const includeUnpublished = user ? '&include_unpublished=1' : '';
         // Load author profile, socials, and galleries in parallel
         const [authorRes, socialsRes, galleriesRes] = await Promise.allSettled([
           fetch(`${API_BASE}/author/get.php`, { cache: "no-cache" }),
           fetch(`${API_BASE}/socials/get.php`, { cache: "no-cache" }),
-          fetch(`${API_BASE}/galleries/list.php?page=1&limit=1000`, { cache: "no-cache" })
+          fetch(`${API_BASE}/galleries/list.php?page=1&limit=1000${includeUnpublished}`, { cache: "no-cache" })
         ]);
 
         // Handle author profile
@@ -74,7 +441,7 @@ function GalleryList() {
       }
     }
     loadBoot();
-  }, []);
+  }, [user]);
 
   const visibleGalleries = useMemo(() => {
     if (!galleries) return [];
@@ -82,12 +449,23 @@ function GalleryList() {
     return galleries;
   }, [galleries, rating]);
 
+  // Determine if rating filter should be shown
+  const shouldShowRatingFilter = useMemo(() => {
+    const filterSetting = authorProfile?.gallery_rating_filter || 'auto';
+    
+    if (filterSetting === 'always') return true;
+    if (filterSetting === 'never') return false;
+    
+    // 'auto' mode: show only if X-rated galleries exist
+    return galleries?.some((g) => g.rating === 'X') ?? false;
+  }, [authorProfile?.gallery_rating_filter, galleries]);
+
   // SEO meta data for gallery listing page
   const authorName = authorProfile?.name || 'Author Name';
   const baseDomain = authorProfile?.site_domain || 'example.com';
-  const galleriesUrl = `https://${baseDomain}/galleries`;
-  const galleriesDescription = `Browse ${authorName}'s collection of artwork and illustrations. Featuring creative visual storytelling and artistic designs.`;
-  const galleriesTitle = `Image Galleries | ${authorName} | ${authorProfile?.bio || 'Author & Artist'}`;
+  const galleriesUrl = `https://${baseDomain}/galleries/all`;
+  const galleriesDescription = `Browse all galleries by ${authorName}.`;
+  const galleriesTitle = `All Galleries | ${authorName} | ${authorProfile?.bio || 'Author & Artist'}`;
 
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100 transition-colors duration-200">
@@ -95,39 +473,15 @@ function GalleryList() {
         <title>{galleriesTitle}</title>
         <meta name="description" content={galleriesDescription} />
         <link rel="canonical" href={galleriesUrl} />
-        
-        {/* Open Graph */}
-        <meta property="og:title" content="Image Galleries" />
+        <meta property="og:title" content="All Galleries" />
         <meta property="og:description" content={galleriesDescription} />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={galleriesUrl} />
         <meta property="og:site_name" content={authorName} />
-        
-        {/* Twitter Cards */}
         <meta name="twitter:card" content="summary" />
-        <meta name="twitter:title" content="Image Galleries" />
+        <meta name="twitter:title" content="All Galleries" />
         <meta name="twitter:description" content={galleriesDescription} />
-        <meta name="twitter:creator" content="" />
-        
-        {/* Additional SEO */}
         <meta name="author" content={authorName} />
-        <meta name="keywords" content="digital artwork, concept art, character design, illustration gallery, visual art, creative design" />
-        
-        {/* Schema.org JSON-LD */}
-        <script type="application/ld+json">
-          {JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "ImageGallery",
-            "name": "Image Galleries",
-            "description": galleriesDescription,
-            "author": {
-              "@type": "Person",
-              "name": authorName
-            },
-            "url": galleriesUrl,
-            "inLanguage": "en-US"
-          })}
-        </script>
       </Helmet>
       <ThemeToggle />
       
@@ -140,7 +494,11 @@ function GalleryList() {
                 Home
               </Link>
               <span>/</span>
-              <span className="text-gray-900 dark:text-white">Galleries</span>
+              <Link to="/galleries" className="hover:underline hover:text-gray-900 dark:hover:text-neutral-200">
+                Galleries
+              </Link>
+              <span>/</span>
+              <span className="text-gray-900 dark:text-white">All</span>
             </div>
           </div>
         </div>
@@ -151,17 +509,23 @@ function GalleryList() {
             All Galleries
           </h1>
           
-          <div className="flex items-center gap-2">
-            <select
-              aria-label="Rating filter"
-              value={rating}
-              onChange={(e) => setRating(e.target.value as Rating)}
-              className="rounded-lg border border-gray-300 bg-white text-gray-900 hover:border-gray-400 dark:border-white/30 dark:bg-black/70 dark:text-white dark:hover:border-white/50 px-3 py-2 text-sm transition-colors"
-            >
-              <option value="PG">PG</option>
-              <option value="X">X</option>
-            </select>
-          </div>
+          {shouldShowRatingFilter && (
+            <div className="flex items-center gap-2">
+              <select
+                aria-label="Rating filter"
+                value={rating}
+                onChange={(e) => {
+                  const newRating = e.target.value as Rating;
+                  setRating(newRating);
+                  localStorage.setItem('gallery_rating_filter', newRating);
+                }}
+                className="rounded-lg border border-gray-300 bg-white text-gray-900 hover:border-gray-400 dark:border-white/30 dark:bg-black/70 dark:text-white dark:hover:border-white/50 px-3 py-2 text-sm transition-colors"
+              >
+                <option value="PG">PG</option>
+                <option value="X">X</option>
+              </select>
+            </div>
+          )}
         </div>
 
         <main>
@@ -186,8 +550,13 @@ function GalleryList() {
 
 function GalleryView() {
   const { slug } = useParams<{ slug: string }>();
+  const { user } = useAuth();
   const [q, setQ] = useState("");
-  const [rating, setRating] = useState<Rating>("PG");
+  // Initialize rating from localStorage or default to PG
+  const [rating, setRating] = useState<Rating>(() => {
+    const saved = localStorage.getItem('gallery_rating_filter');
+    return (saved === 'X' ? 'X' : 'PG') as Rating;
+  });
   const [error, setError] = useState<string | null>(null);
   const [socials, setSocials] = useState<Socials | undefined>(undefined);
   const [galleries, setGalleries] = useState<ApiGalleryCardItem[] | null>(null);
@@ -212,15 +581,24 @@ function GalleryView() {
     return (galleries.find((g) => g.slug === slug) as ApiGalleryCardItem | undefined) || null;
   }, [galleries, slug]);
 
+  // Track gallery view
+  useEffect(() => {
+    if (currentGallery && currentGallery.id) {
+      analytics.trackGalleryView(currentGallery.id);
+    }
+  }, [currentGallery]);
+
   // Initial load: socials + galleries + author profile
   useEffect(() => {
     async function loadBoot() {
       try {
+        // Include unpublished galleries when user is authenticated
+        const includeUnpublished = user ? '&include_unpublished=1' : '';
         // Load author profile, socials, and galleries in parallel
         const [authorRes, socialsRes, galleriesRes] = await Promise.allSettled([
           fetch(`${API_BASE}/author/get.php`, { cache: "no-cache" }),
           fetch(`${API_BASE}/socials/get.php`, { cache: "no-cache" }),
-          fetch(`${API_BASE}/galleries/list.php?page=1&limit=1000`, { cache: "no-cache" })
+          fetch(`${API_BASE}/galleries/list.php?page=1&limit=1000${includeUnpublished}`, { cache: "no-cache" })
         ]);
 
         // Handle author profile
@@ -264,7 +642,7 @@ function GalleryView() {
       }
     }
     loadBoot();
-  }, []);
+  }, [user]);
 
   // When switching gallery or search, reset images and load from page 1
   useEffect(() => {
@@ -310,6 +688,10 @@ function GalleryView() {
           loras: Array.isArray(im.loras) ? im.loras : [],
           width: typeof im.width === "number" ? im.width : undefined,
           height: typeof im.height === "number" ? im.height : undefined,
+          // Include media info so the modal can render <video> correctly
+          media_type: im.media_type ?? "image",
+          mime_type: im.mime_type ?? null,
+          poster: im.poster ?? null,
         }));
 
         setImages(prev => {
@@ -336,6 +718,17 @@ function GalleryView() {
     if (!imgHasMore) return;
     setImgPage((p) => p + 1);
   };
+
+  // Determine if rating filter should be shown
+  const shouldShowRatingFilter = useMemo(() => {
+    const filterSetting = authorProfile?.gallery_rating_filter || 'auto';
+    
+    if (filterSetting === 'always') return true;
+    if (filterSetting === 'never') return false;
+    
+    // 'auto' mode: show only if X-rated galleries exist
+    return galleries?.some((g) => g.rating === 'X') ?? false;
+  }, [authorProfile?.gallery_rating_filter, galleries]);
 
   // SEO meta data for individual gallery page
   const authorName = authorProfile?.name || 'Author Name';
@@ -376,25 +769,6 @@ function GalleryView() {
         {/* Additional SEO */}
         <meta name="author" content={authorName} />
         <meta name="keywords" content="digital artwork, concept art, character design, illustration, visual art, creative design" />
-        
-        {/* Schema.org JSON-LD */}
-        <script type="application/ld+json">
-          {JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "ImageGallery",
-            "name": galleryTitle,
-            "description": galleryDescription,
-            "author": {
-              "@type": "Person",
-              "name": authorName
-            },
-            "url": galleryUrl,
-            "inLanguage": "en-US",
-            ...(currentGallery?.hero_thumb && {
-              "image": currentGallery.hero_thumb.startsWith('http') ? currentGallery.hero_thumb : `https://${baseDomain}${currentGallery.hero_thumb}`
-            })
-          })}
-        </script>
       </Helmet>
       <ThemeToggle />
       
@@ -423,15 +797,17 @@ function GalleryView() {
           </h1>
           
           <div className="flex items-center gap-2">
-            <select
-              aria-label="Rating filter"
-              value={rating}
-              onChange={(e) => setRating(e.target.value as Rating)}
-              className="rounded-lg border border-gray-300 bg-white text-gray-900 hover:border-gray-400 dark:border-white/30 dark:bg-black/70 dark:text-white dark:hover:border-white/50 px-3 py-2 text-sm transition-colors"
-            >
-              <option value="PG">PG</option>
-              <option value="X">X</option>
-            </select>
+            {shouldShowRatingFilter && (
+              <select
+                aria-label="Rating filter"
+                value={rating}
+                onChange={(e) => setRating(e.target.value as Rating)}
+                className="rounded-lg border border-gray-300 bg-white text-gray-900 hover:border-gray-400 dark:border-white/30 dark:bg-black/70 dark:text-white dark:hover:border-white/50 px-3 py-2 text-sm transition-colors"
+              >
+                <option value="PG">PG</option>
+                <option value="X">X</option>
+              </select>
+            )}
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
@@ -453,7 +829,7 @@ function GalleryView() {
               {/* Images grid */}
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {images.map((im) => (
-                  <ImageCard key={String(im.id ?? im.src)} im={im} />
+                  <ImageCard key={String(im.id ?? im.src)} im={im} galleryId={currentGallery?.id} />
                 ))}
               </div>
 
@@ -488,7 +864,9 @@ function GalleryView() {
 export default function GalleriesRoute() {
   return (
     <Routes>
-      <Route path="/" element={<GalleryList />} />
+      <Route path="/" element={<CollectionsList />} />
+      <Route path="/collection/:cslug" element={<CollectionGalleries />} />
+      <Route path="/all" element={<GalleryList />} />
       <Route path="/:slug" element={<GalleryView />} />
     </Routes>
   );

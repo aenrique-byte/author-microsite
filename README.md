@@ -10,6 +10,7 @@ A complete author website with content management system, built with React and P
 - ✅ Author profile management
 - ✅ Social media integration (10+ platforms)
 - ✅ SEO optimization with dynamic sitemaps
+- ✅ External platform links per story (Amazon, RoyalRoad, ScribbleHub, WebNovel, Inkitt, etc.)
 
 ### **Admin Panel**
 - ✅ Complete content management system
@@ -18,6 +19,7 @@ A complete author website with content management system, built with React and P
 - ✅ User management and IP banning
 - ✅ File upload system with image processing
 - ✅ Bulk upload capabilities
+- ✅ Bulk publish ("Publish All") to publish all chapters in a story at once
 
 ### **Technical Features**
 - ✅ Responsive design (mobile-friendly)
@@ -28,6 +30,7 @@ A complete author website with content management system, built with React and P
 - ✅ SEO-optimized URLs
 - ✅ Dynamic sitemap generation
 - ✅ Rate limiting and security features
+- ✅ Persisted chapter word counts (summed per story and displayed on the Stories page)
 
 ## 📋 System Requirements
 
@@ -237,6 +240,10 @@ Click **Save changes** after adding your links.
 3. Upload cover image through Upload Manager
 4. Create chapters with markdown content
 5. Publish when ready
+
+Optional: External Links
+- In the Story form (Create/Edit), use the External Links section to add platform links (label + URL) such as Amazon, RoyalRoad, ScribbleHub, WebNovel, Inkitt, etc.
+- These appear on the public Stories page under the primary Start/Continue button as “Find on …” links (open in a new tab).
 
 #### **Creating Galleries:**
 1. Go to **Gallery Manager** → **Create New Gallery**

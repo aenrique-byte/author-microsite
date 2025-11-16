@@ -101,7 +101,7 @@ export default function SocialIcons({ socials, variant = 'homepage', showCopyrig
     // Footer variant (for galleries) with copyright
     return (
       <div className="mx-auto max-w-6xl px-4">
-        <div className="flex items-center justify-center gap-4 py-6">
+        <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 py-6">
           {ordered.map((key) => {
             const url = s[key];
             if (!url) return null;
@@ -112,7 +112,7 @@ export default function SocialIcons({ socials, variant = 'homepage', showCopyrig
                 target="_blank"
                 rel="noreferrer"
                 aria-label={LABELS[key] || key}
-                className="inline-flex items-center justify-center rounded-full border border-neutral-300 bg-white text-neutral-700 p-2 hover:border-neutral-400 transition shadow-sm
+                className="inline-flex shrink-0 items-center justify-center rounded-full border border-neutral-300 bg-white text-neutral-700 p-2 hover:border-neutral-400 transition shadow-sm
                            dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:border-neutral-600"
               >
                 {icons[key] || <span className="text-sm">{key}</span>}
@@ -131,7 +131,7 @@ export default function SocialIcons({ socials, variant = 'homepage', showCopyrig
 
   // Default variant (for homepage and storytime)
   return (
-    <div className="flex items-center justify-center gap-3">
+    <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 md:gap-4 max-w-full">
       {ordered.map((key) => {
         const url = s[key];
         if (!url) return null;
@@ -142,7 +142,7 @@ export default function SocialIcons({ socials, variant = 'homepage', showCopyrig
             target="_blank"
             rel="noreferrer"
             aria-label={LABELS[key] || key}
-            className="inline-flex items-center justify-center rounded-full border border-neutral-300 bg-white text-neutral-700 p-2 hover:border-neutral-400 transition shadow-sm
+            className="inline-flex shrink-0 items-center justify-center rounded-full border border-neutral-300 bg-white text-neutral-700 p-2 hover:border-neutral-400 transition shadow-sm
                        dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:border-neutral-600"
           >
             {icons[key] || <span className="text-sm">{key}</span>}

@@ -13,14 +13,15 @@ type Uploads = {
   covers: UploadFile[];
   pagebreaks: UploadFile[];
   general: UploadFile[];
+  music: UploadFile[];
 };
 
 export default function UploadManager() {
-  const [uploads, setUploads] = useState<Uploads>({ covers: [], pagebreaks: [], general: [] });
+  const [uploads, setUploads] = useState<Uploads>({ covers: [], pagebreaks: [], general: [], music: [] });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [selectedTab, setSelectedTab] = useState<'covers' | 'pagebreaks' | 'general'>('covers');
+  const [selectedTab, setSelectedTab] = useState<'covers' | 'pagebreaks' | 'general' | 'music'>('covers');
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -38,7 +39,7 @@ export default function UploadManager() {
       });
       if (!response.ok) throw new Error('Failed to load uploads');
       const data = await response.json();
-      setUploads(data.uploads || { covers: [], pagebreaks: [], general: [] });
+      setUploads(data.uploads || { covers: [], pagebreaks: [], general: [], music: [] });
     } catch (err: any) {
       setError(err.message || 'Failed to load uploads');
     } finally {
@@ -78,16 +79,21 @@ export default function UploadManager() {
     const file = files[0];
     
     // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    const allowedTypes = [
+      'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+      'video/mp4', 'video/webm', 'video/quicktime',
+      'audio/mpeg', 'audio/mp3',
+      'application/pdf'
+    ];
     if (!allowedTypes.includes(file.type)) {
-      setError('Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed.');
+      setError('Invalid file type. Only images (JPEG, PNG, GIF, WebP), videos (MP4, WebM, MOV), audio (MP3), and PDFs are allowed.');
       return;
     }
-    
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024;
+
+    // Validate file size (max 100MB)
+    const maxSize = 100 * 1024 * 1024;
     if (file.size > maxSize) {
-      setError('File too large. Maximum size is 5MB.');
+      setError('File too large. Maximum size is 100MB.');
       return;
     }
     
@@ -97,8 +103,8 @@ export default function UploadManager() {
     
     try {
       const formData = new FormData();
-      formData.append('image', file);
-      formData.append('type', 'general');
+      formData.append('file', file);
+      formData.append('type', selectedTab === 'music' ? 'music' : 'general');
       
       const response = await fetch('/api/images/upload.php', {
         method: 'POST',
@@ -167,11 +173,11 @@ export default function UploadManager() {
   };
 
   const getTotalFiles = () => {
-    return uploads.covers.length + uploads.pagebreaks.length + uploads.general.length;
+    return uploads.covers.length + uploads.pagebreaks.length + uploads.general.length + uploads.music.length;
   };
 
   const getTotalSize = () => {
-    const totalBytes = [...uploads.covers, ...uploads.pagebreaks, ...uploads.general]
+    const totalBytes = [...uploads.covers, ...uploads.pagebreaks, ...uploads.general, ...uploads.music]
       .reduce((sum, file) => sum + file.size, 0);
     return formatFileSize(totalBytes);
   };
@@ -209,7 +215,7 @@ export default function UploadManager() {
       {/* Tab Navigation */}
       <div className="border-b border-gray-200 dark:border-gray-700">
         <nav className="-mb-px flex space-x-8">
-          {(['covers', 'pagebreaks', 'general'] as const).map((tab) => (
+          {(['covers', 'pagebreaks', 'general', 'music'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setSelectedTab(tab)}
@@ -225,11 +231,11 @@ export default function UploadManager() {
         </nav>
       </div>
 
-      {/* Upload Interface for General Tab */}
-      {selectedTab === 'general' && (
+      {/* Upload Interface for General and Music Tabs */}
+      {(selectedTab === 'general' || selectedTab === 'music') && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-6">
           <div className="p-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Upload Images</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Upload Files</h3>
             <div
               className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
                 dragOver
@@ -243,7 +249,7 @@ export default function UploadManager() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/jpeg,image/png,image/gif,image/webp"
+                accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime,audio/mpeg,audio/mp3,application/pdf"
                 onChange={handleFileInputChange}
                 className="hidden"
               />
@@ -260,7 +266,7 @@ export default function UploadManager() {
                   </svg>
                   <div>
                     <p className="text-gray-600 dark:text-gray-400">
-                      Drag and drop an image here, or{' '}
+                      Drag and drop a file here, or{' '}
                       <button
                         onClick={() => fileInputRef.current?.click()}
                         className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
@@ -269,7 +275,7 @@ export default function UploadManager() {
                       </button>
                     </p>
                     <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
-                      Supports JPEG, PNG, GIF, WebP (max 5MB)
+                      Supports images (JPEG, PNG, GIF, WebP), videos (MP4, WebM, MOV), audio (MP3), and PDFs - max 100MB
                     </p>
                   </div>
                 </div>
@@ -288,31 +294,65 @@ export default function UploadManager() {
             <div className="text-center py-8 text-gray-500">
               <p>No {selectedTab} found</p>
               {selectedTab === 'general' ? (
-                <p className="text-sm mt-2">Use the upload area above to add images.</p>
+                <p className="text-sm mt-2">Use the upload area above to add files.</p>
               ) : (
                 <p className="text-sm mt-2">Upload some {selectedTab} to see them here.</p>
               )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {uploads[selectedTab].map((file, index) => (
+              {uploads[selectedTab].map((file, index) => {
+                const isVideo = file.type.startsWith('video/');
+                const isAudio = file.type.startsWith('audio/');
+                const isImage = file.type.startsWith('image/');
+                const isPDF = file.type === 'application/pdf';
+
+                return (
                 <div key={index} className="border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
                   <div className="aspect-w-16 aspect-h-9 bg-gray-100 dark:bg-gray-700">
-                    <img
-                      src={file.url}
-                      alt={file.filename}
-                      className="w-full h-32 object-cover"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                        target.nextElementSibling?.classList.remove('hidden');
-                      }}
-                    />
-                    <div className="hidden w-full h-32 flex items-center justify-center bg-gray-100 dark:bg-gray-700">
-                      <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
+                    {isImage && (
+                      <img
+                        src={file.url}
+                        alt={file.filename}
+                        className="w-full h-32 object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.nextElementSibling?.classList.remove('hidden');
+                        }}
+                      />
+                    )}
+                    {isVideo && (
+                      <video
+                        src={file.url}
+                        className="w-full h-32 object-cover"
+                        controls
+                      />
+                    )}
+                    {isAudio && (
+                      <div className="w-full h-32 flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-700 p-4">
+                        <svg className="w-8 h-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                        </svg>
+                        <audio src={file.url} controls className="w-full max-w-xs" />
+                      </div>
+                    )}
+                    {isPDF && (
+                      <div className="w-full h-32 flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-700">
+                        <svg className="w-12 h-12 text-red-500 mb-2" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" />
+                          <path d="M14 2v6h6M9.5 14.5v-3M9.5 17v.5M12 14v3.5M12 11.5v.5M14.5 14.5v-3M14.5 17v.5" stroke="white" strokeWidth="0.5" />
+                        </svg>
+                        <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">PDF</span>
+                      </div>
+                    )}
+                    {!isImage && !isVideo && !isAudio && !isPDF && (
+                      <div className="w-full h-32 flex items-center justify-center bg-gray-100 dark:bg-gray-700">
+                        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                    )}
                   </div>
                   <div className="p-4">
                     <h3 className="font-medium text-gray-900 dark:text-white text-sm truncate" title={file.filename}>
@@ -340,7 +380,8 @@ export default function UploadManager() {
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

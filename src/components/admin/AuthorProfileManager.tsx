@@ -8,13 +8,15 @@ interface AuthorProfile {
   background_image_light?: string
   background_image_dark?: string
   site_domain?: string
+  gallery_rating_filter?: 'always' | 'auto' | 'never'
 }
 
 export default function AuthorProfileManager() {
   const [profile, setProfile] = useState<AuthorProfile>({
     name: '',
     bio: '',
-    tagline: ''
+    tagline: '',
+    gallery_rating_filter: 'auto'
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -154,33 +156,39 @@ export default function AuthorProfileManager() {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Light Theme Background Image URL (optional)
+            Light Theme Background Image(s) (optional)
           </label>
           <input
-            type="url"
+            type="text"
             value={profile.background_image_light || ''}
             onChange={(e) => setProfile({ ...profile, background_image_light: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="https://example.com/light-background.jpg"
+            placeholder="image1.webp, image2.webp, image3.webp"
           />
           <p className="text-xs text-gray-500 mt-1">
-            Leave empty to use default: /images/lofi_light_bg.webp
+            Enter filename(s) from /api/uploads/general/ (comma-separated for random selection)
+          </p>
+          <p className="text-xs text-gray-500">
+            Example: image1.webp, image2.webp | Leave empty for default: /images/lofi_light_bg.webp
           </p>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Dark Theme Background Image URL (optional)
+            Dark Theme Background Image(s) (optional)
           </label>
           <input
-            type="url"
+            type="text"
             value={profile.background_image_dark || ''}
             onChange={(e) => setProfile({ ...profile, background_image_dark: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="https://example.com/dark-background.jpg"
+            placeholder="dark1.webp, dark2.webp, dark3.webp"
           />
           <p className="text-xs text-gray-500 mt-1">
-            Leave empty to use default: /images/lofi_bg.webp
+            Enter filename(s) from /api/uploads/general/ (comma-separated for random selection)
+          </p>
+          <p className="text-xs text-gray-500">
+            Example: dark1.webp, dark2.webp | Leave empty for default: /images/lofi_bg.webp
           </p>
         </div>
 
@@ -197,6 +205,24 @@ export default function AuthorProfileManager() {
           />
           <p className="text-xs text-gray-500 mt-1">
             Domain name used for SEO URLs and canonical links. Leave empty to use server detection.
+          </p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Gallery Rating Filter
+          </label>
+          <select
+            value={profile.gallery_rating_filter || 'auto'}
+            onChange={(e) => setProfile({ ...profile, gallery_rating_filter: e.target.value as 'always' | 'auto' | 'never' })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="always">Always Show - Filter is always visible</option>
+            <option value="auto">Auto (Recommended) - Show only if X-rated galleries exist</option>
+            <option value="never">Never Show - Hide the filter completely</option>
+          </select>
+          <p className="text-xs text-gray-500 mt-1">
+            Controls visibility of the PG/X rating filter on the Galleries page.
           </p>
         </div>
 

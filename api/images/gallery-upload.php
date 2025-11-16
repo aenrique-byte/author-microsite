@@ -71,8 +71,20 @@ try {
 
   $inserted = [];
   $errors = [];
-  $maxBytes = 25 * 1024 * 1024; // 25 MB per file
-  $allowedMime = ['image/png' => 'png', 'image/jpeg' => 'jpg', 'image/webp' => 'webp'];
+  // Allow up to 100 MB per file (server is already configured accordingly)
+  $maxBytes = 100 * 1024 * 1024; // 100 MB per file
+
+  // Allowed mime types
+  $imageMime = [
+    'image/png'  => 'png',
+    'image/jpeg' => 'jpg',
+    'image/webp' => 'webp',
+  ];
+  $videoMime = [
+    'video/mp4'  => 'mp4',
+    'video/webm' => 'webm',
+  ];
+  $allMime = $imageMime + $videoMime;
   
   // Use separate gallery uploads directory structure
   $galleryUploadsRoot = __DIR__ . '/../uploads/galleries';
@@ -113,11 +125,172 @@ try {
       $detected = $mime;
     }
     $detected = strtolower(trim((string)$detected));
-    if (!isset($allowedMime[$detected])) {
+    if (!isset($allMime[$detected])) {
       $errors[] = ['name' => $origName, 'reason' => 'Unsupported MIME type: ' . $detected];
       continue;
     }
-    $ext = $allowedMime[$detected];
+    $ext = $allMime[$detected];
+
+    // If this is a video, handle as a special case (auto-generate poster from first frame using ffmpeg)
+    if (strpos($detected, 'video/') === 0) {
+      // Ensure unique, safe filename at destination
+      $baseName = preg_replace('/[^a-zA-Z0-9_\-]/', '_', pathinfo($origName, PATHINFO_FILENAME));
+      if ($baseName === '' || $baseName === null) $baseName = 'upload';
+      $desiredName = $baseName . '.' . $ext;
+
+      try {
+        $dupQ = $pdo->prepare("SELECT id FROM images WHERE gallery_id = ? AND filename = ? LIMIT 1");
+        $dupQ->execute([$galleryId, $desiredName]);
+        $dupId = $dupQ->fetchColumn();
+        if ($dupId) {
+          $errors[] = ['name' => $origName, 'reason' => 'Duplicate filename in this gallery (skipped)'];
+          continue;
+        }
+      } catch (Throwable $__) {
+        // ignore DB error and proceed to filesystem check
+      }
+      if (is_file($origDir . DIRECTORY_SEPARATOR . $desiredName)) {
+        $errors[] = ['name' => $origName, 'reason' => 'Duplicate filename on disk (skipped)'];
+        continue;
+      }
+
+      // Generate unique filename if needed
+      $counter = 1;
+      $destName = $desiredName;
+      while (is_file($origDir . DIRECTORY_SEPARATOR . $destName)) {
+        $destName = $baseName . '_' . $counter . '.' . $ext;
+        $counter++;
+      }
+      $destOrig = $origDir . DIRECTORY_SEPARATOR . $destName;
+
+      if (!@move_uploaded_file($tmpPath, $destOrig)) {
+        if (!@copy($tmpPath, $destOrig)) {
+          continue;
+        }
+      }
+
+      // Build web path for the video
+      $origWeb = '/api/uploads/galleries/originals/' . rawurlencode($slug) . '/' . rawurlencode(basename($destOrig));
+
+      // Generate poster from first frame using ffmpeg
+      $posterWeb = null;
+      $thumbBase = pathinfo($destName, PATHINFO_FILENAME);
+      $posterName = $thumbBase . '_poster.jpg';
+      $destPoster = $thumbDir . DIRECTORY_SEPARATOR . $posterName;
+      @mkdir(dirname($destPoster), 0775, true);
+
+      // Use ffmpeg to extract first frame
+      // Check for ffmpeg in custom bin directories or system PATH
+      $ffmpegPath = 'ffmpeg'; // default to system PATH
+      $possiblePaths = [
+        '/home/u473142779/bin/ffmpeg',
+        '/home/aenriqu/bin/ffmpeg',
+      ];
+      foreach ($possiblePaths as $path) {
+        if (is_file($path) && is_executable($path)) {
+          $ffmpegPath = $path;
+          break;
+        }
+      }
+
+      // Use manual poster upload (ffmpeg not available on shared hosting due to resource limits)
+      $posterWeb = null;
+      if (isset($_FILES['poster']) && isset($_FILES['poster']['tmp_name'])) {
+          $pErr = (int)($_FILES['poster']['error'] ?? UPLOAD_ERR_NO_FILE);
+          $pTmp = (string)($_FILES['poster']['tmp_name'] ?? '');
+          $pName = (string)($_FILES['poster']['name'] ?? '');
+          $pType = (string)($_FILES['poster']['type'] ?? '');
+          $pSize = (int)($_FILES['poster']['size'] ?? 0);
+
+          if ($pErr === UPLOAD_ERR_OK && $pTmp && $pSize > 0 && $pSize <= (10 * 1024 * 1024)) {
+            $pDetected = null;
+            if (function_exists('finfo_open')) {
+              $fi2 = @finfo_open(FILEINFO_MIME_TYPE);
+              if ($fi2) {
+                $pDetected = @finfo_file($fi2, $pTmp) ?: null;
+                @finfo_close($fi2);
+              }
+            }
+            if (!$pDetected) $pDetected = $pType;
+            $pDetected = strtolower(trim((string)$pDetected));
+            if (isset($imageMime[$pDetected])) {
+              $pExt = $imageMime[$pDetected];
+              $posterName = $thumbBase . '_poster.' . $pExt;
+              $destPoster = $thumbDir . DIRECTORY_SEPARATOR . $posterName;
+              @mkdir(dirname($destPoster), 0775, true);
+              if (@move_uploaded_file($pTmp, $destPoster) || @copy($pTmp, $destPoster)) {
+                $posterWeb = '/api/uploads/galleries/thumbs/' . rawurlencode($slug) . '/' . rawurlencode(basename($destPoster));
+              }
+            }
+          }
+      }
+
+      // If no poster was generated or supplied, fallback to using original video path as "thumb"
+      $thumbWeb = $posterWeb ?: $origWeb;
+
+      // Manual metadata (no extraction for videos)
+      $title = isset($titles[$i]) ? trim((string)$titles[$i]) : null;
+      if ($title === '') $title = null;
+
+      $finalPrompt = !empty($manualPrompts['positive']) ? $manualPrompts['positive'] : null;
+      $finalCheckpoint = !empty($manualPrompts['checkpoint']) ? $manualPrompts['checkpoint'] : null;
+      $finalParameters = !empty($manualPrompts['negative']) ? ('Negative prompt: ' . $manualPrompts['negative']) : null;
+
+      $finalLoras = null;
+      if (!empty($manualPrompts['loras'])) {
+        $lorasArray = array_map('trim', explode(',', $manualPrompts['loras']));
+        $lorasArray = array_filter($lorasArray, function($lora) { return !empty($lora); });
+        $finalLoras = !empty($lorasArray) ? json_encode(array_values($lorasArray)) : null;
+      }
+
+      // Insert DB row for video (set thumbnail_path to poster for grid/hero compatibility)
+      $stmt = $pdo->prepare("INSERT INTO images
+        (gallery_id, title, filename, original_path, thumbnail_path, media_type, mime_type, poster_path, prompt, parameters, checkpoint, loras, file_size, width, height, sort_order, uploaded_by)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+      $sortOrder = 0;
+
+      $stmt->execute([
+        $galleryId,
+        $title,
+        basename($destOrig),
+        str_replace('\\', '/', $origWeb),
+        str_replace('\\', '/', $thumbWeb),
+        'video',
+        $detected,
+        $posterWeb,
+        $finalPrompt,
+        $finalParameters,
+        $finalCheckpoint,
+        $finalLoras,
+        filesize($destOrig) ?: $size,
+        null, // width (unknown)
+        null, // height (unknown)
+        $sortOrder,
+        $_SESSION['user_id'],
+      ]);
+
+      $imgId = (int)$pdo->lastInsertId();
+
+      $inserted[] = [
+        'id' => $imgId,
+        'title' => $title,
+        'src' => str_replace('\\', '/', $origWeb),
+        'thumb' => str_replace('\\', '/', $thumbWeb),
+        'prompt' => $finalPrompt,
+        'parameters' => $finalParameters,
+        'checkpoint' => $finalCheckpoint,
+        'loras' => $finalLoras ? json_decode($finalLoras, true) : [],
+        'file_size' => filesize($destOrig) ?: $size,
+        'width' => null,
+        'height' => null,
+        'sort_order' => $sortOrder,
+        'media_type' => 'video',
+        'mime_type' => $detected,
+      ];
+
+      // Done with this file
+      continue;
+    }
 
     // Ensure unique, safe filename at destination
     $baseName = preg_replace('/[^a-zA-Z0-9_\-]/', '_', pathinfo($origName, PATHINFO_FILENAME));
@@ -227,10 +400,10 @@ try {
       $finalLoras = json_encode(array_values($meta['loras']));
     }
 
-    // Insert DB row
+    // Insert DB row (image)
     $stmt = $pdo->prepare("INSERT INTO images
-      (gallery_id, title, filename, original_path, thumbnail_path, prompt, parameters, checkpoint, loras, file_size, width, height, sort_order, uploaded_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+      (gallery_id, title, filename, original_path, thumbnail_path, media_type, mime_type, poster_path, prompt, parameters, checkpoint, loras, file_size, width, height, sort_order, uploaded_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     $sortOrder = 0; // could compute max+1 per gallery if needed
 
     $stmt->execute([
@@ -239,6 +412,9 @@ try {
       basename($destOrig),
       str_replace('\\', '/', $origWeb),
       str_replace('\\', '/', $thumbWeb),
+      'image',
+      null,
+      null,
       $finalPrompt,
       $finalParameters,
       $finalCheckpoint,

@@ -9,12 +9,25 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// Check authentication
-session_start();
+// Check authentication (session already started in bootstrap.php)
 if (!isset($_SESSION['user_id'])) {
     http_response_code(401);
     echo json_encode(['error' => 'Not authenticated']);
     exit;
+}
+
+/**
+ * Compute approximate word count from chapter content.
+ * - No markdown/HTML processing; just whitespace-normalized token count.
+ */
+function compute_word_count(string $content): int {
+    $t = trim($content);
+    if ($t === '') { return 0; }
+    // Collapse any whitespace (spaces, tabs, newlines) to single spaces
+    $t = preg_replace('/\s+/u', ' ', $t);
+    // Split on spaces and count tokens
+    $parts = preg_split('/\s+/u', $t, -1, PREG_SPLIT_NO_EMPTY);
+    return is_array($parts) ? count($parts) : 0;
 }
 
 $input = json_decode(file_get_contents('php://input'), true);
@@ -53,18 +66,23 @@ try {
         exit;
     }
 
+    // Compute and persist word count
+    $wordCount = compute_word_count($input['content']);
+
     $stmt = $pdo->prepare("
-        INSERT INTO chapters (story_id, title, slug, content, chapter_number, status, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
+        INSERT INTO chapters (story_id, title, slug, content, soundtrack_url, chapter_number, status, word_count, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
     ");
-    
+
     $stmt->execute([
         $input['story_id'],
         $input['title'],
         $input['slug'],
         $input['content'],
+        $input['soundtrack_url'] ?? null,
         $input['chapter_number'] ?? 1,
-        $input['status'] ?? 'draft'
+        $input['status'] ?? 'draft',
+        $wordCount
     ]);
 
     $chapterId = $pdo->lastInsertId();

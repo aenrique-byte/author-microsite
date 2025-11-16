@@ -43,7 +43,9 @@ try {
     // Get stories with chapter count
     $stories_sql = "
         SELECT s.*, 
-               COUNT(c.id) as chapter_count
+               COUNT(CASE WHEN c.status = 'published' THEN 1 END) as chapter_count,
+               COALESCE(SUM(CASE WHEN c.status = 'published' THEN c.like_count ELSE 0 END), 0) as total_likes,
+               COALESCE(SUM(CASE WHEN c.status = 'published' THEN c.word_count ELSE 0 END), 0) as total_words
         FROM stories s
         LEFT JOIN chapters c ON s.id = c.story_id
         " . $where_clause . "
@@ -57,12 +59,21 @@ try {
     $stmt->execute($final_params);
     $stories = $stmt->fetchAll();
 
-    // Process genres JSON field for each story
+    // Process JSON fields for each story
     foreach ($stories as &$story) {
-        if ($story['genres']) {
-            $story['genres'] = json_decode($story['genres'], true);
+        // genres
+        if (!empty($story['genres'])) {
+            $decoded = json_decode($story['genres'], true);
+            $story['genres'] = is_array($decoded) ? $decoded : [];
         } else {
             $story['genres'] = [];
+        }
+        // external_links: [{label, url}]
+        if (!empty($story['external_links'])) {
+            $decoded = json_decode($story['external_links'], true);
+            $story['external_links'] = is_array($decoded) ? $decoded : [];
+        } else {
+            $story['external_links'] = [];
         }
     }
 

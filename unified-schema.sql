@@ -179,6 +179,7 @@ CREATE TABLE `author_profile` (
   `background_image_light` varchar(255) DEFAULT NULL,
   `background_image_dark` varchar(255) DEFAULT NULL,
   `site_domain` varchar(255) DEFAULT 'example.com',
+  `gallery_rating_filter` enum('always','auto','never') NOT NULL DEFAULT 'auto',
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -221,12 +222,15 @@ CREATE TABLE `stories` (
   `title` varchar(200) NOT NULL,
   `description` text DEFAULT NULL,
   `genres` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'Array of genre tags for SEO and categorization' CHECK (json_valid(`genres`)),
+  `external_links` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'Array of external platform links: [{label,url}]' CHECK (json_valid(`external_links`)),
   `primary_keywords` text DEFAULT NULL COMMENT 'Primary SEO keywords, comma-separated',
   `longtail_keywords` text DEFAULT NULL COMMENT 'Long-tail SEO keywords, comma-separated',
   `target_audience` varchar(255) DEFAULT NULL COMMENT 'Target audience description for SEO',
   `status` enum('draft','published','archived') NOT NULL DEFAULT 'draft',
   `cover_image` varchar(255) DEFAULT NULL,
   `break_image` varchar(255) DEFAULT NULL,
+  `enable_drop_cap` tinyint(1) NOT NULL DEFAULT 0 COMMENT 'Enable drop cap (large first letter) for chapters',
+  `drop_cap_font` varchar(50) DEFAULT 'serif' COMMENT 'Font family for drop cap: serif, cinzel, playfair, cormorant, unna',
   `sort_order` int(11) NOT NULL DEFAULT 0,
   `created_by` int(10) UNSIGNED DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -240,6 +244,7 @@ CREATE TABLE `stories` (
   CONSTRAINT `fk_stories_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Stories metadata with cover and break images';
 
+
 CREATE TABLE `chapters` (
   `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `story_id` int(10) UNSIGNED NOT NULL,
@@ -247,9 +252,12 @@ CREATE TABLE `chapters` (
   `title` varchar(200) NOT NULL,
   `slug` varchar(100) NOT NULL,
   `content` longtext NOT NULL,
-  `status` enum('draft','published') NOT NULL DEFAULT 'draft',
+  `soundtrack_url` varchar(255) DEFAULT NULL COMMENT 'Optional URL to MP3 soundtrack for the chapter',
+  `status` enum('draft','published','scheduled') NOT NULL DEFAULT 'draft',
+  `publish_at` datetime DEFAULT NULL COMMENT 'Scheduled publish date/time (for status=scheduled)',
   `like_count` int(10) UNSIGNED NOT NULL DEFAULT 0,
   `comment_count` int(10) UNSIGNED NOT NULL DEFAULT 0,
+  `word_count` int(10) UNSIGNED NOT NULL DEFAULT 0,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -257,16 +265,44 @@ CREATE TABLE `chapters` (
   UNIQUE KEY `unique_story_slug` (`story_id`,`slug`),
   KEY `idx_chapters_story` (`story_id`),
   KEY `idx_chapters_status` (`status`),
+  KEY `idx_chapters_publish_at` (`publish_at`),
   CONSTRAINT `fk_chapters_story` FOREIGN KEY (`story_id`) REFERENCES `stories` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 -- =====================================================
 -- GALLERIES AND IMAGES
 -- =====================================================
 
+-- Collections (Projects) that group galleries (similar to Stories)
+CREATE TABLE `collections` (
+  `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `slug` VARCHAR(100) NOT NULL,
+  `title` VARCHAR(200) NOT NULL,
+  `description` TEXT DEFAULT NULL,
+  `themes` LONGTEXT
+    CHARACTER SET utf8mb4 COLLATE utf8mb4_bin
+    DEFAULT NULL
+    CHECK (json_valid(`themes`)),
+  `status` ENUM('draft','published','archived') NOT NULL DEFAULT 'published',
+  `cover_hero` VARCHAR(255) DEFAULT NULL,
+  `sort_order` INT NOT NULL DEFAULT 0,
+  `created_by` INT(10) UNSIGNED DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `slug` (`slug`),
+  KEY `idx_collections_status` (`status`),
+  KEY `idx_collections_sort` (`sort_order`),
+  CONSTRAINT `fk_collections_created_by`
+    FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+COMMENT='Top-level projects (like Stories) that group galleries';
+
 CREATE TABLE `galleries` (
   `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `slug` varchar(100) NOT NULL,
+  `collection_id` int(10) UNSIGNED DEFAULT NULL,
   `title` varchar(200) NOT NULL,
   `description` text DEFAULT NULL,
   `status` enum('draft','published','archived') NOT NULL DEFAULT 'published',
@@ -283,8 +319,11 @@ CREATE TABLE `galleries` (
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `slug` (`slug`),
+  KEY `idx_galleries_collection` (`collection_id`),
   KEY `fk_galleries_created_by` (`created_by`),
   KEY `idx_galleries_sort` (`sort_order`),
+  KEY `idx_galleries_status` (`status`),
+  CONSTRAINT `fk_galleries_collection` FOREIGN KEY (`collection_id`) REFERENCES `collections` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_galleries_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -296,6 +335,11 @@ CREATE TABLE `images` (
   `filename` varchar(255) NOT NULL,
   `original_path` varchar(255) NOT NULL,
   `thumbnail_path` varchar(255) NOT NULL,
+  -- Video support (Option B: manual poster, no ffmpeg required)
+  `media_type` enum('image','video') NOT NULL DEFAULT 'image',
+  `mime_type` varchar(64) DEFAULT NULL,
+  `poster_path` varchar(255) DEFAULT NULL,
+  `duration` int DEFAULT NULL,
   `prompt` longtext DEFAULT NULL,
   `parameters` longtext DEFAULT NULL,
   `checkpoint` varchar(255) DEFAULT NULL,

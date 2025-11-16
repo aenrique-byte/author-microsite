@@ -85,15 +85,65 @@ try {
     $analytics_salt = ANALYTICS_SALT;
     $ip_hash = hash('sha256', $ip . $analytics_salt);
 
-    // Get user_id from session if logged in
-    session_start();
+    // Get user_id from session if logged in (session already started in bootstrap.php)
     $user_id = $_SESSION['user_id'] ?? null;
 
-    // TODO: Add geo lookup here if you have MaxMind or similar service
-    // For now, leaving geo fields as NULL - you can add geo lookup later
+    // Geolocation lookup using ip-api.com (free tier: 45 requests/minute)
+    // Cache results to avoid repeated lookups for same IP
     $country_code = null;
     $region = null;
     $city = null;
+
+    // Check if we have cached geo data for this IP (within last 24 hours)
+    $cache_key = 'geo_' . $ip_hash;
+    $stmt = $pdo->prepare("
+        SELECT country_code, region, city
+        FROM analytics_events
+        WHERE ip_hash = ?
+        AND country_code IS NOT NULL
+        AND created_at > NOW() - INTERVAL 24 HOUR
+        LIMIT 1
+    ");
+    $stmt->execute([$ip_hash]);
+    $cached_geo = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($cached_geo) {
+        // Use cached geolocation data
+        $country_code = $cached_geo['country_code'];
+        $region = $cached_geo['region'];
+        $city = $cached_geo['city'];
+    } else {
+        // Perform geolocation lookup for new IP
+        // Skip lookup for localhost/private IPs
+        if (!in_array($ip, ['127.0.0.1', '::1', 'localhost']) &&
+            !preg_match('/^(10|172\.(1[6-9]|2[0-9]|3[01])|192\.168)\./', $ip)) {
+
+            try {
+                $geo_url = "http://ip-api.com/json/{$ip}?fields=status,country,countryCode,region,regionName,city";
+                $context = stream_context_create([
+                    'http' => [
+                        'timeout' => 2, // 2 second timeout
+                        'ignore_errors' => true
+                    ]
+                ]);
+
+                $geo_response = @file_get_contents($geo_url, false, $context);
+
+                if ($geo_response) {
+                    $geo_data = json_decode($geo_response, true);
+
+                    if ($geo_data && isset($geo_data['status']) && $geo_data['status'] === 'success') {
+                        $country_code = $geo_data['countryCode'] ?? null;
+                        $region = $geo_data['regionName'] ?? null;
+                        $city = $geo_data['city'] ?? null;
+                    }
+                }
+            } catch (Exception $e) {
+                // Silently fail - geo lookup is optional
+                error_log("Geo lookup error for IP {$ip}: " . $e->getMessage());
+            }
+        }
+    }
 
     // Prepare data for insertion
     $data = [

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { ImageMeta } from "../types";
 import { API_BASE } from "../../../lib/apiBase";
+import { analytics } from "../../../lib/analytics";
 
 /**
  * Split a single combined prompt string into positive + negative.
@@ -88,9 +89,16 @@ function parseClipTextsFromJsonString(s: string): { pos?: string; neg?: string }
   return { pos: chooseLongest(posTexts), neg: chooseLongest(negTexts) };
 }
 
-export function ImageCard({ im }: { im: ImageMeta }) {
+export function ImageCard({ im, galleryId }: { im: ImageMeta; galleryId?: number }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState<"pos" | "neg" | null>(null);
+
+  // Track image view when modal opens
+  useEffect(() => {
+    if (open && im.id && galleryId) {
+      analytics.trackImageView(im.id, galleryId);
+    }
+  }, [open, im.id, galleryId]);
 
   const doCopy = async (text: string, kind: "pos" | "neg") => {
     if (!text) return;
@@ -387,7 +395,19 @@ export function ImageCard({ im }: { im: ImageMeta }) {
                 ✕ Close
               </button>
             </div>
-            <img src={im.src} className="max-h-[70vh] w-full object-contain rounded-md" />
+            {im.media_type === "video" ? (
+              <video
+                controls
+                playsInline
+                poster={im.poster || im.thumb || undefined}
+                className="max-h-[70vh] w-full object-contain rounded-md"
+              >
+                <source src={im.src} type={im.mime_type || "video/mp4"} />
+                Your browser does not support the video tag.
+              </video>
+            ) : (
+              <img src={im.src} className="max-h-[70vh] w-full object-contain rounded-md" />
+            )}
             <div className="mt-3 rounded-lg border bg-white border-neutral-200 p-3 dark:bg-neutral-900 dark:border-neutral-800">
               <div className="mb-3 flex items-center gap-3">
                 <button

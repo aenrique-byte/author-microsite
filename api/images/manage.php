@@ -20,12 +20,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $uploads = [
             'covers' => [],
             'pagebreaks' => [],
-            'general' => []
+            'general' => [],
+            'music' => []
         ];
-        
+
         $baseDir = '../uploads/';
-        
-        foreach (['covers', 'pagebreaks', 'general'] as $type) {
+
+        foreach (['covers', 'pagebreaks', 'general', 'music'] as $type) {
             $typeDir = $baseDir . $type . '/';
             
             if (is_dir($typeDir)) {
@@ -34,18 +35,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 foreach ($files as $file) {
                     if ($file !== '.' && $file !== '..' && $file !== '.htaccess') {
                         $filePath = $typeDir . $file;
-                        
+
                         if (is_file($filePath)) {
                             $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
-                            $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
-                            
-                            if (in_array($extension, $imageExtensions)) {
+                            $allowedExtensions = [
+                                'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg',  // images
+                                'mp4', 'webm', 'mov',  // videos
+                                'mp3',  // audio
+                                'pdf'  // documents
+                            ];
+
+                            if (in_array($extension, $allowedExtensions)) {
+                                // Determine MIME type from extension
+                                $mimeType = 'application/octet-stream';
+                                $extToMime = [
+                                    'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg',
+                                    'png' => 'image/png', 'gif' => 'image/gif',
+                                    'webp' => 'image/webp', 'svg' => 'image/svg+xml',
+                                    'mp4' => 'video/mp4', 'webm' => 'video/webm',
+                                    'mov' => 'video/quicktime', 'mp3' => 'audio/mpeg',
+                                    'pdf' => 'application/pdf'
+                                ];
+                                if (isset($extToMime[$extension])) {
+                                    $mimeType = $extToMime[$extension];
+                                }
+
                                 $uploads[$type][] = [
                                     'filename' => $file,
                                     'url' => '/api/uploads/' . $type . '/' . $file,
                                     'size' => filesize($filePath),
                                     'modified' => filemtime($filePath),
-                                    'type' => $type,
+                                    'type' => $mimeType,
                                     'path' => $type . '/' . $file
                                 ];
                             }

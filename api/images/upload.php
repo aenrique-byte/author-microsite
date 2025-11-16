@@ -17,35 +17,45 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 try {
-    // Check if file was uploaded
-    if (!isset($_FILES['image']) || $_FILES['image']['error'] !== UPLOAD_ERR_OK) {
+    // Check if file was uploaded (support both 'image' and 'file' parameter names)
+    if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
+        $file = $_FILES['file'];
+    } elseif (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+        $file = $_FILES['image'];
+    } else {
         throw new Exception('No file uploaded or upload error');
     }
 
-    $file = $_FILES['image'];
-    
     // Validate file type
-    $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    $allowedTypes = [
+        'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+        'video/mp4', 'video/webm', 'video/quicktime',
+        'audio/mpeg', 'audio/mp3',
+        'application/pdf'
+    ];
     if (!in_array($file['type'], $allowedTypes)) {
-        throw new Exception('Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed.');
+        throw new Exception('Invalid file type. Only images (JPEG, PNG, GIF, WebP), videos (MP4, WebM, MOV), audio (MP3), and PDFs are allowed.');
     }
-    
-    // Validate file size (max 5MB)
-    $maxSize = 5 * 1024 * 1024; // 5MB
+
+    // Validate file size (max 100MB)
+    $maxSize = 100 * 1024 * 1024; // 100MB
     if ($file['size'] > $maxSize) {
-        throw new Exception('File too large. Maximum size is 5MB.');
+        throw new Exception('File too large. Maximum size is 100MB.');
     }
     
     // Determine upload subdirectory based on type
     $type = $_POST['type'] ?? 'general';
     $subDir = '';
-    
+
     switch ($type) {
         case 'cover':
             $subDir = 'covers/';
             break;
         case 'pagebreak':
             $subDir = 'pagebreaks/';
+            break;
+        case 'music':
+            $subDir = 'music/';
             break;
         default:
             $subDir = 'general/';
@@ -68,6 +78,12 @@ try {
             'image/png'  => 'png',
             'image/gif'  => 'gif',
             'image/webp' => 'webp',
+            'video/mp4' => 'mp4',
+            'video/webm' => 'webm',
+            'video/quicktime' => 'mov',
+            'audio/mpeg' => 'mp3',
+            'audio/mp3' => 'mp3',
+            'application/pdf' => 'pdf',
         ];
         $extension = $mimeToExt[$file['type']] ?? 'bin';
     }

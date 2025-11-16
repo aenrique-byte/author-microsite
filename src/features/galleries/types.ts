@@ -11,6 +11,10 @@ export interface ImageMeta {
   loras?: string[];
   width?: number;
   height?: number;
+  // Video support
+  media_type?: "image" | "video";
+  mime_type?: string | null;
+  poster?: string | null;
 }
 
 export interface Socials {
@@ -29,4 +33,16 @@ export interface ApiGalleryCardItem {
   hero_thumb: string | null;
   hero_width: number | null;
   hero_height: number | null;
+}
+
+export interface CollectionCardItem {
+  id: number;
+  slug: string;
+  title: string;
+  description?: string;
+  themes?: string[];
+  status: "draft" | "published" | "archived";
+  cover_hero?: string | null;
+  sort_order?: number;
+  gallery_count: number;
 }

@@ -39,6 +39,37 @@ try {
     $description = isset($input['description']) ? trim($input['description']) : null;
     $rating = strtoupper(trim($input['rating'] ?? 'PG'));
     $customSlug = isset($input['slug']) ? trim($input['slug']) : null;
+
+    // Optional: assign to a collection (by id or slug)
+    $collectionId = null;
+    if (array_key_exists('collection_id', $input)) {
+        $val = $input['collection_id'];
+        if ($val !== null && $val !== '') {
+            $collectionId = (int)$val;
+            // Validate collection exists
+            $stc = $pdo->prepare("SELECT id FROM collections WHERE id = ? LIMIT 1");
+            $stc->execute([$collectionId]);
+            if (!$stc->fetchColumn()) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Invalid collection_id']);
+                exit;
+            }
+        }
+    } elseif (isset($input['collection_slug'])) {
+        $cslug = trim((string)$input['collection_slug']);
+        if ($cslug !== '') {
+            $stc = $pdo->prepare("SELECT id FROM collections WHERE slug = ? LIMIT 1");
+            $stc->execute([$cslug]);
+            $cid = $stc->fetchColumn();
+            if (!$cid) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Invalid collection_slug']);
+                exit;
+            }
+            $collectionId = (int)$cid;
+        }
+    }
+
     // Publication status: default to draft for new galleries
     $status = strtolower(trim($input['status'] ?? 'draft'));
     if (!in_array($status, ['draft','published','archived'], true)) {
@@ -70,8 +101,8 @@ try {
     $maxRow = $maxStmt->fetch();
     $sortOrder = (int)($maxRow ? $maxRow['m'] : 0) + 1;
 
-    $ins = $pdo->prepare("INSERT INTO galleries (slug, title, description, status, rating, sort_order, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    $ins->execute([$slug, $title, $description !== '' ? $description : null, $status, $rating, $sortOrder, $_SESSION['user_id']]);
+    $ins = $pdo->prepare("INSERT INTO galleries (slug, title, description, status, rating, sort_order, created_by, collection_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    $ins->execute([$slug, $title, $description !== '' ? $description : null, $status, $rating, $sortOrder, $_SESSION['user_id'], $collectionId]);
 
     $id = $pdo->lastInsertId();
 
@@ -86,6 +117,7 @@ try {
             'status' => $status,
             'sort_order' => $sortOrder,
             'created_by' => $_SESSION['user_id'],
+            'collection_id' => $collectionId,
         ]
     ]);
 

@@ -40,22 +40,41 @@ try {
         $genres_json = json_encode($input['genres']);
     }
 
+    // Prepare external links as JSON if provided: [{label, url}]
+    $external_links_json = null;
+    if (isset($input['external_links']) && is_array($input['external_links'])) {
+        $sanitized = array_values(array_filter(array_map(function($item) {
+            if (!is_array($item)) return null;
+            $label = isset($item['label']) ? (string)$item['label'] : '';
+            $url = isset($item['url']) ? (string)$item['url'] : '';
+            if ($label === '' || $url === '') return null;
+            return ['label' => $label, 'url' => $url];
+        }, $input['external_links'])));
+        if (!empty($sanitized)) {
+            $external_links_json = json_encode($sanitized);
+        }
+    }
+
     $stmt = $pdo->prepare("
-        INSERT INTO stories (title, slug, description, genres, primary_keywords, longtail_keywords, target_audience, cover_image, break_image, status, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+        INSERT INTO stories (title, slug, description, genres, external_links, primary_keywords, longtail_keywords, target_audience, cover_image, break_image, enable_drop_cap, drop_cap_font, status, schedule_id, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
     ");
-    
+
     $stmt->execute([
         $input['title'],
         $input['slug'],
         $input['description'] ?? null,
         $genres_json,
+        $external_links_json,
         $input['primary_keywords'] ?? null,
         $input['longtail_keywords'] ?? null,
         $input['target_audience'] ?? null,
         $input['cover_image'] ?? null,
         $input['break_image'] ?? null,
-        $input['status'] ?? 'draft'
+        isset($input['enable_drop_cap']) ? (int)$input['enable_drop_cap'] : 0,
+        $input['drop_cap_font'] ?? 'serif',
+        $input['status'] ?? 'draft',
+        $input['schedule_id'] ?? null
     ]);
 
     $storyId = $pdo->lastInsertId();

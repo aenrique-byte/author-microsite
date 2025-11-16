@@ -13,7 +13,7 @@ export default function ThemeToggle() {
   return (
     <button
       onClick={toggleTheme}
-      className={`fixed top-4 left-4 z-50 p-2 rounded-lg transition-colors duration-200 shadow-lg ${
+      className={`fixed bottom-4 right-4 md:top-4 md:left-4 md:bottom-auto md:right-auto z-50 p-2 h-10 w-10 md:h-auto md:w-auto rounded-full md:rounded-lg transition-colors duration-200 shadow-lg ${
         isDark
           ? 'bg-neutral-800 text-neutral-100 hover:bg-neutral-700'
           : 'bg-neutral-200 text-neutral-900 hover:bg-neutral-300'

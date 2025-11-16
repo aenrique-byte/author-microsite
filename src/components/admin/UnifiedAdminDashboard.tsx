@@ -3,9 +3,9 @@ import { useState, useEffect } from 'react'
 import ThemeToggle from '../ThemeToggle'
 
 // Admin Components
-import GalleryManager from './GalleryManager'
 import StoryManager from './StoryManager'
 import AuthorProfileManager from './AuthorProfileManager'
+import CollectionGalleryManager from './CollectionGalleryManager'
 import SocialMediaManager from './SocialMediaManager'
 import ModerationManager from './ModerationManager'
 import PasswordManager from './PasswordManager'
@@ -108,7 +108,7 @@ export default function UnifiedAdminDashboard() {
         <Routes>
           <Route path="/" element={<AdminHome />} />
           <Route path="/author" element={<AuthorProfileManager />} />
-          <Route path="/galleries/*" element={<GalleryManager />} />
+          <Route path="/galleries/*" element={<CollectionGalleryManager />} />
           <Route path="/stories/*" element={<StoryManager />} />
           <Route path="/uploads" element={<UploadManager />} />
           <Route path="/socials" element={<SocialMediaManager />} />
@@ -250,11 +250,11 @@ function AdminHome() {
       const response = await fetch('/api/admin/quick-stats.php', {
         credentials: 'same-origin'
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch quick stats');
       }
-      
+
       const data = await response.json();
       if (data.success) {
         setQuickStats(data.data);
@@ -288,17 +288,18 @@ function AdminHome() {
             description="Create and manage image galleries"
             icon="🖼️"
           />
+
           
-          <AdminCard 
-            title="Stories & Chapters" 
-            href="/admin/stories" 
+          <AdminCard
+            title="Stories & Chapters"
+            href="/admin/stories"
             description="Write and publish stories and chapters"
             icon="📚"
           />
-          
-          <AdminCard 
-            title="Upload Manager" 
-            href="/admin/uploads" 
+
+          <AdminCard
+            title="Upload Manager"
+            href="/admin/uploads"
             description="Manage uploaded images and files"
             icon="📁"
           />
@@ -331,7 +332,7 @@ function AdminHome() {
             icon="📊"
           />
         </div>
-        
+
         <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
           <h3 className="text-sm font-medium text-blue-900 dark:text-blue-300 mb-2">Quick Stats</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">

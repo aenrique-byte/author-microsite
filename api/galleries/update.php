@@ -55,6 +55,40 @@ try {
         }
     }
 
+    // Resolve collection assignment if provided (either collection_id or collection_slug)
+    $collectionId = null;
+    if (array_key_exists('collection_id', $input)) {
+        $val = $input['collection_id'];
+        if ($val === null || $val === '' ) {
+            $collectionId = null;
+        } else {
+            $collectionId = (int)$val;
+            // Verify collection exists
+            $stc = $pdo->prepare("SELECT id FROM collections WHERE id = ? LIMIT 1");
+            $stc->execute([$collectionId]);
+            if (!$stc->fetchColumn()) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Invalid collection_id']);
+                exit;
+            }
+        }
+    } elseif (isset($input['collection_slug'])) {
+        $slugVal = trim((string)$input['collection_slug']);
+        if ($slugVal === '') {
+            $collectionId = null;
+        } else {
+            $stc = $pdo->prepare("SELECT id FROM collections WHERE slug = ? LIMIT 1");
+            $stc->execute([$slugVal]);
+            $cid = $stc->fetchColumn();
+            if (!$cid) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Invalid collection_slug']);
+                exit;
+            }
+            $collectionId = (int)$cid;
+        }
+    }
+
     // Validate status if provided
     $status = null;
     if (isset($input['status'])) {
@@ -64,23 +98,50 @@ try {
         }
     }
 
-    $stmt = $pdo->prepare("
-        UPDATE galleries 
-        SET title = ?, slug = ?, description = ?, 
-            rating = COALESCE(?, rating),
-            status = COALESCE(?, status),
-            updated_at = NOW()
-        WHERE id = ?
-    ");
-    
-    $stmt->execute([
-        $input['title'] ?? null,
-        $input['slug'] ?? $gallery['slug'],
-        $input['description'] ?? null,
-        $rating,
-        $status,
-        $input['id']
-    ]);
+    // Build dynamic UPDATE query based on provided fields
+    $updates = [];
+    $params = [];
+
+    // Always update updated_at
+    $updates[] = "updated_at = NOW()";
+
+    // Only update fields that are explicitly provided
+    if (isset($input['title'])) {
+        $updates[] = "title = ?";
+        $params[] = $input['title'];
+    }
+
+    if (isset($input['slug'])) {
+        $updates[] = "slug = ?";
+        $params[] = $input['slug'];
+    }
+
+    if (array_key_exists('description', $input)) {
+        $updates[] = "description = ?";
+        $params[] = $input['description'];
+    }
+
+    if ($rating !== null) {
+        $updates[] = "rating = ?";
+        $params[] = $rating;
+    }
+
+    if ($status !== null) {
+        $updates[] = "status = ?";
+        $params[] = $status;
+    }
+
+    if ($collectionId !== null || array_key_exists('collection_id', $input) || isset($input['collection_slug'])) {
+        $updates[] = "collection_id = ?";
+        $params[] = $collectionId;
+    }
+
+    // Add the WHERE clause parameter
+    $params[] = $input['id'];
+
+    $sql = "UPDATE galleries SET " . implode(', ', $updates) . " WHERE id = ?";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
 
     echo json_encode(['success' => true]);
 

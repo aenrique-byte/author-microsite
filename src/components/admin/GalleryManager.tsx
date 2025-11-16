@@ -10,6 +10,7 @@ type Gallery = {
   description?: string | null;
   rating?: Rating;
   status?: Status;
+  collection_id?: number | null;
   image_count?: number;
 };
 
@@ -43,6 +44,7 @@ export default function GalleryManager() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [collections, setCollections] = useState<{ id: number; title: string; slug: string }[]>([]);
 
   // Gallery form state
   const [showGalleryForm, setShowGalleryForm] = useState(false);
@@ -52,7 +54,8 @@ export default function GalleryManager() {
     slug: "",
     description: "",
     rating: "PG" as Rating,
-    status: "draft" as Status
+    status: "draft" as Status,
+    collection_id: "" as number | "" // '' means unassigned
   });
 
   // Image upload state
@@ -90,6 +93,7 @@ export default function GalleryManager() {
 
   useEffect(() => {
     loadGalleries();
+    loadCollections();
   }, []);
 
   const loadGalleries = async () => {
@@ -108,7 +112,25 @@ export default function GalleryManager() {
       setLoading(false);
     }
   };
-
+  
+  const loadCollections = async () => {
+    try {
+      const response = await fetch('/api/collections/list.php?limit=1000', {
+        credentials: 'same-origin'
+      });
+      if (!response.ok) return;
+      const data = await response.json();
+      const items = (data.collections || []).map((c: any) => ({
+        id: Number(c.id) || 0,
+        title: String(c.title || 'Untitled'),
+        slug: String(c.slug || '')
+      }));
+      setCollections(items);
+    } catch {
+      // ignore non-critical errors
+    }
+  };
+  
   const loadImages = async (galleryId: number) => {
     setLoading(true);
     setError(null);
@@ -134,9 +156,17 @@ export default function GalleryManager() {
 
     try {
       const url = editingGallery ? '/api/galleries/update.php' : '/api/galleries/create.php';
+      const payloadBase = {
+        title: galleryForm.title,
+        slug: galleryForm.slug,
+        description: galleryForm.description,
+        rating: galleryForm.rating,
+        status: galleryForm.status,
+        collection_id: galleryForm.collection_id === '' ? null : galleryForm.collection_id
+      };
       const payload = editingGallery 
-        ? { id: editingGallery.id, ...galleryForm }
-        : galleryForm;
+        ? { id: editingGallery.id, ...payloadBase }
+        : payloadBase;
 
       const response = await fetch(url, {
         method: 'POST',
@@ -164,7 +194,7 @@ export default function GalleryManager() {
       setSuccess(editingGallery ? 'Gallery updated successfully!' : 'Gallery created successfully!');
       setShowGalleryForm(false);
       setEditingGallery(null);
-      setGalleryForm({ title: "", slug: "", description: "", rating: "PG", status: "draft" as Status });
+      setGalleryForm({ title: "", slug: "", description: "", rating: "PG", status: "draft" as Status, collection_id: "" });
       await loadGalleries();
     } catch (err: any) {
       setError(err.message || 'Failed to save gallery');
@@ -238,7 +268,7 @@ export default function GalleryManager() {
     try {
       const formData = new FormData();
       formData.append('gallery_id', selectedGallery.id.toString());
-      
+
       // Add manual prompt data
       if (uploadPrompts.positive.trim()) {
         formData.append('positive_prompt', uploadPrompts.positive.trim());
@@ -252,10 +282,16 @@ export default function GalleryManager() {
       if (uploadPrompts.loras.trim()) {
         formData.append('loras', uploadPrompts.loras.trim());
       }
-      
+
       // Add metadata extraction preference
       formData.append('extract_metadata', uploadPrompts.extractMetadata ? '1' : '0');
-      
+
+      // Add poster file if provided (for videos)
+      const posterInput = document.getElementById('posterUpload') as HTMLInputElement;
+      if (posterInput && posterInput.files && posterInput.files.length > 0) {
+        formData.append('poster', posterInput.files[0]);
+      }
+
       Array.from(files).forEach(file => {
         formData.append('files[]', file);
       });
@@ -275,6 +311,8 @@ export default function GalleryManager() {
       setFiles(null);
       // Clear the upload prompts after successful upload
       setUploadPrompts({ positive: "", negative: "", checkpoint: "", loras: "", extractMetadata: true });
+      // Clear poster input
+      if (posterInput) posterInput.value = '';
       await loadImages(selectedGallery.id);
     } catch (err: any) {
       setError(err.message || 'Failed to upload images');
@@ -318,7 +356,8 @@ export default function GalleryManager() {
       slug: gallery.slug,
       description: gallery.description || "",
       rating: gallery.rating || "PG",
-      status: (gallery as any).status || "draft"
+      status: (gallery as any).status || "draft",
+      collection_id: (gallery as any).collection_id ?? ""
     });
     setShowGalleryForm(true);
   };
@@ -388,7 +427,7 @@ export default function GalleryManager() {
           onClick={() => {
             setShowGalleryForm(true);
             setEditingGallery(null);
-            setGalleryForm({ title: "", slug: "", description: "", rating: "PG", status: "draft" as Status });
+            setGalleryForm({ title: "", slug: "", description: "", rating: "PG", status: "draft" as Status, collection_id: "" });
           }}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
         >
@@ -480,6 +519,28 @@ export default function GalleryManager() {
                 </select>
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   New galleries default to Draft. Publish to make it visible on the site.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Collection
+                </label>
+                <select
+                  value={galleryForm.collection_id as any}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setGalleryForm(prev => ({ ...prev, collection_id: v === '' ? '' : Number(v) }));
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="">Unassigned</option>
+                  {collections.map((c) => (
+                    <option key={c.id} value={c.id}>{c.title}</option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Assign this gallery to a collection (project). Optional.
                 </p>
               </div>
               <div className="flex gap-3 pt-4">
@@ -763,15 +824,38 @@ export default function GalleryManager() {
               
               {/* File Selection */}
               <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Upload Files
+                </label>
                 <input
                   type="file"
                   multiple
-                  accept=".png,.jpg,.jpeg,.webp"
+                  accept=".png,.jpg,.jpeg,.webp,.mp4,.webm"
                   onChange={(e) => setFiles(e.target.files)}
                   className="text-sm"
                 />
                 <p className="mt-1 text-xs text-gray-500">
-                  Supported formats: PNG, JPG, JPEG, WebP. Thumbnails generated automatically.
+                  <strong>Images:</strong> PNG, JPG, JPEG, WebP - Thumbnails generated automatically
+                  <br />
+                  <strong>Videos:</strong> MP4, WebM - Add a poster image below for thumbnail
+                </p>
+              </div>
+
+              {/* Poster Upload for Videos */}
+              <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Video Poster Image (Optional but Recommended)
+                </label>
+                <input
+                  type="file"
+                  accept=".png,.jpg,.jpeg,.webp"
+                  id="posterUpload"
+                  className="text-sm"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Upload a thumbnail/poster image for videos. If not provided, the video itself will be used as preview.
+                  <br />
+                  💡 <strong>Tip:</strong> Take a screenshot of your video's first frame and upload it here.
                 </p>
               </div>
 
