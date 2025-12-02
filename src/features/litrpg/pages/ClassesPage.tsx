@@ -1,14 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Swords, Search, Loader2, RefreshCw, Star, ArrowRight, Shield, Brain, Zap, Eye, MessageSquare, Settings, Briefcase } from 'lucide-react';
-import { getCachedClasses, LitrpgClass } from '../utils/api-litrpg';
+import { getCachedClasses, getCachedProfessions, createClass, LitrpgClass, LitrpgProfession } from '../utils/api-litrpg';
 import SocialIcons from '../../../components/SocialIcons';
 import LitrpgNav from '../components/LitrpgNav';
 import { ClassAbilitiesManager } from '../components/ClassAbilitiesManager';
-import { ClassEditorModal } from '../components/ClassEditorModal';
 import { useAuth } from '../../../contexts/AuthContext';
 import { TIER_ORDER, TIER_COLORS, TIER_TEXT_COLORS, TIER_BORDER_COLORS, ClassTier, getTierString } from '../tier-constants';
-import { getAllProfessions } from '../profession-constants';
 
 const STAT_ICONS: Record<string, React.ReactNode> = {
   STR: <Swords size={12} className="text-red-500" />,
@@ -24,13 +22,23 @@ export default function ClassesPage() {
   const isAdmin = user?.role === 'admin';
   
   const [classes, setClasses] = useState<LitrpgClass[]>([]);
+  const [professions, setProfessions] = useState<LitrpgProfession[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [filterTier, setFilterTier] = useState<string | 'All'>('All');
   const [filterCategory, setFilterCategory] = useState<'combat' | 'professional'>('combat');
   const [showAbilityManager, setShowAbilityManager] = useState(false);
-  const [showClassEditor, setShowClassEditor] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
+  const [newClass, setNewClass] = useState({
+    name: '',
+    slug: '',
+    tier: 1,
+    unlock_level: 1,
+    description: '',
+    primary_attribute: '',
+    secondary_attribute: '',
+  });
 
   useEffect(() => {
     document.title = "Classes - LitRPG Tools";
@@ -40,9 +48,11 @@ export default function ClassesPage() {
   const loadClasses = async () => {
     setLoading(true);
     setError(null);
+    setStatus(null);
     try {
-      const data = await getCachedClasses();
-      setClasses(data);
+      const [dbClasses, dbProfessions] = await Promise.all([getCachedClasses(), getCachedProfessions()]);
+      setClasses(dbClasses);
+      setProfessions(dbProfessions);
     } catch (err) {
       setError('Failed to load classes');
       console.error(err);
@@ -51,32 +61,54 @@ export default function ClassesPage() {
     }
   };
 
+  const handleCreate = async () => {
+    const result = await createClass({
+      name: newClass.name,
+      slug: newClass.slug,
+      tier: Number(newClass.tier) || 1,
+      unlock_level: Number(newClass.unlock_level) || 1,
+      description: newClass.description,
+      primary_attribute: newClass.primary_attribute || undefined,
+      secondary_attribute: newClass.secondary_attribute || undefined,
+    });
+
+    if (!result.success) {
+      setStatus(result.error || 'Failed to create class');
+      return;
+    }
+
+    setStatus(`Created ${result.class?.name}`);
+    setNewClass({ name: '', slug: '', tier: 1, unlock_level: 1, description: '', primary_attribute: '', secondary_attribute: '' });
+    const refreshed = await Promise.all([getCachedClasses(), getCachedProfessions()]);
+    setClasses(refreshed[0]);
+    setProfessions(refreshed[1]);
+  };
+
   // Combine classes and professions based on category
   const displayItems = useMemo(() => {
     if (filterCategory === 'combat') {
       return classes;
     } else {
       // Convert professions to class-like format for display
-      const professions = getAllProfessions();
       return professions.map(p => ({
         id: p.id,
         name: p.name,
         slug: p.slug,
         description: p.description,
-        tier: p.tier.toString(),
-        unlock_level: p.unlockLevel,
-        prerequisite_class_id: p.prerequisiteProfessionId,
-        stat_bonuses: p.statBonuses,
+        tier: p.tier,
+        unlock_level: p.unlock_level,
+        prerequisite_class_id: p.prerequisite_profession_id,
+        stat_bonuses: p.stat_bonuses,
         primary_attribute: undefined,
         secondary_attribute: undefined,
         starting_item: undefined,
-        ability_ids: p.abilityIds,
+        ability_ids: p.ability_ids,
         upgrade_ids: [],
         created_at: '',
         updated_at: ''
       } as LitrpgClass));
     }
-  }, [classes, filterCategory]);
+  }, [classes, filterCategory, professions]);
 
   // Group items by tier
   const groupedClasses = useMemo(() => {
@@ -103,7 +135,7 @@ export default function ClassesPage() {
       const cls = classes.find(c => c.id === id);
       return cls?.name || `Class #${id}`;
     } else {
-      const prof = getAllProfessions().find(p => p.id === id);
+      const prof = professions.find(p => p.id === id);
       return prof?.name || `Profession #${id}`;
     }
   };
@@ -175,7 +207,7 @@ export default function ClassesPage() {
           <div className="max-w-5xl mx-auto flex flex-wrap gap-4 items-center">
             {/* Search */}
             <div className="relative flex-1 min-w-[200px]">
-              <input 
+              <input
                 type="text" 
                 placeholder="Search classes..." 
                 value={search}
@@ -239,6 +271,85 @@ export default function ClassesPage() {
             </span>
           </div>
         </div>
+
+        {isAdmin && (
+          <div className="max-w-5xl mx-auto px-6 py-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-slate-900 border border-slate-700 rounded-lg p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-white">Add New Class</h3>
+                {status && <span className="text-[10px] text-green-300">{status}</span>}
+              </div>
+              <input
+                className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm"
+                placeholder="Name"
+                value={newClass.name}
+                onChange={(e) => setNewClass({ ...newClass, name: e.target.value })}
+              />
+              <input
+                className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm"
+                placeholder="Slug"
+                value={newClass.slug}
+                onChange={(e) => setNewClass({ ...newClass, slug: e.target.value })}
+              />
+              <textarea
+                className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm"
+                placeholder="Description"
+                value={newClass.description}
+                onChange={(e) => setNewClass({ ...newClass, description: e.target.value })}
+              />
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <label className="flex flex-col gap-1 text-slate-400">
+                  <span className="text-[10px] uppercase text-slate-500">Tier #</span>
+                  <input
+                    className="bg-slate-800 border border-slate-700 rounded px-2 py-1"
+                    type="number"
+                    min={1}
+                    max={4}
+                    value={newClass.tier}
+                    onChange={(e) => setNewClass({ ...newClass, tier: Number(e.target.value) })}
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-slate-400">
+                  <span className="text-[10px] uppercase text-slate-500">Unlock Level</span>
+                  <input
+                    className="bg-slate-800 border border-slate-700 rounded px-2 py-1"
+                    type="number"
+                    min={1}
+                    value={newClass.unlock_level}
+                    onChange={(e) => setNewClass({ ...newClass, unlock_level: Number(e.target.value) })}
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-slate-400">
+                  <span className="text-[10px] uppercase text-slate-500">Primary Attribute</span>
+                  <input
+                    className="bg-slate-800 border border-slate-700 rounded px-2 py-1"
+                    value={newClass.primary_attribute}
+                    onChange={(e) => setNewClass({ ...newClass, primary_attribute: e.target.value })}
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-slate-400">
+                  <span className="text-[10px] uppercase text-slate-500">Secondary Attribute</span>
+                  <input
+                    className="bg-slate-800 border border-slate-700 rounded px-2 py-1"
+                    value={newClass.secondary_attribute}
+                    onChange={(e) => setNewClass({ ...newClass, secondary_attribute: e.target.value })}
+                  />
+                </label>
+              </div>
+              <button
+                onClick={handleCreate}
+                className="w-full bg-nexus-accent/80 hover:bg-nexus-accent text-white rounded py-2 text-sm font-semibold"
+              >
+                Create Class
+              </button>
+            </div>
+            <div className="bg-slate-900 border border-slate-700 rounded-lg p-4 text-sm text-slate-400">
+              <div className="font-semibold text-white mb-2">Tip</div>
+              Use "Manage Abilities" to attach abilities to your new class after saving. Data is stored in MySQL and refreshed for
+              all LitRPG pages.
+            </div>
+          </div>
+        )}
 
         {/* Main Content */}
         <main className="flex-1 py-8 px-6">
@@ -344,16 +455,10 @@ export default function ClassesPage() {
           </div>
         </main>
 
-        {/* Class Editor Modal */}
-        <ClassEditorModal
-          isOpen={showClassEditor}
-          onClose={() => { setShowClassEditor(false); loadClasses(); }}
-        />
-
         {/* Class Abilities Manager Modal */}
-        <ClassAbilitiesManager 
-          isOpen={showAbilityManager} 
-          onClose={() => setShowAbilityManager(false)} 
+        <ClassAbilitiesManager
+          isOpen={showAbilityManager}
+          onClose={() => setShowAbilityManager(false)}
         />
 
         {/* Footer with Social Icons */}
