@@ -176,69 +176,15 @@ export default function LootPage() {
               <Search className="absolute left-3 top-2.5 text-slate-500" size={16} />
             </div>
 
-            <div className="space-y-2">
-              <div className="text-[11px] uppercase text-slate-500">Tech Level</div>
-              <div className="flex gap-2 flex-wrap">
-                <button
-                  onClick={() => setSelectedTL('All')}
-                  className={`px-2 py-1 text-xs rounded border transition-colors ${
-                    selectedTL === 'All'
-                      ? 'bg-nexus-accent/20 border-nexus-accent text-white'
-                      : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'
-                  }`}
-                >
-                  All
-                </button>
-                {techLevels.map(tl => (
-                  <button
-                    key={tl}
-                    onClick={() => setSelectedTL(tl)}
-                    className={`px-2 py-1 text-xs rounded border transition-colors ${
-                      selectedTL === tl
-                        ? `${TECH_LEVEL_COLORS[tl] || 'bg-slate-800 text-white border-slate-500'} border-current`
-                        : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'
-                    }`}
-                  >
-                    {tl}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="text-[11px] uppercase text-slate-500">Category</div>
-              <div className="flex gap-2 flex-wrap">
-                <button
-                  onClick={() => setSelectedCategory('All')}
-                  className={`px-2 py-1 text-xs rounded border transition-colors ${
-                    selectedCategory === 'All'
-                      ? 'bg-nexus-accent/20 border-nexus-accent text-white'
-                      : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'
-                  }`}
-                >
-                  All
-                </button>
-                {categories.map(cat => (
-                  <button
-                    key={cat}
-                    onClick={() => setSelectedCategory(cat)}
-                    className={`px-2 py-1 text-xs rounded border transition-colors flex items-center gap-1 ${
-                      selectedCategory === cat && CATEGORY_COLORS[cat]
-                        ? CATEGORY_COLORS[cat]
-                        : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'
-                    }`}
-                  >
-                    {CATEGORY_ICONS[cat]}
-                    {cat}
-                  </button>
-                ))}
-              </div>
+            <div className="p-3 bg-slate-800/50 rounded-lg">
+              <div className="text-xs text-slate-500 uppercase tracking-wide mb-1">Total Items</div>
+              <div className="text-2xl font-bold text-green-400">{items.length}</div>
             </div>
 
             {isAdmin && (
               <div className="bg-slate-800/60 p-3 rounded border border-slate-700 space-y-2">
                 <div className="flex items-center justify-between">
-                  <div className="text-xs font-bold text-slate-400 uppercase">Add Item</div>
+                  <div className="text-xs font-bold text-slate-400 uppercase">Quick Add Item</div>
                   {status && <div className="text-[10px] text-green-300">{status}</div>}
                 </div>
                 <div className="space-y-2">
@@ -299,6 +245,65 @@ export default function LootPage() {
                 </button>
               </div>
             )}
+
+            <div className="space-y-2">
+              <div className="text-[11px] uppercase text-slate-500">Tech Level</div>
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={() => setSelectedTL('All')}
+                  className={`px-2 py-1 text-xs rounded border transition-colors ${
+                    selectedTL === 'All'
+                      ? 'bg-nexus-accent/20 border-nexus-accent text-white'
+                      : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'
+                  }`}
+                >
+                  All
+                </button>
+                {techLevels.map(tl => (
+                  <button
+                    key={tl}
+                    onClick={() => setSelectedTL(tl)}
+                    className={`px-2 py-1 text-xs rounded border transition-colors ${
+                      selectedTL === tl
+                        ? `${TECH_LEVEL_COLORS[tl] || 'bg-slate-800 text-white border-slate-500'} border-current`
+                        : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'
+                    }`}
+                  >
+                    {tl}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-[11px] uppercase text-slate-500">Category</div>
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={() => setSelectedCategory('All')}
+                  className={`px-2 py-1 text-xs rounded border transition-colors ${
+                    selectedCategory === 'All'
+                      ? 'bg-nexus-accent/20 border-nexus-accent text-white'
+                      : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'
+                  }`}
+                >
+                  All
+                </button>
+                {categories.map(cat => (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`px-2 py-1 text-xs rounded border transition-colors flex items-center gap-1 ${
+                      selectedCategory === cat && CATEGORY_COLORS[cat]
+                        ? CATEGORY_COLORS[cat]
+                        : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'
+                    }`}
+                  >
+                    {CATEGORY_ICONS[cat]}
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             {error && <p className="text-sm text-red-400">{error}</p>}
           </div>
