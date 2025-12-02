@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Loader2, Star, Swords, Check, ArrowRight, Shield, Brain, Zap, Eye, MessageSquare, Briefcase } from 'lucide-react';
-import { getCachedClasses, LitrpgClass } from '../utils/api-litrpg';
+import { getCachedClasses, getCachedProfessions, LitrpgClass, LitrpgProfession } from '../utils/api-litrpg';
 import { TIER_ORDER, TIER_TEXT_COLORS, ClassTier, getTierString } from '../tier-constants';
-import { getAllProfessions } from '../profession-constants';
 
 interface ClassSelectionModalProps {
   isOpen: boolean;
@@ -42,6 +41,7 @@ export const ClassSelectionModal: React.FC<ClassSelectionModalProps> = ({
   lockCategory = false,
 }) => {
   const [classes, setClasses] = useState<LitrpgClass[]>([]);
+  const [professions, setProfessions] = useState<LitrpgProfession[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedClassId, setSelectedClassId] = useState<number | null>(currentClassId || null);
   const [category, setCategory] = useState<'combat' | 'professional'>(defaultCategory);
@@ -57,8 +57,12 @@ export const ClassSelectionModal: React.FC<ClassSelectionModalProps> = ({
   const loadClasses = async () => {
     setLoading(true);
     try {
-      const data = await getCachedClasses();
-      setClasses(data);
+      const [dbClasses, dbProfessions] = await Promise.all([
+        getCachedClasses(),
+        getCachedProfessions()
+      ]);
+      setClasses(dbClasses);
+      setProfessions(dbProfessions);
     } catch (err) {
       console.error('Failed to load classes', err);
     }
@@ -66,25 +70,25 @@ export const ClassSelectionModal: React.FC<ClassSelectionModalProps> = ({
   };
 
   // Combine classes and professions based on category
-  const displayItems = category === 'combat' 
-    ? classes 
-    : getAllProfessions().map(p => ({
-        id: p.id,
-        name: p.name,
-        slug: p.slug,
-        description: p.description,
-        tier: p.tier,
-        unlock_level: p.unlockLevel,
-        prerequisite_class_id: p.prerequisiteProfessionId,
-        stat_bonuses: p.statBonuses,
-        primary_attribute: undefined,
-        secondary_attribute: undefined,
-        starting_item: undefined,
-        ability_ids: p.abilityIds,
-        upgrade_ids: [],
-        created_at: '',
-        updated_at: ''
-      } as LitrpgClass));
+    const displayItems = category === 'combat'
+      ? classes
+      : professions.map(p => ({
+          id: p.id,
+          name: p.name,
+          slug: p.slug,
+          description: p.description,
+          tier: p.tier,
+          unlock_level: p.unlock_level,
+          prerequisite_class_id: p.prerequisite_profession_id,
+          stat_bonuses: p.stat_bonuses,
+          primary_attribute: undefined,
+          secondary_attribute: undefined,
+          starting_item: undefined,
+          ability_ids: p.ability_ids,
+          upgrade_ids: [],
+          created_at: '',
+          updated_at: ''
+        } as LitrpgClass));
 
   // Group items by tier
   const groupedClasses = displayItems.reduce((acc, cls) => {
@@ -109,25 +113,24 @@ export const ClassSelectionModal: React.FC<ClassSelectionModalProps> = ({
       let cls = classes.find(c => c.id === selectedClassId);
       if (!cls) {
         // Also search in professions if not found in classes
-        const professions = getAllProfessions();
         const profession = professions.find(p => p.id === selectedClassId);
-        if (profession) {
-          cls = {
-            id: profession.id,
-            name: profession.name,
-            slug: profession.slug,
-            description: profession.description,
-            tier: profession.tier,
-            unlock_level: profession.unlockLevel,
-            prerequisite_class_id: profession.prerequisiteProfessionId,
-            stat_bonuses: profession.statBonuses,
-            primary_attribute: undefined,
-            secondary_attribute: undefined,
-            starting_item: undefined,
-            ability_ids: profession.abilityIds,
-            upgrade_ids: [],
-            created_at: '',
-            updated_at: ''
+          if (profession) {
+            cls = {
+              id: profession.id,
+              name: profession.name,
+              slug: profession.slug,
+              description: profession.description,
+              tier: profession.tier,
+              unlock_level: profession.unlock_level,
+              prerequisite_class_id: profession.prerequisite_profession_id,
+              stat_bonuses: profession.stat_bonuses,
+              primary_attribute: undefined,
+              secondary_attribute: undefined,
+              starting_item: undefined,
+              ability_ids: profession.ability_ids,
+              upgrade_ids: [],
+              created_at: '',
+              updated_at: ''
           } as LitrpgClass;
         }
       }

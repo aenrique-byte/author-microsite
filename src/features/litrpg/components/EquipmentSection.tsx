@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Shield, Swords, Gem, ChevronDown, ChevronRight } from 'lucide-react';
-import { LOOT_DATABASE, LootItem } from '../loot-constants';
+import { LitrpgItem } from '../utils/api-litrpg';
 import { EquippedItems } from '../types';
 
 interface EquipmentSectionProps {
   equippedItems: EquippedItems;
   onEquipmentChange: (equipped: EquippedItems) => void;
   isEditable?: boolean;
+  items: LitrpgItem[];
 }
 
 const SLOT_CONFIG = [
@@ -25,11 +26,11 @@ export const EquipmentSection: React.FC<EquipmentSectionProps> = ({
   equippedItems,
   onEquipmentChange,
   isEditable = true,
+  items,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // Use constants data - items are stored by name as string in equippedItems
-  const allItems = LOOT_DATABASE;
+  const allItems = items;
 
   const handleSlotChange = (slotKey: string, value: string) => {
     onEquipmentChange({
