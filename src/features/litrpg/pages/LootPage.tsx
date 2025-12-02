@@ -1,9 +1,28 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Package, Search, Wrench, Swords, Cpu, Layers, Pill, Shield, Heart } from 'lucide-react';
-import { LOOT_DATABASE, LootItem, TechLevel, ItemCategory, CATEGORY_COLORS, TECH_LEVEL_COLORS } from '../loot-constants';
+import { LitrpgItem, listItems } from '../utils/api-litrpg';
 import SocialIcons from '../../../components/SocialIcons';
 import LitrpgNav from '../components/LitrpgNav';
+
+type TechLevel = string;
+type ItemCategory = string;
+
+const CATEGORY_COLORS: Record<ItemCategory, string> = {
+  Tool: 'text-amber-400 border-amber-500/30 bg-amber-900/10',
+  Weapon: 'text-red-400 border-red-500/30 bg-red-900/10',
+  Component: 'text-cyan-400 border-cyan-500/30 bg-cyan-900/10',
+  Material: 'text-slate-300 border-slate-500/30 bg-slate-800/30',
+  Consumable: 'text-green-400 border-green-500/30 bg-green-900/10',
+  Armor: 'text-blue-400 border-blue-500/30 bg-blue-900/10',
+  Medical: 'text-pink-400 border-pink-500/30 bg-pink-900/10',
+};
+
+const TECH_LEVEL_COLORS: Record<TechLevel, string> = {
+  TL8: 'text-slate-400 border-slate-600 bg-slate-800',
+  TL9: 'text-blue-400 border-blue-600 bg-blue-900/20',
+  TL10: 'text-purple-400 border-purple-600 bg-purple-900/20',
+};
 
 const CATEGORY_ICONS: Record<ItemCategory, React.ReactNode> = {
   Tool: <Wrench size={14} />,
@@ -15,49 +34,77 @@ const CATEGORY_ICONS: Record<ItemCategory, React.ReactNode> = {
   Medical: <Heart size={14} />,
 };
 
-const TECH_LEVELS: TechLevel[] = ['TL8', 'TL9', 'TL10'];
-const CATEGORIES: ItemCategory[] = ['Material', 'Component', 'Tool', 'Weapon', 'Armor', 'Consumable', 'Medical'];
+const DEFAULT_TECH_LEVELS: TechLevel[] = ['TL8', 'TL9', 'TL10'];
+const DEFAULT_CATEGORIES: ItemCategory[] = ['Material', 'Component', 'Tool', 'Weapon', 'Armor', 'Consumable', 'Medical'];
 
 export default function LootPage() {
   const [search, setSearch] = useState('');
   const [selectedTL, setSelectedTL] = useState<TechLevel | 'All'>('All');
   const [selectedCategory, setSelectedCategory] = useState<ItemCategory | 'All'>('All');
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
+  const [items, setItems] = useState<LitrpgItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Use constants data
-  const items = LOOT_DATABASE;
+  useEffect(() => {
+    const loadItems = async () => {
+      setLoading(true);
+      setError(null);
+      const response = await listItems();
+      if (!response.success) {
+        setError(response.error || 'Failed to load items');
+        setItems([]);
+      } else {
+        setItems(response.items);
+      }
+      setLoading(false);
+    };
+
+    void loadItems();
+  }, []);
+
+  const techLevels = useMemo(() => {
+    const levels = Array.from(new Set(items.map(item => item.tech_level).filter(Boolean))) as TechLevel[];
+    const sorted = levels.sort((a, b) => DEFAULT_TECH_LEVELS.indexOf(a) - DEFAULT_TECH_LEVELS.indexOf(b));
+    return sorted.length > 0 ? sorted : DEFAULT_TECH_LEVELS;
+  }, [items]);
+
+  const categories = useMemo(() => {
+    const cats = Array.from(new Set(items.map(item => item.category).filter(Boolean))) as ItemCategory[];
+    return cats.length > 0 ? cats : DEFAULT_CATEGORIES;
+  }, [items]);
 
   const filteredLoot = useMemo(() => {
+    const searchTerm = search.toLowerCase();
     return items.filter(item => {
-      const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase()) || 
-                           (item.description?.toLowerCase().includes(search.toLowerCase()));
-      const matchesTL = selectedTL === 'All' || item.techLevel === selectedTL;
+      const matchesSearch = item.name.toLowerCase().includes(searchTerm) || item.description?.toLowerCase().includes(searchTerm);
+      const matchesTL = selectedTL === 'All' || item.tech_level === selectedTL;
       const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
       return matchesSearch && matchesTL && matchesCategory;
     });
   }, [items, search, selectedTL, selectedCategory]);
 
-  // Group by Tech Level then Category
   const groupedLoot = useMemo(() => {
-    const groups: Record<TechLevel, Record<ItemCategory, LootItem[]>> = {
-      TL8: { Tool: [], Weapon: [], Component: [], Material: [], Consumable: [], Armor: [], Medical: [] },
-      TL9: { Tool: [], Weapon: [], Component: [], Material: [], Consumable: [], Armor: [], Medical: [] },
-      TL10: { Tool: [], Weapon: [], Component: [], Material: [], Consumable: [], Armor: [], Medical: [] },
-    };
-    
+    const groups: Record<TechLevel, Record<ItemCategory, LitrpgItem[]>> = {};
+
     filteredLoot.forEach(item => {
-      if (groups[item.techLevel] && groups[item.techLevel][item.category]) {
-        groups[item.techLevel][item.category].push(item);
+      const tl = (item.tech_level as TechLevel) || 'Unspecified';
+      const cat = (item.category as ItemCategory) || 'General';
+      if (!groups[tl]) {
+        groups[tl] = {} as Record<ItemCategory, LitrpgItem[]>;
       }
+      if (!groups[tl][cat]) {
+        groups[tl][cat] = [];
+      }
+      groups[tl][cat].push(item);
     });
-    
+
     return groups;
   }, [filteredLoot]);
 
-  // Get text color from tailwind class
   const getTechLevelTextColor = (tl: TechLevel): string => {
     const colors = TECH_LEVEL_COLORS[tl];
-    return colors.split(' ')[0]; // e.g., "text-slate-400"
+    return colors ? colors.split(' ')[0] : 'text-slate-300';
   };
 
   return (
@@ -66,7 +113,7 @@ export default function LootPage() {
         <title>Loot Catalog - LitRPG Tools</title>
         <meta name="description" content="Item database organized by Tech Level and category for Destiny Among the Stars LitRPG." />
       </Helmet>
-      
+
       <div className="min-h-screen bg-nexus-dark text-slate-200 font-sans selection:bg-nexus-accent/30 selection:text-white flex flex-col">
         {/* Shared Navigation */}
         <LitrpgNav />
@@ -80,16 +127,16 @@ export default function LootPage() {
               <div className="flex items-center gap-3 mb-4">
                 <Package className="text-green-400" size={24} />
                 <h1 className="text-xl font-bold text-white font-mono tracking-wider">LOOT CATALOG</h1>
-                <span className="text-sm text-slate-500 ml-auto">{filteredLoot.length} items</span>
+                <span className="text-sm text-slate-500 ml-auto">{loading ? 'Loading...' : `${filteredLoot.length} items`}</span>
               </div>
 
               {/* Filters Row */}
               <div className="flex flex-wrap gap-4 items-center">
                 {/* Search */}
                 <div className="relative flex-1 min-w-[200px] max-w-md">
-                  <input 
-                    type="text" 
-                    placeholder="Search items..." 
+                  <input
+                    type="text"
+                    placeholder="Search items..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="w-full bg-slate-800 border border-slate-600 rounded-lg py-2 pl-10 pr-4 text-sm text-white focus:border-green-500 outline-none"
@@ -104,20 +151,20 @@ export default function LootPage() {
                     <button
                       onClick={() => setSelectedTL('All')}
                       className={`px-2 py-1 text-xs rounded border transition-colors ${
-                        selectedTL === 'All' 
-                          ? 'bg-nexus-accent/20 border-nexus-accent text-white' 
+                        selectedTL === 'All'
+                          ? 'bg-nexus-accent/20 border-nexus-accent text-white'
                           : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'
                       }`}
                     >
                       All
                     </button>
-                    {TECH_LEVELS.map(tl => (
+                    {techLevels.map(tl => (
                       <button
                         key={tl}
                         onClick={() => setSelectedTL(tl)}
                         className={`px-2 py-1 text-xs rounded border transition-colors ${
-                          selectedTL === tl 
-                            ? `${TECH_LEVEL_COLORS[tl]} border-current` 
+                          selectedTL === tl
+                            ? `${TECH_LEVEL_COLORS[tl] || 'bg-slate-800 text-white border-slate-500'} border-current`
                             : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'
                         }`}
                       >
@@ -134,20 +181,20 @@ export default function LootPage() {
                     <button
                       onClick={() => setSelectedCategory('All')}
                       className={`px-2 py-1 text-xs rounded border transition-colors ${
-                        selectedCategory === 'All' 
-                          ? 'bg-nexus-accent/20 border-nexus-accent text-white' 
+                        selectedCategory === 'All'
+                          ? 'bg-nexus-accent/20 border-nexus-accent text-white'
                           : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'
                       }`}
                     >
                       All
                     </button>
-                    {CATEGORIES.map(cat => (
+                    {categories.map(cat => (
                       <button
                         key={cat}
                         onClick={() => setSelectedCategory(cat)}
                         className={`px-2 py-1 text-xs rounded border transition-colors flex items-center gap-1 ${
-                          selectedCategory === cat 
-                            ? CATEGORY_COLORS[cat] 
+                          selectedCategory === cat && CATEGORY_COLORS[cat]
+                            ? CATEGORY_COLORS[cat]
                             : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'
                         }`}
                       >
@@ -158,28 +205,25 @@ export default function LootPage() {
                   </div>
                 </div>
               </div>
+              {error && <p className="text-sm text-red-400 mt-3">{error}</p>}
             </div>
           </div>
 
           {/* Grid Content */}
           <div className="flex-1 overflow-y-auto p-6">
             <div className="max-w-7xl mx-auto space-y-8">
-              {TECH_LEVELS.filter(tl => selectedTL === 'All' || selectedTL === tl).map(tl => {
-                const tlItems = Object.entries(groupedLoot[tl]).filter(([, items]) => items.length > 0);
+              {techLevels.filter(tl => selectedTL === 'All' || selectedTL === tl).map(tl => {
+                const tlItems = Object.entries(groupedLoot[tl] || {}).filter(([, items]) => items.length > 0);
                 if (tlItems.length === 0) return null;
-                
+
                 return (
                   <div key={tl} className="space-y-4">
                     {/* Tech Level Header */}
                     <div className={`flex items-center gap-3 pb-2 border-b ${
-                      tl === 'TL8' ? 'border-slate-600' :
-                      tl === 'TL9' ? 'border-blue-600/50' :
-                      'border-purple-600/50'
+                      tl === 'TL8' ? 'border-slate-600' : tl === 'TL9' ? 'border-blue-600/50' : 'border-purple-600/50'
                     }`}>
                       <span className={`text-2xl font-bold font-mono ${
-                        tl === 'TL8' ? 'text-slate-300' :
-                        tl === 'TL9' ? 'text-blue-400' :
-                        'text-purple-400'
+                        tl === 'TL8' ? 'text-slate-300' : tl === 'TL9' ? 'text-blue-400' : 'text-purple-400'
                       }`}>{tl}</span>
                       <span className="text-slate-500 text-sm">
                         {tl === 'TL8' ? 'Basic Tech' : tl === 'TL9' ? 'Advanced Tech' : 'Elite Tech'}
@@ -188,49 +232,61 @@ export default function LootPage() {
 
                     {/* Categories Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                      {CATEGORIES.filter(cat => selectedCategory === 'All' || selectedCategory === cat).map(category => {
-                        const categoryItems = groupedLoot[tl][category];
+                      {categories.filter(cat => selectedCategory === 'All' || selectedCategory === cat).map(category => {
+                        const categoryItems = groupedLoot[tl]?.[category] || [];
                         if (categoryItems.length === 0) return null;
 
                         return (
                           <div key={`${tl}-${category}`} className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
                             {/* Category Header */}
-                            <div className={`p-3 border-b border-slate-700 flex items-center gap-2 ${CATEGORY_COLORS[category].split(' ').slice(0, 1).join(' ')}`}>
+                            <div className={`p-3 border-b border-slate-700 flex items-center gap-2 ${(CATEGORY_COLORS[category] || 'text-slate-200').split(' ').slice(0, 1).join(' ')}`}>
                               {CATEGORY_ICONS[category]}
                               <h3 className="font-bold text-sm">{category}</h3>
                               <span className="text-xs text-slate-500 ml-auto">{categoryItems.length}</span>
                             </div>
-                            
+
                             {/* Items List */}
                             <div className="p-2 space-y-1 max-h-80 overflow-y-auto">
                               {categoryItems.map(item => {
                                 const isExpanded = expandedItem === item.name;
                                 return (
-                                  <div 
-                                    key={item.name} 
+                                  <div
+                                    key={item.id}
                                     onClick={() => setExpandedItem(isExpanded ? null : item.name)}
                                     className={`p-2 rounded border text-sm transition-all cursor-pointer ${
-                                      isExpanded 
-                                        ? `${CATEGORY_COLORS[item.category]} ring-1 ring-current` 
-                                        : `${CATEGORY_COLORS[item.category]} hover:bg-slate-800/50`
+                                      isExpanded
+                                        ? `${CATEGORY_COLORS[item.category] || 'text-slate-200 border-slate-700 bg-slate-800'} ring-1 ring-current`
+                                        : `${CATEGORY_COLORS[item.category] || 'text-slate-200 border-slate-700 bg-slate-900'} hover:bg-slate-800/50`
                                     }`}
                                   >
                                     <div className="font-medium flex items-center justify-between">
                                       {item.name}
                                       <span className={`text-xs transition-transform ${isExpanded ? 'rotate-180' : ''}`}>▼</span>
                                     </div>
-                                    
+
                                     {isExpanded && (
                                       <div className="mt-3 pt-3 border-t border-current/20 space-y-2 animate-in slide-in-from-top-1 duration-200">
                                         <div className="grid grid-cols-2 gap-2 text-xs">
                                           <div>
                                             <span className="text-slate-500">Tech Level:</span>
-                                            <span className={`ml-1 font-bold ${getTechLevelTextColor(item.techLevel)}`}>{item.techLevel}</span>
+                                            <span className={`ml-1 font-bold ${getTechLevelTextColor(item.tech_level as TechLevel)}`}>{item.tech_level || 'N/A'}</span>
                                           </div>
                                           <div>
                                             <span className="text-slate-500">Category:</span>
-                                            <span className="ml-1 font-bold">{item.category}</span>
+                                            <span className="ml-1 font-bold">{item.category || 'General'}</span>
                                           </div>
+                                          {item.rarity && (
+                                            <div>
+                                              <span className="text-slate-500">Rarity:</span>
+                                              <span className="ml-1 font-bold">{item.rarity}</span>
+                                            </div>
+                                          )}
+                                          {typeof item.base_value === 'number' && (
+                                            <div>
+                                              <span className="text-slate-500">Value:</span>
+                                              <span className="ml-1 font-bold">{item.base_value} cr</span>
+                                            </div>
+                                          )}
                                         </div>
                                         {item.description && (
                                           <p className="text-xs text-slate-400 italic">{item.description}</p>
@@ -249,7 +305,7 @@ export default function LootPage() {
                 );
               })}
 
-              {filteredLoot.length === 0 && (
+              {filteredLoot.length === 0 && !loading && (
                 <div className="text-center py-20 text-slate-600">
                   <Package size={64} className="mx-auto mb-4 opacity-20" />
                   <p className="text-lg">No items matching filters.</p>
