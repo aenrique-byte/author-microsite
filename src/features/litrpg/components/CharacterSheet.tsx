@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Shield, 
   Swords, 
@@ -25,15 +25,13 @@ import {
   Loader2
 } from 'lucide-react';
 import { Attribute, Character, ClassName, Monster, EquippedItems, ClassHistoryEntry } from '../types';
-import { ATTRIBUTE_DESCRIPTIONS, getTotalXpRequired, getCumulativePoints, getLevelRewards, getCooldownReduction, applyCooldownReduction, getDurationExtension, applyDurationExtension } from '../constants';
+import { ATTRIBUTE_DESCRIPTIONS } from '../attribute-metadata';
+import { getTotalXpRequired, getCumulativePoints, getLevelRewards, getCooldownReduction, applyCooldownReduction, getDurationExtension, applyDurationExtension } from '../xp-constants';
 import { BattleSimulator } from './BattleSimulator';
 import { EquipmentSection } from './EquipmentSection';
 import { ClassSelectionModal } from './ClassSelectionModal';
-import { getCachedClasses, LitrpgClass } from '../utils/api-litrpg';
-import { getAllAbilities, ExportedAbility } from '../ability-constants';
+import { getCachedClasses, getCachedAbilities, getCachedProfessions, getCachedItems, LitrpgAbility, LitrpgClass, LitrpgProfession, LitrpgItem } from '../utils/api-litrpg';
 import { getTierNumber, TIER_COLORS, TIER_NAMES, ClassTier } from '../tier-constants';
-import { getAllProfessions } from '../profession-constants';
-import { getAllProfessionalAbilities, ProfessionalAbility } from '../professional-abilities-constants';
 
 // Bonus ability points awarded per tier upgrade (when selecting a new tier class)
 const TIER_UPGRADE_ABILITY_BONUS = 5;
@@ -79,10 +77,10 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
   
   // Database State
   const [dbClasses, setDbClasses] = useState<LitrpgClass[]>([]);
+  const [dbAbilities, setDbAbilities] = useState<LitrpgAbility[]>([]);
+  const [dbProfessions, setDbProfessions] = useState<LitrpgProfession[]>([]);
+  const [items, setItems] = useState<LitrpgItem[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
-  
-  // Abilities from constants (instant load)
-  const dbAbilities = useMemo(() => getAllAbilities(), []);
   
   // Ability Disk State
   const [isDiskModalOpen, setIsDiskModalOpen] = useState(false);
@@ -129,8 +127,20 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
   useEffect(() => {
     const loadData = async () => {
       setIsLoadingData(true);
-      const classes = await getCachedClasses();
-      setDbClasses(classes);
+      try {
+        const [classes, abilities, professions, apiItems] = await Promise.all([
+          getCachedClasses(),
+          getCachedAbilities(),
+          getCachedProfessions(),
+          getCachedItems(),
+        ]);
+        setDbClasses(classes);
+        setDbAbilities(abilities);
+        setDbProfessions(professions);
+        setItems(apiItems);
+      } catch (error) {
+        console.error('Failed to load LitRPG data', error);
+      }
       setIsLoadingData(false);
     };
     loadData();
@@ -141,10 +151,9 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
     // First search classes
     const foundClass = dbClasses.find(c => c.name === name);
     if (foundClass) return foundClass;
-    
+
     // Then search professions (convert to class format)
-    const professions = getAllProfessions();
-    const foundProfession = professions.find(p => p.name === name);
+    const foundProfession = dbProfessions.find(p => p.name === name);
     if (foundProfession) {
       return {
         id: foundProfession.id,
@@ -152,13 +161,13 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
         slug: foundProfession.slug,
         description: foundProfession.description,
         tier: foundProfession.tier,
-        unlock_level: foundProfession.unlockLevel,
-        prerequisite_class_id: foundProfession.prerequisiteProfessionId,
-        stat_bonuses: foundProfession.statBonuses,
+        unlock_level: foundProfession.unlock_level,
+        prerequisite_class_id: foundProfession.prerequisite_profession_id,
+        stat_bonuses: foundProfession.stat_bonuses,
         primary_attribute: undefined,
         secondary_attribute: undefined,
         starting_item: undefined,
-        ability_ids: foundProfession.abilityIds,
+        ability_ids: foundProfession.ability_ids,
         upgrade_ids: [],
         created_at: '',
         updated_at: ''
@@ -169,13 +178,13 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
   };
 
   // Helper: Find ability by name in constants
-  const findAbilityByName = (name: string): ExportedAbility | undefined => {
-    return dbAbilities.find((a: ExportedAbility) => a.name === name);
+  const findAbilityByName = (name: string): LitrpgAbility | undefined => {
+    return dbAbilities.find((a) => a.name === name);
   };
 
   // Helper: Find ability by ID in constants
-  const findAbilityById = (id: number): ExportedAbility | undefined => {
-    return dbAbilities.find((a: ExportedAbility) => a.id === id);
+  const findAbilityById = (id: number): LitrpgAbility | undefined => {
+    return dbAbilities.find((a) => a.id === id);
   };
 
   // Get current class from DB
@@ -218,20 +227,19 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
     const currentTierNum = getTierNumber(currentDbClass.tier);
     
     // Combine combat classes and professions
-    const professions = getAllProfessions();
-    const professionsAsClasses = professions.map(p => ({
+    const professionsAsClasses = dbProfessions.map(p => ({
       id: p.id,
       name: p.name,
       slug: p.slug,
       description: p.description,
       tier: p.tier,
-      unlock_level: p.unlockLevel,
-      prerequisite_class_id: p.prerequisiteProfessionId,
-      stat_bonuses: p.statBonuses,
+      unlock_level: p.unlock_level,
+      prerequisite_class_id: p.prerequisite_profession_id,
+      stat_bonuses: p.stat_bonuses,
       primary_attribute: undefined,
       secondary_attribute: undefined,
       starting_item: undefined,
-      ability_ids: p.abilityIds,
+      ability_ids: p.ability_ids,
       upgrade_ids: [],
       created_at: '',
       updated_at: ''
@@ -269,26 +277,25 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
   const checkProfessionUpgradeAvailable = (): { targetTier: ClassTier; availableProfessions: LitrpgClass[] } | null => {
     if (!character.professionName) return null;
     
-    const professions = getAllProfessions();
-    const currentProfession = professions.find(p => p.name === character.professionName);
+    const currentProfession = dbProfessions.find(p => p.name === character.professionName);
     if (!currentProfession) return null;
     
     const currentTierNum = getTierNumber(currentProfession.tier);
     
     // Convert professions to LitrpgClass format
-    const professionsAsClasses = professions.map(p => ({
+    const professionsAsClasses = dbProfessions.map(p => ({
       id: p.id,
       name: p.name,
       slug: p.slug,
       description: p.description,
       tier: p.tier,
-      unlock_level: p.unlockLevel,
-      prerequisite_class_id: p.prerequisiteProfessionId,
-      stat_bonuses: p.statBonuses,
+      unlock_level: p.unlock_level,
+      prerequisite_class_id: p.prerequisite_profession_id,
+      stat_bonuses: p.stat_bonuses,
       primary_attribute: undefined,
       secondary_attribute: undefined,
       starting_item: undefined,
-      ability_ids: p.abilityIds,
+      ability_ids: p.ability_ids,
       upgrade_ids: [],
       created_at: '',
       updated_at: ''
@@ -380,28 +387,26 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
     
     // Add bonuses from all previous professions
     if (character.professionHistoryWithLevels && character.professionHistoryWithLevels.length > 0) {
-      const professions = getAllProfessions();
       for (const entry of character.professionHistoryWithLevels) {
-        const historicalProfession = professions.find(p => p.name === entry.className);
-        if (historicalProfession?.statBonuses) {
+        const historicalProfession = dbProfessions.find(p => p.name === entry.className);
+        if (historicalProfession?.stat_bonuses) {
           const levelsHeld = (entry.deactivatedAtLevel || character.level) - entry.activatedAtLevel;
           if (levelsHeld > 0) {
-            for (const [stat, bonusPerLevel] of Object.entries(historicalProfession.statBonuses)) {
+            for (const [stat, bonusPerLevel] of Object.entries(historicalProfession.stat_bonuses)) {
               totalBonuses[stat] = (totalBonuses[stat] || 0) + (bonusPerLevel * levelsHeld);
             }
           }
         }
       }
     }
-    
+
     // Add bonuses from current profession
     if (character.professionName && character.professionActivatedAtLevel) {
-      const professions = getAllProfessions();
-      const currentProfession = professions.find(p => p.name === character.professionName);
-      if (currentProfession?.statBonuses) {
+      const currentProfession = dbProfessions.find(p => p.name === character.professionName);
+      if (currentProfession?.stat_bonuses) {
         const levelsHeld = Math.max(0, character.level - character.professionActivatedAtLevel);
         if (levelsHeld > 0) {
-          for (const [stat, bonusPerLevel] of Object.entries(currentProfession.statBonuses)) {
+          for (const [stat, bonusPerLevel] of Object.entries(currentProfession.stat_bonuses)) {
             totalBonuses[stat] = (totalBonuses[stat] || 0) + (bonusPerLevel * levelsHeld);
           }
         }
@@ -600,7 +605,7 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
     }
   };
 
-  const convertToDisplayAbility = (ability: ExportedAbility): DisplayAbility => ({
+  const convertToDisplayAbility = (ability: LitrpgAbility): DisplayAbility => ({
     id: String(ability.id),
     name: ability.name,
     description: ability.description || '',
@@ -610,50 +615,23 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
       level: t.level,
       duration: t.duration,
       cooldown: t.cooldown,
-      effectDescription: t.effectDescription
-    }))
-  });
-
-  // Convert professional ability to display format
-  const convertProfessionalAbilityToDisplay = (ability: ProfessionalAbility): DisplayAbility => ({
-    id: String(ability.id),
-    name: ability.name,
-    description: ability.description || '',
-    maxLevel: ability.maxLevel,
-    tiers: ability.tiers.map(t => ({
-      level: t.level,
-      duration: t.duration,
-      cooldown: t.cooldown,
-      effectDescription: t.effectDescription
+      effectDescription: t.effectDescription || ''
     }))
   });
 
   const getCombatAbilities = (): DisplayAbility[] => {
     const displayList: DisplayAbility[] = [];
     const addedNames = new Set<string>();
-    
+
     // Helper to add abilities from a class
     const addAbilitiesFromClass = (cls: LitrpgClass) => {
-      if (cls.abilities) {
-        cls.abilities.forEach(classAbility => {
-          if (!addedNames.has(classAbility.name)) {
-            const fullAbility = dbAbilities.find((a: ExportedAbility) => a.id === classAbility.id);
-            if (fullAbility) {
-              displayList.push(convertToDisplayAbility(fullAbility));
-            } else {
-              displayList.push({ 
-                id: String(classAbility.id), 
-                name: classAbility.name, 
-                description: 'Ability data not loaded', 
-                maxLevel: 10, 
-                evolutionId: undefined, 
-                tiers: [] 
-              });
-            }
-            addedNames.add(classAbility.name);
-          }
-        });
-      }
+      (cls.ability_ids || []).forEach(abilityId => {
+        const fullAbility = findAbilityById(abilityId);
+        if (fullAbility && !addedNames.has(fullAbility.name)) {
+          displayList.push(convertToDisplayAbility(fullAbility));
+          addedNames.add(fullAbility.name);
+        }
+      });
     };
     
     // Add abilities from previous classes
@@ -688,46 +666,45 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
   const getProfessionalAbilities = (): DisplayAbility[] => {
     const displayList: DisplayAbility[] = [];
     const addedNames = new Set<string>();
-    
-    const professions = getAllProfessions();
-    const professionalAbilities = getAllProfessionalAbilities();
-    
+
     // Add abilities from previous professions (from profession history)
     if (character.professionHistoryWithLevels && character.professionHistoryWithLevels.length > 0) {
       character.professionHistoryWithLevels.forEach(entry => {
-        const historicalProfession = professions.find(p => p.name === entry.className);
-        if (historicalProfession && historicalProfession.abilityIds && historicalProfession.abilityIds.length > 0) {
-          historicalProfession.abilityIds.forEach(abilityId => {
-            const professionalAbility = professionalAbilities.find(a => a.id === abilityId);
+        const historicalProfession = dbProfessions.find(p => p.name === entry.className);
+        const professionAbilities = historicalProfession?.ability_ids || [];
+        if (professionAbilities.length > 0) {
+          professionAbilities.forEach(abilityId => {
+            const professionalAbility = findAbilityById(abilityId);
             if (professionalAbility && !addedNames.has(professionalAbility.name)) {
-              displayList.push(convertProfessionalAbilityToDisplay(professionalAbility));
+              displayList.push(convertToDisplayAbility(professionalAbility));
               addedNames.add(professionalAbility.name);
             }
           });
         }
       });
     }
-    
+
     // Add abilities from current profession
     if (character.professionName) {
-      const currentProfession = professions.find(p => p.name === character.professionName);
-      if (currentProfession && currentProfession.abilityIds && currentProfession.abilityIds.length > 0) {
-        currentProfession.abilityIds.forEach(abilityId => {
-          const professionalAbility = professionalAbilities.find(a => a.id === abilityId);
+      const currentProfession = dbProfessions.find(p => p.name === character.professionName);
+      const professionAbilities = currentProfession?.ability_ids || [];
+      if (professionAbilities.length > 0) {
+        professionAbilities.forEach(abilityId => {
+          const professionalAbility = findAbilityById(abilityId);
           if (professionalAbility && !addedNames.has(professionalAbility.name)) {
-            displayList.push(convertProfessionalAbilityToDisplay(professionalAbility));
+            displayList.push(convertToDisplayAbility(professionalAbility));
             addedNames.add(professionalAbility.name);
           }
         });
       }
     }
-    
+
     return displayList;
   };
 
-  const getUnlearnedAbilities = (): ExportedAbility[] => {
+  const getUnlearnedAbilities = (): LitrpgAbility[] => {
     const learnedSet = new Set(Object.keys(character.abilities));
-    return dbAbilities.filter((a: ExportedAbility) => !learnedSet.has(a.name)).filter((a: ExportedAbility) => a.name.toLowerCase().includes(diskSearch.toLowerCase()));
+    return dbAbilities.filter((a) => !learnedSet.has(a.name)).filter((a) => a.name.toLowerCase().includes(diskSearch.toLowerCase()));
   };
 
   if (isLoadingData) {
@@ -857,13 +834,9 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {professionUpgradeAvailable.availableProfessions.map(prof => {
                   const tierColor = TIER_COLORS[prof.tier as ClassTier]?.split(' ')[0] || 'text-cyan-400';
-                  const professionalAbilities = getAllProfessionalAbilities();
-                  // Get profession ability IDs from the profession constants (not from LitrpgClass.abilities)
-                  const professions = getAllProfessions();
-                  const matchingProfession = professions.find(p => p.id === prof.id);
-                  const profAbilities = (matchingProfession?.abilityIds || []).map((id: number) => 
-                    professionalAbilities.find((a: ProfessionalAbility) => a.id === id)
-                  ).filter((a): a is ProfessionalAbility => a !== undefined);
+                  const profAbilities = (prof.ability_ids || [])
+                    .map((id: number) => findAbilityById(id))
+                    .filter((a): a is LitrpgAbility => a !== undefined);
                   
                   return (
                     <button
@@ -1202,7 +1175,12 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
       </div>
 
       {/* Equipment Section */}
-      <EquipmentSection equippedItems={character.equippedItems || {}} onEquipmentChange={(equipped: EquippedItems) => updateCharacter({ ...character, equippedItems: equipped })} isEditable={true} />
+      <EquipmentSection
+        equippedItems={character.equippedItems || {}}
+        onEquipmentChange={(equipped: EquippedItems) => updateCharacter({ ...character, equippedItems: equipped })}
+        isEditable={true}
+        items={items}
+      />
 
       {/* Class */}
       <ClassSelectionModal 
@@ -1411,8 +1389,7 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
           <>
             {character.professionName ? (
               (() => {
-                const professions = getAllProfessions();
-                const currentProfession = professions.find(p => p.name === character.professionName);
+                const currentProfession = dbProfessions.find(p => p.name === character.professionName);
                 if (!currentProfession) return null;
                 
                 const levelsHeld = character.professionActivatedAtLevel 
@@ -1423,13 +1400,13 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
                   <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
                     <h3 className="text-lg font-bold text-blue-400">{currentProfession.name}</h3>
                     <p className="text-sm text-slate-300 mt-1">{currentProfession.description}</p>
-                    {currentProfession.statBonuses && Object.keys(currentProfession.statBonuses).length > 0 && (
+                    {currentProfession.stat_bonuses && Object.keys(currentProfession.stat_bonuses).length > 0 && (
                       <div className="mt-3 pt-3 border-t border-slate-700">
                         <div className="text-xs text-slate-500 uppercase mb-2">
                           Profession Bonuses (per level × {levelsHeld} levels since Lvl {character.professionActivatedAtLevel || character.level})
                         </div>
                         <div className="flex flex-wrap gap-2">
-                          {Object.entries(currentProfession.statBonuses).map(([stat, bonus]) => (
+                          {Object.entries(currentProfession.stat_bonuses).map(([stat, bonus]) => (
                             <span key={stat} className="text-xs bg-green-900/30 text-green-400 px-2 py-1 rounded border border-green-700/30">
                               {stat}: +{bonus}/lvl = <strong>+{bonus * levelsHeld}</strong>
                             </span>
@@ -1609,7 +1586,13 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
       </div>
 
       {/* Battle Simulator */}
-      <BattleSimulator character={character} monsters={monsters} onApplyResult={handleApplyBattle} currentDbClass={currentDbClass} />
+      <BattleSimulator
+        character={character}
+        monsters={monsters}
+        onApplyResult={handleApplyBattle}
+        currentDbClass={currentDbClass}
+        items={items}
+      />
 
       {/* Mission Log */}
       <div className="bg-nexus-panel p-6 rounded-xl border border-slate-700">
