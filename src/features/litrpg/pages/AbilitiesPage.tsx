@@ -15,16 +15,22 @@ export default function AbilitiesPage() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
 
+  const defaultTier = (level: number) => ({
+    level,
+    duration: '',
+    cooldown: '',
+    energyCost: '',
+    effectDescription: '',
+  });
+
   const [newAbility, setNewAbility] = useState({
     name: '',
     description: '',
     category: '',
     maxLevel: 5,
-    tierDuration: '',
-    tierCooldown: '',
-    tierEnergy: '',
-    tierEffect: '',
+    tiers: [defaultTier(1)],
   });
+  const [tierEditorOpen, setTierEditorOpen] = useState(false);
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
@@ -49,21 +55,34 @@ export default function AbilitiesPage() {
 
   const handleCreate = async () => {
     setStatus(null);
+    const normalizedTiers = newAbility.tiers
+      .map((tier, index) => {
+        const hasData = tier.duration || tier.cooldown || tier.energyCost || tier.effectDescription;
+        if (!hasData && index > 0) return null;
+
+        return {
+          level: index + 1,
+          duration: tier.duration || undefined,
+          cooldown: tier.cooldown || undefined,
+          energyCost: tier.energyCost ? Number(tier.energyCost) : undefined,
+          effectDescription: tier.effectDescription || undefined,
+        };
+      })
+      .filter((tier): tier is {
+        level: number;
+        duration?: string;
+        cooldown?: string;
+        energyCost?: number;
+        effectDescription?: string;
+      } => Boolean(tier));
+
     const result = await createAbility({
       name: newAbility.name,
       // slug auto-generated from name
       description: newAbility.description,
       category: newAbility.category,
       maxLevel: Number(newAbility.maxLevel) || 1,
-      tierPreview: newAbility.tierDuration || newAbility.tierCooldown || newAbility.tierEnergy || newAbility.tierEffect
-        ? {
-            level: 1,
-            duration: newAbility.tierDuration || undefined,
-            cooldown: newAbility.tierCooldown || undefined,
-            energyCost: newAbility.tierEnergy ? Number(newAbility.tierEnergy) : undefined,
-            effectDescription: newAbility.tierEffect || undefined,
-          }
-        : undefined,
+      tiers: normalizedTiers,
     });
 
     if (!result.success) {
@@ -72,8 +91,34 @@ export default function AbilitiesPage() {
     }
 
     setStatus(`Created ability ${result.ability?.name}`);
-    setNewAbility({ name: '', description: '', category: '', maxLevel: 5, tierDuration: '', tierCooldown: '', tierEnergy: '', tierEffect: '' });
+    setNewAbility({ name: '', description: '', category: '', maxLevel: 5, tiers: [defaultTier(1)] });
+    setTierEditorOpen(false);
     await loadAbilities();
+  };
+
+  const updateTierField = (index: number, field: 'duration' | 'cooldown' | 'energyCost' | 'effectDescription', value: string) => {
+    setNewAbility((prev) => {
+      const tiers = [...prev.tiers];
+      tiers[index] = { ...tiers[index], [field]: value };
+      return { ...prev, tiers };
+    });
+  };
+
+  const addTier = () => {
+    setNewAbility((prev) => {
+      const nextLevel = prev.tiers.length + 1;
+      const tiers = [...prev.tiers, defaultTier(nextLevel)];
+      return { ...prev, tiers, maxLevel: Math.max(prev.maxLevel, tiers.length) };
+    });
+    setTierEditorOpen(true);
+  };
+
+  const removeTier = (index: number) => {
+    setNewAbility((prev) => {
+      if (prev.tiers.length === 1) return prev;
+      const tiers = prev.tiers.filter((_, i) => i !== index).map((tier, i) => ({ ...tier, level: i + 1 }));
+      return { ...prev, tiers, maxLevel: Math.max(prev.maxLevel, tiers.length) };
+    });
   };
 
   // Group abilities (single section since DB doesn't have class associations yet)
@@ -198,33 +243,105 @@ export default function AbilitiesPage() {
                         <span className="text-[10px] uppercase text-slate-500">Energy (L1)</span>
                         <input
                           className="bg-slate-900 border border-slate-700 rounded px-2 py-1"
-                          value={newAbility.tierEnergy}
-                          onChange={(e) => setNewAbility({ ...newAbility, tierEnergy: e.target.value })}
+                          value={newAbility.tiers[0].energyCost}
+                          onChange={(e) => updateTierField(0, 'energyCost', e.target.value)}
                         />
                       </label>
                       <label className="flex flex-col gap-1 text-slate-400">
                         <span className="text-[10px] uppercase text-slate-500">Duration (L1)</span>
                         <input
                           className="bg-slate-900 border border-slate-700 rounded px-2 py-1"
-                          value={newAbility.tierDuration}
-                          onChange={(e) => setNewAbility({ ...newAbility, tierDuration: e.target.value })}
+                          value={newAbility.tiers[0].duration}
+                          onChange={(e) => updateTierField(0, 'duration', e.target.value)}
                         />
                       </label>
                       <label className="flex flex-col gap-1 text-slate-400">
                         <span className="text-[10px] uppercase text-slate-500">Cooldown (L1)</span>
                         <input
                           className="bg-slate-900 border border-slate-700 rounded px-2 py-1"
-                          value={newAbility.tierCooldown}
-                          onChange={(e) => setNewAbility({ ...newAbility, tierCooldown: e.target.value })}
+                          value={newAbility.tiers[0].cooldown}
+                          onChange={(e) => updateTierField(0, 'cooldown', e.target.value)}
                         />
                       </label>
                     </div>
                     <textarea
                       className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
                       placeholder="Effect description (L1)"
-                      value={newAbility.tierEffect}
-                      onChange={(e) => setNewAbility({ ...newAbility, tierEffect: e.target.value })}
+                      value={newAbility.tiers[0].effectDescription}
+                      onChange={(e) => updateTierField(0, 'effectDescription', e.target.value)}
                     />
+
+                    <div className="rounded border border-slate-700 bg-slate-900/60">
+                      <button
+                        type="button"
+                        onClick={() => setTierEditorOpen((open) => !open)}
+                        className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-slate-300 hover:text-white"
+                      >
+                        <span>Multi-level details</span>
+                        <span className={`transform transition-transform ${tierEditorOpen ? 'rotate-180' : ''}`}>▼</span>
+                      </button>
+
+                      {tierEditorOpen && (
+                        <div className="px-3 pb-3 space-y-3 text-sm">
+                          <div className="flex items-center justify-between text-xs text-slate-400">
+                            <span>Levels 2-10</span>
+                            <button
+                              type="button"
+                              onClick={addTier}
+                              disabled={newAbility.tiers.length >= 10}
+                              className="px-2 py-1 rounded bg-nexus-accent/80 text-white disabled:bg-slate-700 disabled:text-slate-500"
+                            >
+                              Add Level
+                            </button>
+                          </div>
+
+                          {newAbility.tiers.slice(1).map((tier, idx) => (
+                            <div key={tier.level} className="p-2 rounded border border-slate-800 bg-slate-900/80 space-y-2">
+                              <div className="flex items-center justify-between text-xs text-slate-400">
+                                <span className="font-semibold text-slate-200">Level {idx + 2}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => removeTier(idx + 1)}
+                                  className="text-red-400 hover:text-red-300"
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2">
+                                <input
+                                  className="bg-slate-900 border border-slate-700 rounded px-2 py-1"
+                                  placeholder="Duration"
+                                  value={tier.duration}
+                                  onChange={(e) => updateTierField(idx + 1, 'duration', e.target.value)}
+                                />
+                                <input
+                                  className="bg-slate-900 border border-slate-700 rounded px-2 py-1"
+                                  placeholder="Cooldown"
+                                  value={tier.cooldown}
+                                  onChange={(e) => updateTierField(idx + 1, 'cooldown', e.target.value)}
+                                />
+                                <input
+                                  className="bg-slate-900 border border-slate-700 rounded px-2 py-1"
+                                  placeholder="Energy"
+                                  value={tier.energyCost}
+                                  onChange={(e) => updateTierField(idx + 1, 'energyCost', e.target.value)}
+                                />
+                                <textarea
+                                  className="col-span-2 bg-slate-900 border border-slate-700 rounded px-2 py-1"
+                                  placeholder="Effect description"
+                                  value={tier.effectDescription}
+                                  onChange={(e) => updateTierField(idx + 1, 'effectDescription', e.target.value)}
+                                />
+                              </div>
+                            </div>
+                          ))}
+
+                          {newAbility.tiers.length === 1 && (
+                            <p className="text-xs text-slate-500">Click "Add Level" to include more than one tier.</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
                     <button
                       onClick={handleCreate}
                       className="w-full bg-nexus-accent/80 hover:bg-nexus-accent text-white rounded py-2 text-sm font-semibold"

@@ -155,164 +155,156 @@ export default function LootPage() {
         <LitrpgNav />
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col">
-          {/* Toolbar */}
-          <div className="p-4 border-b border-slate-800 bg-slate-900/50">
-            <div className="max-w-7xl mx-auto">
-              {/* Header */}
-              <div className="flex items-center gap-3 mb-4">
-                <Package className="text-green-400" size={24} />
+        <div className="flex-1 flex flex-col md:flex-row">
+          <div className="w-full md:w-80 bg-slate-900/50 border-r border-slate-800 p-4 md:sticky md:top-0 md:h-screen md:overflow-y-auto space-y-4">
+            <div className="flex items-center gap-3">
+              <Package className="text-green-400" size={24} />
+              <div>
                 <h1 className="text-xl font-bold text-white font-mono tracking-wider">LOOT CATALOG</h1>
-                <span className="text-sm text-slate-500 ml-auto">{loading ? 'Loading...' : `${filteredLoot.length} items`}</span>
+                <div className="text-xs text-slate-500">{loading ? 'Loading...' : `${items.length} items`}</div>
               </div>
-
-              {/* Admin Add Item Form */}
-              {isAdmin && (
-                <div className="bg-slate-800/60 p-3 rounded border border-slate-700 space-y-2 mb-4">
-                  <div className="flex items-center justify-between">
-                    <div className="text-xs font-bold text-slate-400 uppercase">Add Item</div>
-                    {status && <div className="text-[10px] text-green-300">{status}</div>}
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <input
-                      className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
-                      placeholder="Name (slug auto-generated)"
-                      value={newItem.name}
-                      onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
-                    />
-                    <input
-                      className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
-                      placeholder="Description"
-                      value={newItem.description}
-                      onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
-                    />
-                    <select
-                      className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
-                      value={newItem.tech_level}
-                      onChange={(e) => setNewItem({ ...newItem, tech_level: e.target.value })}
-                    >
-                      <option value="TL8">TL8 - Basic Tech</option>
-                      <option value="TL9">TL9 - Advanced Tech</option>
-                      <option value="TL10">TL10 - Elite Tech</option>
-                    </select>
-                    <select
-                      className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
-                      value={newItem.category}
-                      onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
-                    >
-                      {DEFAULT_CATEGORIES.map(cat => (
-                        <option key={cat} value={cat}>{cat}</option>
-                      ))}
-                    </select>
-                    <select
-                      className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
-                      value={newItem.rarity}
-                      onChange={(e) => setNewItem({ ...newItem, rarity: e.target.value })}
-                    >
-                      <option value="common">Common</option>
-                      <option value="uncommon">Uncommon</option>
-                      <option value="rare">Rare</option>
-                      <option value="legendary">Legendary</option>
-                    </select>
-                    <input
-                      type="number"
-                      className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
-                      placeholder="Base Value (credits)"
-                      value={newItem.base_value}
-                      onChange={(e) => setNewItem({ ...newItem, base_value: Number(e.target.value) })}
-                    />
-                  </div>
-                  <button
-                    onClick={handleCreate}
-                    disabled={!newItem.name}
-                    className="w-full bg-green-600 hover:bg-green-700 disabled:bg-slate-700 disabled:text-slate-500 text-white px-3 py-1.5 rounded text-sm font-medium transition-colors"
-                  >
-                    Add Item
-                  </button>
-                </div>
-              )}
-
-              {/* Filters Row */}
-              <div className="flex flex-wrap gap-4 items-center">
-                {/* Search */}
-                <div className="relative flex-1 min-w-[200px] max-w-md">
-                  <input
-                    type="text"
-                    placeholder="Search items..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-600 rounded-lg py-2 pl-10 pr-4 text-sm text-white focus:border-green-500 outline-none"
-                  />
-                  <Search className="absolute left-3 top-2.5 text-slate-500" size={16} />
-                </div>
-
-                {/* Tech Level Filter */}
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-500 uppercase">Tech Level:</span>
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => setSelectedTL('All')}
-                      className={`px-2 py-1 text-xs rounded border transition-colors ${
-                        selectedTL === 'All'
-                          ? 'bg-nexus-accent/20 border-nexus-accent text-white'
-                          : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'
-                      }`}
-                    >
-                      All
-                    </button>
-                    {techLevels.map(tl => (
-                      <button
-                        key={tl}
-                        onClick={() => setSelectedTL(tl)}
-                        className={`px-2 py-1 text-xs rounded border transition-colors ${
-                          selectedTL === tl
-                            ? `${TECH_LEVEL_COLORS[tl] || 'bg-slate-800 text-white border-slate-500'} border-current`
-                            : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'
-                        }`}
-                      >
-                        {tl}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Category Filter */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs text-slate-500 uppercase">Category:</span>
-                  <div className="flex gap-1 flex-wrap">
-                    <button
-                      onClick={() => setSelectedCategory('All')}
-                      className={`px-2 py-1 text-xs rounded border transition-colors ${
-                        selectedCategory === 'All'
-                          ? 'bg-nexus-accent/20 border-nexus-accent text-white'
-                          : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'
-                      }`}
-                    >
-                      All
-                    </button>
-                    {categories.map(cat => (
-                      <button
-                        key={cat}
-                        onClick={() => setSelectedCategory(cat)}
-                        className={`px-2 py-1 text-xs rounded border transition-colors flex items-center gap-1 ${
-                          selectedCategory === cat && CATEGORY_COLORS[cat]
-                            ? CATEGORY_COLORS[cat]
-                            : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'
-                        }`}
-                      >
-                        {CATEGORY_ICONS[cat]}
-                        {cat}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              {error && <p className="text-sm text-red-400 mt-3">{error}</p>}
             </div>
+
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search items..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full bg-slate-800 border border-slate-600 rounded-lg py-2 pl-10 pr-4 text-sm text-white focus:border-green-500 outline-none"
+              />
+              <Search className="absolute left-3 top-2.5 text-slate-500" size={16} />
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-[11px] uppercase text-slate-500">Tech Level</div>
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={() => setSelectedTL('All')}
+                  className={`px-2 py-1 text-xs rounded border transition-colors ${
+                    selectedTL === 'All'
+                      ? 'bg-nexus-accent/20 border-nexus-accent text-white'
+                      : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'
+                  }`}
+                >
+                  All
+                </button>
+                {techLevels.map(tl => (
+                  <button
+                    key={tl}
+                    onClick={() => setSelectedTL(tl)}
+                    className={`px-2 py-1 text-xs rounded border transition-colors ${
+                      selectedTL === tl
+                        ? `${TECH_LEVEL_COLORS[tl] || 'bg-slate-800 text-white border-slate-500'} border-current`
+                        : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'
+                    }`}
+                  >
+                    {tl}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-[11px] uppercase text-slate-500">Category</div>
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={() => setSelectedCategory('All')}
+                  className={`px-2 py-1 text-xs rounded border transition-colors ${
+                    selectedCategory === 'All'
+                      ? 'bg-nexus-accent/20 border-nexus-accent text-white'
+                      : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'
+                  }`}
+                >
+                  All
+                </button>
+                {categories.map(cat => (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`px-2 py-1 text-xs rounded border transition-colors flex items-center gap-1 ${
+                      selectedCategory === cat && CATEGORY_COLORS[cat]
+                        ? CATEGORY_COLORS[cat]
+                        : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'
+                    }`}
+                  >
+                    {CATEGORY_ICONS[cat]}
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {isAdmin && (
+              <div className="bg-slate-800/60 p-3 rounded border border-slate-700 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-bold text-slate-400 uppercase">Add Item</div>
+                  {status && <div className="text-[10px] text-green-300">{status}</div>}
+                </div>
+                <div className="space-y-2">
+                  <input
+                    className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
+                    placeholder="Name (slug auto-generated)"
+                    value={newItem.name}
+                    onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                  />
+                  <input
+                    className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
+                    placeholder="Description"
+                    value={newItem.description}
+                    onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
+                  />
+                  <select
+                    className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
+                    value={newItem.tech_level}
+                    onChange={(e) => setNewItem({ ...newItem, tech_level: e.target.value })}
+                  >
+                    <option value="TL8">TL8 - Basic Tech</option>
+                    <option value="TL9">TL9 - Advanced Tech</option>
+                    <option value="TL10">TL10 - Elite Tech</option>
+                  </select>
+                  <select
+                    className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
+                    value={newItem.category}
+                    onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
+                  >
+                    {DEFAULT_CATEGORIES.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                  <select
+                    className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
+                    value={newItem.rarity}
+                    onChange={(e) => setNewItem({ ...newItem, rarity: e.target.value })}
+                  >
+                    <option value="common">Common</option>
+                    <option value="uncommon">Uncommon</option>
+                    <option value="rare">Rare</option>
+                    <option value="legendary">Legendary</option>
+                  </select>
+                  <input
+                    type="number"
+                    className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
+                    placeholder="Base Value (credits)"
+                    value={newItem.base_value}
+                    onChange={(e) => setNewItem({ ...newItem, base_value: Number(e.target.value) })}
+                  />
+                </div>
+                <button
+                  onClick={handleCreate}
+                  disabled={!newItem.name}
+                  className="w-full bg-green-600 hover:bg-green-700 disabled:bg-slate-700 disabled:text-slate-500 text-white px-3 py-1.5 rounded text-sm font-medium transition-colors"
+                >
+                  Add Item
+                </button>
+              </div>
+            )}
+
+            {error && <p className="text-sm text-red-400">{error}</p>}
           </div>
 
           {/* Grid Content */}
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 overflow-y-auto p-6 md:p-8 bg-slate-950">
             <div className="max-w-7xl mx-auto space-y-8">
               {techLevels.filter(tl => selectedTL === 'All' || selectedTL === tl).map(tl => {
                 const tlItems = Object.entries(groupedLoot[tl] || {}).filter(([, items]) => items.length > 0);
