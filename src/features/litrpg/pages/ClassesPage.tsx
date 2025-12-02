@@ -5,6 +5,7 @@ import { getCachedClasses, getCachedProfessions, createClass, LitrpgClass, Litrp
 import SocialIcons from '../../../components/SocialIcons';
 import LitrpgNav from '../components/LitrpgNav';
 import { ClassAbilitiesManager } from '../components/ClassAbilitiesManager';
+import { ClassEditorModal } from '../components/ClassEditorModal';
 import { useAuth } from '../../../contexts/AuthContext';
 import { TIER_ORDER, TIER_COLORS, TIER_TEXT_COLORS, TIER_BORDER_COLORS, ClassTier, getTierString } from '../tier-constants';
 
@@ -28,6 +29,7 @@ export default function ClassesPage() {
   const [search, setSearch] = useState('');
   const [filterTier, setFilterTier] = useState<string | 'All'>('All');
   const [filterCategory, setFilterCategory] = useState<'combat' | 'professional'>('combat');
+  const [showClassEditor, setShowClassEditor] = useState(false);
   const [showAbilityManager, setShowAbilityManager] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [newClass, setNewClass] = useState({
@@ -459,6 +461,11 @@ export default function ClassesPage() {
         <ClassAbilitiesManager
           isOpen={showAbilityManager}
           onClose={() => setShowAbilityManager(false)}
+        />
+
+        <ClassEditorModal
+          isOpen={showClassEditor}
+          onClose={() => setShowClassEditor(false)}
         />
 
         {/* Footer with Social Icons */}

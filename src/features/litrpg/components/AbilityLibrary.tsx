@@ -1,7 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Search, Zap, X, Shield, Swords } from 'lucide-react';
-import { getAllClasses, ExportedClass } from '../class-constants';
-import { getAllAbilities, ExportedAbility } from '../ability-constants';
+import { getCachedClasses, getCachedAbilities, LitrpgClass, LitrpgAbility } from '../utils/api-litrpg';
 
 interface DisplayAbility {
   id: string;
@@ -24,12 +23,40 @@ interface AbilityLibraryProps {
 export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onClose }) => {
   const [search, setSearch] = useState('');
   
-  // Load data from constants
-  const dbClasses = useMemo(() => getAllClasses(), []);
-  const dbAbilities = useMemo(() => getAllAbilities(), []);
+  const [dbClasses, setDbClasses] = useState<LitrpgClass[]>([]);
+  const [dbAbilities, setDbAbilities] = useState<LitrpgAbility[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const [classes, abilities] = await Promise.all([
+          getCachedClasses(),
+          getCachedAbilities(),
+        ]);
+
+        if (isMounted) {
+          setDbClasses(classes);
+          setDbAbilities(abilities);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void loadData();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Convert constants ability to display format
-  const convertToDisplayAbility = (ability: ExportedAbility): DisplayAbility => ({
+  const convertToDisplayAbility = (ability: LitrpgAbility): DisplayAbility => ({
     id: String(ability.id),
     name: ability.name,
     description: ability.description || '',
@@ -44,7 +71,7 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onClose }) => {
   });
 
   // Find ability by ID
-  const findAbilityById = (id: number): ExportedAbility | undefined => {
+  const findAbilityById = (id: number): LitrpgAbility | undefined => {
     return dbAbilities.find(a => a.id === id);
   };
   
@@ -57,17 +84,20 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onClose }) => {
 
     // Sort classes: tier-1 first, then by tier number, then by unlock level
     const sortedClasses = [...dbClasses].sort((a, b) => {
-      const tierDiff = a.tier - b.tier;
+      const tierA = Number(String(a.tier).replace('tier-', '')) || 1;
+      const tierB = Number(String(b.tier).replace('tier-', '')) || 1;
+      const tierDiff = tierA - tierB;
       if (tierDiff !== 0) return tierDiff;
-      return a.unlockLevel - b.unlockLevel;
+      return a.unlock_level - b.unlock_level;
     });
 
     // Add class abilities
-    sortedClasses.forEach((cls: ExportedClass) => {
-      if (cls.abilityIds && cls.abilityIds.length > 0) {
+    sortedClasses.forEach((cls: LitrpgClass) => {
+      const abilityIds = cls.ability_ids || [];
+      if (abilityIds.length > 0) {
         const classDisplayAbilities: DisplayAbility[] = [];
-        
-        cls.abilityIds.forEach(abilityId => {
+
+        abilityIds.forEach(abilityId => {
           if (!processedAbilityIds.has(abilityId)) {
             const fullAbility = dbAbilities.find(a => a.id === abilityId);
             if (fullAbility) {
@@ -78,8 +108,8 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onClose }) => {
         });
 
         if (classDisplayAbilities.length > 0) {
-          const tierNum = cls.tier;
-          const colorClass = tierNum === 1 
+          const tierNum = Number(String(cls.tier).replace('tier-', '')) || 1;
+          const colorClass = tierNum === 1
             ? 'text-slate-300 border-slate-600'
             : tierNum === 2
             ? 'text-blue-400 border-blue-500'
@@ -162,15 +192,17 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onClose }) => {
                 {/* Ability Index Navigation */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar">
                     <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 sticky top-0 bg-slate-900/90 py-1">Ability Index ({dbAbilities.length} total)</h4>
-                    
-                    {filteredSections.length === 0 ? (
+
+                    {loading ? (
+                      <p className="text-xs text-slate-500 italic">Loading abilities...</p>
+                    ) : filteredSections.length === 0 ? (
                       <p className="text-xs text-slate-600 italic">No abilities found matching search.</p>
                     ) : (
                       <div className="space-y-3">
                         {filteredSections.map((section, idx) => (
                             <div key={idx}>
                               {/* Section Header - clickable */}
-                              <button 
+                              <button
                                 onClick={() => {
                                   const el = document.getElementById(`section-${idx}`);
                                   el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -205,7 +237,12 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onClose }) => {
 
           {/* Results Grid (Right) */}
           <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 bg-slate-950">
-              {filteredSections.length === 0 ? (
+              {loading ? (
+                  <div className="h-full flex flex-col items-center justify-center text-slate-600">
+                      <Zap size={48} className="mb-4 animate-spin text-nexus-accent" />
+                      <p className="text-lg">Loading abilities...</p>
+                  </div>
+              ) : filteredSections.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-slate-600">
                       <Search size={48} className="mb-4 opacity-20" />
                       <p className="text-lg">No matching abilities found.</p>
