@@ -2,7 +2,8 @@ import { useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Shield, Brain, Zap, Eye, Swords, MessageSquare, Flame, AlertTriangle, Globe, Clock, Timer } from 'lucide-react';
 import { Attribute } from '../types';
-import { ATTRIBUTE_DESCRIPTIONS, MEM_CDR_DIMINISHING_FACTOR, INT_DURATION_SCALING_FACTOR } from '../constants';
+import { ATTRIBUTE_DESCRIPTIONS } from '../attribute-metadata';
+import { MEM_CDR_DIMINISHING_FACTOR, INT_DURATION_SCALING_FACTOR } from '../xp-constants';
 import SocialIcons from '../../../components/SocialIcons';
 import LitrpgNav from '../components/LitrpgNav';
 

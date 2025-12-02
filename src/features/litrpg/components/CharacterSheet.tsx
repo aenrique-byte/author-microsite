@@ -25,7 +25,8 @@ import {
   Loader2
 } from 'lucide-react';
 import { Attribute, Character, ClassName, Monster, EquippedItems, ClassHistoryEntry } from '../types';
-import { ATTRIBUTE_DESCRIPTIONS, getTotalXpRequired, getCumulativePoints, getLevelRewards, getCooldownReduction, applyCooldownReduction, getDurationExtension, applyDurationExtension } from '../constants';
+import { ATTRIBUTE_DESCRIPTIONS } from '../attribute-metadata';
+import { getTotalXpRequired, getCumulativePoints, getLevelRewards, getCooldownReduction, applyCooldownReduction, getDurationExtension, applyDurationExtension } from '../xp-constants';
 import { BattleSimulator } from './BattleSimulator';
 import { EquipmentSection } from './EquipmentSection';
 import { ClassSelectionModal } from './ClassSelectionModal';
