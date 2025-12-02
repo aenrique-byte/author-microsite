@@ -17,7 +17,6 @@ export default function AbilitiesPage() {
 
   const [newAbility, setNewAbility] = useState({
     name: '',
-    slug: '',
     description: '',
     category: '',
     maxLevel: 5,
@@ -52,7 +51,7 @@ export default function AbilitiesPage() {
     setStatus(null);
     const result = await createAbility({
       name: newAbility.name,
-      slug: newAbility.slug,
+      // slug auto-generated from name
       description: newAbility.description,
       category: newAbility.category,
       maxLevel: Number(newAbility.maxLevel) || 1,
@@ -73,7 +72,7 @@ export default function AbilitiesPage() {
     }
 
     setStatus(`Created ability ${result.ability?.name}`);
-    setNewAbility({ name: '', slug: '', description: '', category: '', maxLevel: 5, tierDuration: '', tierCooldown: '', tierEnergy: '', tierEffect: '' });
+    setNewAbility({ name: '', description: '', category: '', maxLevel: 5, tierDuration: '', tierCooldown: '', tierEnergy: '', tierEffect: '' });
     await loadAbilities();
   };
 
@@ -168,15 +167,9 @@ export default function AbilitiesPage() {
                     </div>
                     <input
                       className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
-                      placeholder="Name"
+                      placeholder="Name (slug auto-generated)"
                       value={newAbility.name}
                       onChange={(e) => setNewAbility({ ...newAbility, name: e.target.value })}
-                    />
-                    <input
-                      className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
-                      placeholder="Slug"
-                      value={newAbility.slug}
-                      onChange={(e) => setNewAbility({ ...newAbility, slug: e.target.value })}
                     />
                     <input
                       className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"

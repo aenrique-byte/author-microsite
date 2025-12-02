@@ -153,7 +153,7 @@ export interface LitrpgItem {
 }
 
 export interface NewAbilityInput {
-  slug: string;
+  slug?: string; // Auto-generated from name if not provided
   name: string;
   description?: string;
   maxLevel: number;
@@ -170,7 +170,7 @@ export interface NewAbilityInput {
 }
 
 export interface NewClassInput {
-  slug: string;
+  slug?: string; // Auto-generated from name if not provided
   name: string;
   description?: string;
   tier: number;
@@ -181,7 +181,7 @@ export interface NewClassInput {
 }
 
 export interface NewMonsterInput {
-  slug: string;
+  slug?: string; // Auto-generated from name if not provided
   name: string;
   description?: string;
   level: number;
@@ -448,7 +448,7 @@ export async function getCachedClasses(): Promise<LitrpgClass[]> {
 export async function createClass(payload: NewClassInput): Promise<{ success: boolean; class?: LitrpgClass; error?: string }> {
   try {
     const result = await postJson<{ success: boolean; class?: any; error?: string }>(`${API_BASE}/litrpg/classes/create.php`, {
-      slug: payload.slug,
+      // slug auto-generated from name in backend
       name: payload.name,
       description: payload.description,
       tier: payload.tier,
@@ -555,7 +555,7 @@ export async function getCachedAbilities(): Promise<LitrpgAbility[]> {
 export async function createAbility(payload: NewAbilityInput): Promise<{ success: boolean; ability?: LitrpgAbility; error?: string }> {
   try {
     const result = await postJson<{ success: boolean; ability?: any; error?: string }>(`${API_BASE}/litrpg/abilities/create.php`, {
-      slug: payload.slug,
+      // slug auto-generated from name in backend
       name: payload.name,
       description: payload.description,
       max_level: payload.maxLevel,
@@ -672,6 +672,40 @@ export async function getCachedItems(): Promise<LitrpgItem[]> {
   if (itemsCache) return itemsCache;
   const result = await listItems();
   return result.success ? result.items : [];
+}
+
+export async function createItem(payload: {
+  name: string;
+  description?: string;
+  tech_level?: string;
+  category?: string;
+  rarity?: string;
+  base_value?: number;
+}): Promise<{ success: boolean; item?: LitrpgItem; error?: string }> {
+  try {
+    const result = await postJson<{ success: boolean; item?: any; error?: string }>(`${API_BASE}/litrpg/items/create.php`, {
+      // slug auto-generated from name
+      name: payload.name,
+      description: payload.description,
+      tech_level: payload.tech_level,
+      category: payload.category,
+      rarity: payload.rarity,
+      base_value: payload.base_value,
+    });
+
+    if (!result.success || !result.item) return { success: false, error: result.error || 'Failed to create item' };
+
+    itemsCache = null;
+    const item: LitrpgItem = {
+      ...result.item,
+      stats: result.item.stats || {},
+      requirements: result.item.requirements || {},
+    };
+
+    return { success: true, item };
+  } catch (error) {
+    return { success: false, error: String(error) };
+  }
 }
 
 export function clearAllCaches(): void {

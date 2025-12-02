@@ -16,12 +16,17 @@ requireAdmin();
 try {
     $data = json_decode(file_get_contents('php://input'), true);
 
-    // Validate required fields
-    $required = ['slug', 'name', 'max_level'];
+    // Validate required fields (slug is now optional)
+    $required = ['name', 'max_level'];
     foreach ($required as $field) {
         if (!isset($data[$field]) || trim($data[$field]) === '') {
             throw new Exception("Missing required field: $field");
         }
+    }
+
+    // Auto-generate slug from name if not provided
+    if (empty($data['slug'])) {
+        $data['slug'] = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $data['name'])));
     }
 
     // Check for duplicate slug

@@ -34,7 +34,6 @@ export default function ClassesPage() {
   const [status, setStatus] = useState<string | null>(null);
   const [newClass, setNewClass] = useState({
     name: '',
-    slug: '',
     tier: 1,
     unlock_level: 1,
     description: '',
@@ -66,7 +65,7 @@ export default function ClassesPage() {
   const handleCreate = async () => {
     const result = await createClass({
       name: newClass.name,
-      slug: newClass.slug,
+      // slug auto-generated from name
       tier: Number(newClass.tier) || 1,
       unlock_level: Number(newClass.unlock_level) || 1,
       description: newClass.description,
@@ -80,7 +79,7 @@ export default function ClassesPage() {
     }
 
     setStatus(`Created ${result.class?.name}`);
-    setNewClass({ name: '', slug: '', tier: 1, unlock_level: 1, description: '', primary_attribute: '', secondary_attribute: '' });
+    setNewClass({ name: '', tier: 1, unlock_level: 1, description: '', primary_attribute: '', secondary_attribute: '' });
     const refreshed = await Promise.all([getCachedClasses(), getCachedProfessions()]);
     setClasses(refreshed[0]);
     setProfessions(refreshed[1]);
@@ -283,15 +282,9 @@ export default function ClassesPage() {
               </div>
               <input
                 className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm"
-                placeholder="Name"
+                placeholder="Name (slug auto-generated)"
                 value={newClass.name}
                 onChange={(e) => setNewClass({ ...newClass, name: e.target.value })}
-              />
-              <input
-                className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm"
-                placeholder="Slug"
-                value={newClass.slug}
-                onChange={(e) => setNewClass({ ...newClass, slug: e.target.value })}
               />
               <textarea
                 className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm"

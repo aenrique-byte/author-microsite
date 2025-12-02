@@ -34,7 +34,6 @@ export default function BestiaryPage() {
 
   const [newMonster, setNewMonster] = useState({
     name: '',
-    slug: '',
     rank: 'Regular' as MonsterRank,
     level: 1,
     xp_reward: 10,
@@ -64,7 +63,7 @@ export default function BestiaryPage() {
   const handleCreate = async () => {
     const result = await createMonster({
       name: newMonster.name,
-      slug: newMonster.slug,
+      // slug auto-generated from name
       rank: newMonster.rank,
       level: Number(newMonster.level) || 1,
       xp_reward: Number(newMonster.xp_reward) || 0,
@@ -79,7 +78,7 @@ export default function BestiaryPage() {
     }
 
     setStatus(`Added ${result.monster?.name}`);
-    setNewMonster({ name: '', slug: '', rank: 'Regular', level: 1, xp_reward: 10, credits: 5, description: '' });
+    setNewMonster({ name: '', rank: 'Regular', level: 1, xp_reward: 10, credits: 5, description: '' });
     const updated = await getCachedMonsters();
     setMonsters(updated);
   };
@@ -161,15 +160,9 @@ export default function BestiaryPage() {
                          {status && <div className="text-[10px] text-green-300">{status}</div>}
                          <input
                            className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
-                           placeholder="Name"
+                           placeholder="Name (slug auto-generated)"
                            value={newMonster.name}
                            onChange={(e) => setNewMonster({ ...newMonster, name: e.target.value })}
-                         />
-                         <input
-                           className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
-                           placeholder="Slug"
-                           value={newMonster.slug}
-                           onChange={(e) => setNewMonster({ ...newMonster, slug: e.target.value })}
                          />
                          <select
                            className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"

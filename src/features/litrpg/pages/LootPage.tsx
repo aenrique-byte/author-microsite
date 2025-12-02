@@ -1,9 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Package, Search, Wrench, Swords, Cpu, Layers, Pill, Shield, Heart } from 'lucide-react';
-import { LitrpgItem, listItems } from '../utils/api-litrpg';
+import { LitrpgItem, listItems, createItem } from '../utils/api-litrpg';
 import SocialIcons from '../../../components/SocialIcons';
 import LitrpgNav from '../components/LitrpgNav';
+import { useAuth } from '../../../contexts/AuthContext';
 
 type TechLevel = string;
 type ItemCategory = string;
@@ -38,6 +39,9 @@ const DEFAULT_TECH_LEVELS: TechLevel[] = ['TL8', 'TL9', 'TL10'];
 const DEFAULT_CATEGORIES: ItemCategory[] = ['Material', 'Component', 'Tool', 'Weapon', 'Armor', 'Consumable', 'Medical'];
 
 export default function LootPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+
   const [search, setSearch] = useState('');
   const [selectedTL, setSelectedTL] = useState<TechLevel | 'All'>('All');
   const [selectedCategory, setSelectedCategory] = useState<ItemCategory | 'All'>('All');
@@ -45,23 +49,55 @@ export default function LootPage() {
   const [items, setItems] = useState<LitrpgItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
+
+  const [newItem, setNewItem] = useState({
+    name: '',
+    description: '',
+    tech_level: 'TL8' as TechLevel,
+    category: 'Material' as ItemCategory,
+    rarity: 'common',
+    base_value: 0,
+  });
 
   useEffect(() => {
-    const loadItems = async () => {
-      setLoading(true);
-      setError(null);
-      const response = await listItems();
-      if (!response.success) {
-        setError(response.error || 'Failed to load items');
-        setItems([]);
-      } else {
-        setItems(response.items);
-      }
-      setLoading(false);
-    };
-
-    void loadItems();
+    loadItems();
   }, []);
+
+  const loadItems = async () => {
+    setLoading(true);
+    setError(null);
+    setStatus(null);
+    const response = await listItems();
+    if (!response.success) {
+      setError(response.error || 'Failed to load items');
+      setItems([]);
+    } else {
+      setItems(response.items);
+    }
+    setLoading(false);
+  };
+
+  const handleCreate = async () => {
+    setStatus(null);
+    const result = await createItem({
+      name: newItem.name,
+      description: newItem.description,
+      tech_level: newItem.tech_level,
+      category: newItem.category,
+      rarity: newItem.rarity,
+      base_value: Number(newItem.base_value) || 0,
+    });
+
+    if (!result.success) {
+      setStatus(result.error || 'Failed to create item');
+      return;
+    }
+
+    setStatus(`Created ${result.item?.name}`);
+    setNewItem({ name: '', description: '', tech_level: 'TL8', category: 'Material', rarity: 'common', base_value: 0 });
+    await loadItems();
+  };
 
   const techLevels = useMemo(() => {
     const levels = Array.from(new Set(items.map(item => item.tech_level).filter(Boolean))) as TechLevel[];
@@ -129,6 +165,72 @@ export default function LootPage() {
                 <h1 className="text-xl font-bold text-white font-mono tracking-wider">LOOT CATALOG</h1>
                 <span className="text-sm text-slate-500 ml-auto">{loading ? 'Loading...' : `${filteredLoot.length} items`}</span>
               </div>
+
+              {/* Admin Add Item Form */}
+              {isAdmin && (
+                <div className="bg-slate-800/60 p-3 rounded border border-slate-700 space-y-2 mb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs font-bold text-slate-400 uppercase">Add Item</div>
+                    {status && <div className="text-[10px] text-green-300">{status}</div>}
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <input
+                      className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
+                      placeholder="Name (slug auto-generated)"
+                      value={newItem.name}
+                      onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                    />
+                    <input
+                      className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
+                      placeholder="Description"
+                      value={newItem.description}
+                      onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
+                    />
+                    <select
+                      className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
+                      value={newItem.tech_level}
+                      onChange={(e) => setNewItem({ ...newItem, tech_level: e.target.value })}
+                    >
+                      <option value="TL8">TL8 - Basic Tech</option>
+                      <option value="TL9">TL9 - Advanced Tech</option>
+                      <option value="TL10">TL10 - Elite Tech</option>
+                    </select>
+                    <select
+                      className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
+                      value={newItem.category}
+                      onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
+                    >
+                      {DEFAULT_CATEGORIES.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                    <select
+                      className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
+                      value={newItem.rarity}
+                      onChange={(e) => setNewItem({ ...newItem, rarity: e.target.value })}
+                    >
+                      <option value="common">Common</option>
+                      <option value="uncommon">Uncommon</option>
+                      <option value="rare">Rare</option>
+                      <option value="legendary">Legendary</option>
+                    </select>
+                    <input
+                      type="number"
+                      className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
+                      placeholder="Base Value (credits)"
+                      value={newItem.base_value}
+                      onChange={(e) => setNewItem({ ...newItem, base_value: Number(e.target.value) })}
+                    />
+                  </div>
+                  <button
+                    onClick={handleCreate}
+                    disabled={!newItem.name}
+                    className="w-full bg-green-600 hover:bg-green-700 disabled:bg-slate-700 disabled:text-slate-500 text-white px-3 py-1.5 rounded text-sm font-medium transition-colors"
+                  >
+                    Add Item
+                  </button>
+                </div>
+              )}
 
               {/* Filters Row */}
               <div className="flex flex-wrap gap-4 items-center">
@@ -255,8 +357,8 @@ export default function LootPage() {
                                     onClick={() => setExpandedItem(isExpanded ? null : item.name)}
                                     className={`p-2 rounded border text-sm transition-all cursor-pointer ${
                                       isExpanded
-                                        ? `${CATEGORY_COLORS[item.category] || 'text-slate-200 border-slate-700 bg-slate-800'} ring-1 ring-current`
-                                        : `${CATEGORY_COLORS[item.category] || 'text-slate-200 border-slate-700 bg-slate-900'} hover:bg-slate-800/50`
+                                        ? `${item.category ? CATEGORY_COLORS[item.category] : ''} text-slate-200 border-slate-700 bg-slate-800 ring-1 ring-current`
+                                        : `${item.category ? CATEGORY_COLORS[item.category] : ''} text-slate-200 border-slate-700 bg-slate-900 hover:bg-slate-800/50`
                                     }`}
                                   >
                                     <div className="font-medium flex items-center justify-between">

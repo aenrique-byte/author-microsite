@@ -39,12 +39,12 @@ export const EquipmentSection: React.FC<EquipmentSectionProps> = ({
     });
   };
 
-  const getItemByName = (name: string | null | undefined): LootItem | undefined => {
+  const getItemByName = (name: string | null | undefined): LitrpgItem | undefined => {
     if (!name) return undefined;
     return allItems.find(item => item.name === name);
   };
 
-  const getFilteredItems = (category?: string): LootItem[] => {
+  const getFilteredItems = (category?: string): LitrpgItem[] => {
     if (!category) return allItems;
     return allItems.filter(item => item.category === category);
   };
@@ -90,7 +90,7 @@ export const EquipmentSection: React.FC<EquipmentSectionProps> = ({
             <option value="">— Empty —</option>
             {availableItems.map(item => (
               <option key={item.name} value={item.name}>
-                {item.name} ({item.techLevel})
+                {item.name} ({item.tech_level})
               </option>
             ))}
           </select>
@@ -183,8 +183,8 @@ export const EquipmentSection: React.FC<EquipmentSectionProps> = ({
                     <span
                       key={slot}
                       className={`text-xs px-2 py-0.5 rounded border ${
-                        item.techLevel === 'TL10' ? 'bg-purple-900/20 border-purple-600 text-purple-300' :
-                        item.techLevel === 'TL9' ? 'bg-blue-900/20 border-blue-600 text-blue-300' :
+                        item.tech_level === 'TL10' ? 'bg-purple-900/20 border-purple-600 text-purple-300' :
+                        item.tech_level === 'TL9' ? 'bg-blue-900/20 border-blue-600 text-blue-300' :
                         'bg-slate-800 border-slate-600 text-slate-400'
                       }`}
                     >
