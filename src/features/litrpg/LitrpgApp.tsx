@@ -2,9 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { BookOpen, ScrollText, Upload, Save, Zap, Shield, Package, Users, RefreshCw, ChevronLeft, Database, Swords, Plus, X } from 'lucide-react';
 import { Character, ClassName, Attribute, Monster, Quest, SaveData } from './types';
-import { getAllMonsters } from './monster-constants';
 import { CharacterSheet } from './components/CharacterSheet';
-import { listCharacters, updateCharacter as apiUpdateCharacter, createCharacter as apiCreateCharacter, LitrpgCharacter, getCachedClasses, getCachedAbilities } from './utils/api-litrpg';
+import { listCharacters, updateCharacter as apiUpdateCharacter, createCharacter as apiCreateCharacter, LitrpgCharacter, getCachedClasses, getCachedAbilities, getCachedMonsters, LitrpgMonster } from './utils/api-litrpg';
 import { useAuth } from '../../contexts/AuthContext';
 
 const LitrpgApp: React.FC = () => {
@@ -32,20 +31,7 @@ const LitrpgApp: React.FC = () => {
     history: ['Initialized in the Nexus.']
   });
 
-  const [monsters, setMonsters] = useState<Monster[]>(() => {
-    // Convert ExportedMonster format to Monster format
-    return getAllMonsters().map(m => ({
-      id: m.id,
-      name: m.name,
-      level: m.level,
-      rank: m.rank,
-      xpReward: m.xpReward,
-      credits: m.credits,
-      description: m.description,
-      stats: m.stats || { STR: 1, PER: 1, DEX: 1, MEM: 1, INT: 1, CHA: 1 },
-      abilities: m.abilities || []
-    }));
-  });
+  const [monsters, setMonsters] = useState<Monster[]>([]);
   const [quests, setQuests] = useState<Quest[]>([]);
   
   // Database Character State
@@ -67,6 +53,7 @@ const LitrpgApp: React.FC = () => {
   // Load characters from database on mount
   useEffect(() => {
     loadDbCharacters();
+    loadMonsters();
   }, []);
 
   const loadDbCharacters = async () => {
@@ -117,6 +104,36 @@ const LitrpgApp: React.FC = () => {
       alert('Failed to create character: ' + String(error));
     }
     setIsCreating(false);
+  };
+
+  const normalizeMonsters = (apiMonsters: LitrpgMonster[]): Monster[] => {
+    return apiMonsters.map((monster) => ({
+      id: String(monster.id),
+      name: monster.name,
+      description: monster.description || 'No description provided.',
+      level: monster.level,
+      rank: (monster.rank as Monster['rank']) || 'Regular',
+      xpReward: monster.xp_reward ?? 0,
+      credits: monster.credits ?? 0,
+      stats: {
+        [Attribute.STR]: monster.stats?.STR ?? monster.stats?.str ?? 1,
+        [Attribute.PER]: monster.stats?.PER ?? monster.stats?.per ?? 1,
+        [Attribute.DEX]: monster.stats?.DEX ?? monster.stats?.dex ?? 1,
+        [Attribute.MEM]: monster.stats?.MEM ?? monster.stats?.mem ?? 1,
+        [Attribute.INT]: monster.stats?.INT ?? monster.stats?.int ?? 1,
+        [Attribute.CHA]: monster.stats?.CHA ?? monster.stats?.cha ?? 1,
+      },
+      abilities: monster.abilities || [],
+    }));
+  };
+
+  const loadMonsters = async () => {
+    try {
+      const apiMonsters = await getCachedMonsters();
+      setMonsters(normalizeMonsters(apiMonsters));
+    } catch (error) {
+      console.error('Failed to load monsters', error);
+    }
   };
 
   const handleSelectDbCharacter = async (dbChar: LitrpgCharacter) => {

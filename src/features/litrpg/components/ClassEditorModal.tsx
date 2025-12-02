@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
-import { X, Swords, Info } from 'lucide-react';
-import { getAllClasses } from '../class-constants';
-import { getTierColorByNumber } from '../tier-constants';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Loader2, X, Swords, Info } from 'lucide-react';
+import { getCachedClasses, LitrpgClass } from '../utils/api-litrpg';
+import { getTierColorByNumber, getTierNumber } from '../tier-constants';
 
 interface ClassEditorModalProps {
   isOpen: boolean;
@@ -21,17 +21,25 @@ const ATTRIBUTE_NAMES: Record<AttributeKey, string> = {
 };
 
 export const ClassEditorModal: React.FC<ClassEditorModalProps> = ({ isOpen, onClose }) => {
+  const [classes, setClasses] = useState<LitrpgClass[]>([]);
   const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
-  
-  // Load classes from constants
-  const classes = useMemo(() => getAllClasses(), []);
+  const [loading, setLoading] = useState(true);
 
-  // Auto-select first class
-  React.useEffect(() => {
-    if (isOpen && classes.length > 0 && !selectedClassId) {
-      setSelectedClassId(classes[0].id);
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      const dbClasses = await getCachedClasses();
+      setClasses(dbClasses);
+      if (!selectedClassId && dbClasses.length > 0) {
+        setSelectedClassId(dbClasses[0].id);
+      }
+      setLoading(false);
+    };
+
+    if (isOpen) {
+      load();
     }
-  }, [isOpen, classes, selectedClassId]);
+  }, [isOpen, selectedClassId]);
 
   const selectedClass = useMemo(() => 
     classes.find(c => c.id === selectedClassId), 
@@ -60,137 +68,147 @@ export const ClassEditorModal: React.FC<ClassEditorModalProps> = ({ isOpen, onCl
         {/* Info Banner */}
         <div className="px-4 py-2 text-sm bg-blue-900/20 text-blue-400 border-b border-blue-900/30 flex items-center gap-2">
           <Info size={16} />
-          Classes are now managed via constants files (class-constants.ts). Edit the file directly to modify classes.
+          Classes are loaded from MySQL via the LitRPG API. Use the admin tools to update data.
         </div>
 
         {/* Content */}
         <div className="flex flex-1 overflow-hidden">
-          {/* Left: Class List */}
-          <div className="w-64 border-r border-slate-700 bg-slate-900/50 flex flex-col">
-            <div className="p-2 border-b border-slate-800">
-              <span className="text-xs text-slate-500 uppercase tracking-wide">Classes ({classes.length})</span>
+          {loading ? (
+            <div className="flex-1 flex items-center justify-center gap-2 text-slate-400">
+              <Loader2 className="animate-spin" size={18} /> Loading classes...
             </div>
-            <div className="flex-1 overflow-y-auto">
-              {classes.map(cls => (
-                <button
-                  key={cls.id}
-                  onClick={() => setSelectedClassId(cls.id)}
-                  className={`w-full text-left px-3 py-2 border-b border-slate-800 transition-colors ${
-                    selectedClassId === cls.id 
-                      ? 'bg-orange-500/10 border-l-2 border-l-orange-500 text-white' 
-                      : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                  }`}
-                >
-                  <div className="font-medium">{cls.name}</div>
-                  <div className="text-[10px] text-slate-500 flex items-center gap-2">
-                    <span className={`px-1 rounded ${getTierColorByNumber(cls.tier)}`}>Tier {cls.tier}</span>
-                    <span>Lvl {cls.unlockLevel}+</span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Right: Class Details */}
-          <div className="flex-1 overflow-y-auto p-6">
-            {selectedClass ? (
-              <div className="space-y-6">
-                {/* Basic Info */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs text-slate-500 uppercase mb-1">Name</label>
-                    <div className="w-full bg-slate-800/50 border border-slate-700 rounded px-3 py-2 text-white">
-                      {selectedClass.name}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs text-slate-500 uppercase mb-1">Tier</label>
-                    <div className={`w-full bg-slate-800/50 border border-slate-700 rounded px-3 py-2 ${getTierColorByNumber(selectedClass.tier)}`}>
-                      Tier {selectedClass.tier}
-                    </div>
-                  </div>
+          ) : (
+            <>
+              {/* Left: Class List */}
+              <div className="w-64 border-r border-slate-700 bg-slate-900/50 flex flex-col">
+                <div className="p-2 border-b border-slate-800">
+                  <span className="text-xs text-slate-500 uppercase tracking-wide">Classes ({classes.length})</span>
                 </div>
-
-                <div>
-                  <label className="block text-xs text-slate-500 uppercase mb-1">Description</label>
-                  <div className="w-full bg-slate-800/50 border border-slate-700 rounded px-3 py-2 text-slate-300 min-h-[80px]">
-                    {selectedClass.description || 'No description'}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs text-slate-500 uppercase mb-1">Unlock Level</label>
-                    <div className="w-full bg-slate-800/50 border border-slate-700 rounded px-3 py-2 text-white">
-                      Level {selectedClass.unlockLevel}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs text-slate-500 uppercase mb-1">Prerequisite Class ID</label>
-                    <div className="w-full bg-slate-800/50 border border-slate-700 rounded px-3 py-2 text-white">
-                      {selectedClass.prerequisiteClassId || 'None'}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Primary & Secondary Attributes */}
-                <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
-                  <h3 className="text-sm font-bold text-orange-400 mb-3">Combat Attributes</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs text-slate-500 uppercase mb-1">Primary Attribute</label>
-                      <div className="bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white">
-                        {selectedClass.primaryAttribute ? 
-                          `${selectedClass.primaryAttribute} - ${ATTRIBUTE_NAMES[selectedClass.primaryAttribute as AttributeKey] || selectedClass.primaryAttribute}` 
-                          : 'Not Set'}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-xs text-slate-500 uppercase mb-1">Secondary Attribute</label>
-                      <div className="bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white">
-                        {selectedClass.secondaryAttribute ? 
-                          `${selectedClass.secondaryAttribute} - ${ATTRIBUTE_NAMES[selectedClass.secondaryAttribute as AttributeKey] || selectedClass.secondaryAttribute}` 
-                          : 'Not Set'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Stat Bonuses */}
-                <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
-                  <h3 className="text-sm font-bold text-green-400 mb-3">Stat Bonuses</h3>
-                  <div className="grid grid-cols-3 gap-3">
-                    {ATTRIBUTES.map(attr => (
-                      <div key={attr} className="flex items-center justify-between bg-slate-900 px-3 py-2 rounded border border-slate-700">
-                        <span className="text-xs text-slate-400">{attr}</span>
-                        <span className={`font-mono ${(selectedClass.statBonuses?.[attr] || 0) > 0 ? 'text-green-400' : 'text-slate-500'}`}>
-                          {selectedClass.statBonuses?.[attr] ? `+${selectedClass.statBonuses[attr]}` : '0'}
+                <div className="flex-1 overflow-y-auto">
+                  {classes.map(cls => (
+                    <button
+                      key={cls.id}
+                      onClick={() => setSelectedClassId(cls.id)}
+                      className={`w-full text-left px-3 py-2 border-b border-slate-800 transition-colors ${
+                        selectedClassId === cls.id
+                          ? 'bg-orange-500/10 border-l-2 border-l-orange-500 text-white'
+                          : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                      }`}
+                    >
+                      <div className="font-medium">{cls.name}</div>
+                      <div className="text-[10px] text-slate-500 flex items-center gap-2">
+                        <span className={`px-1 rounded ${getTierColorByNumber(getTierNumber(cls.tier))}`}>
+                          Tier {getTierNumber(cls.tier)}
                         </span>
+                        <span>Lvl {cls.unlock_level}+</span>
                       </div>
-                    ))}
-                  </div>
+                    </button>
+                  ))}
                 </div>
+              </div>
 
-                {/* Ability IDs */}
-                {selectedClass.abilityIds && selectedClass.abilityIds.length > 0 && (
-                  <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
-                    <h3 className="text-sm font-bold text-purple-400 mb-3">Assigned Ability IDs</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedClass.abilityIds.map(id => (
-                        <span key={id} className="px-2 py-1 bg-purple-900/30 text-purple-300 rounded text-xs font-mono">
-                          #{id}
-                        </span>
-                      ))}
+              {/* Right: Class Details */}
+              <div className="flex-1 overflow-y-auto p-6">
+                {selectedClass ? (
+                  <div className="space-y-6">
+                    {/* Basic Info */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs text-slate-500 uppercase mb-1">Name</label>
+                        <div className="w-full bg-slate-800/50 border border-slate-700 rounded px-3 py-2 text-white">
+                          {selectedClass.name}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-slate-500 uppercase mb-1">Tier</label>
+                        <div className={`w-full bg-slate-800/50 border border-slate-700 rounded px-3 py-2 ${getTierColorByNumber(getTierNumber(selectedClass.tier))}`}>
+                          Tier {getTierNumber(selectedClass.tier)}
+                        </div>
+                      </div>
                     </div>
+
+                    <div>
+                      <label className="block text-xs text-slate-500 uppercase mb-1">Description</label>
+                      <div className="w-full bg-slate-800/50 border border-slate-700 rounded px-3 py-2 text-slate-300 min-h-[80px]">
+                        {selectedClass.description || 'No description'}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs text-slate-500 uppercase mb-1">Unlock Level</label>
+                        <div className="w-full bg-slate-800/50 border border-slate-700 rounded px-3 py-2 text-white">
+                          Level {selectedClass.unlock_level}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-slate-500 uppercase mb-1">Prerequisite Class ID</label>
+                        <div className="w-full bg-slate-800/50 border border-slate-700 rounded px-3 py-2 text-white">
+                          {selectedClass.prerequisite_class_id || 'None'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Primary & Secondary Attributes */}
+                    <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
+                      <h3 className="text-sm font-bold text-orange-400 mb-3">Combat Attributes</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs text-slate-500 uppercase mb-1">Primary Attribute</label>
+                          <div className="bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white">
+                            {selectedClass.primary_attribute ?
+                              `${selectedClass.primary_attribute} - ${ATTRIBUTE_NAMES[selectedClass.primary_attribute as AttributeKey] || selectedClass.primary_attribute}`
+                              : 'Not Set'}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs text-slate-500 uppercase mb-1">Secondary Attribute</label>
+                          <div className="bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white">
+                            {selectedClass.secondary_attribute ?
+                              `${selectedClass.secondary_attribute} - ${ATTRIBUTE_NAMES[selectedClass.secondary_attribute as AttributeKey] || selectedClass.secondary_attribute}`
+                              : 'Not Set'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Stat Bonuses */}
+                    <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
+                      <h3 className="text-sm font-bold text-green-400 mb-3">Stat Bonuses</h3>
+                      <div className="grid grid-cols-3 gap-3">
+                        {ATTRIBUTES.map(attr => (
+                          <div key={attr} className="flex items-center justify-between bg-slate-900 px-3 py-2 rounded border border-slate-700">
+                            <span className="text-xs text-slate-400">{attr}</span>
+                            <span className={`font-mono ${(selectedClass.stat_bonuses?.[attr] || 0) > 0 ? 'text-green-400' : 'text-slate-500'}`}>
+                              {selectedClass.stat_bonuses?.[attr] ? `+${selectedClass.stat_bonuses[attr]}` : '0'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Ability IDs */}
+                    {selectedClass.ability_ids && selectedClass.ability_ids.length > 0 && (
+                      <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
+                        <h3 className="text-sm font-bold text-purple-400 mb-3">Assigned Ability IDs</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedClass.ability_ids.map(id => (
+                            <span key={id} className="px-2 py-1 bg-purple-900/30 text-purple-300 rounded text-xs font-mono">
+                              #{id}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-slate-600">
+                    Select a class from the left
                   </div>
                 )}
               </div>
-            ) : (
-              <div className="flex items-center justify-center h-full text-slate-600">
-                Select a class from the left
-              </div>
-            )}
-          </div>
+            </>
+          )}
         </div>
 
         {/* Footer */}
