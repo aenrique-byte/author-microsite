@@ -160,6 +160,13 @@ export interface NewAbilityInput {
   category?: string;
   evolutionId?: number;
   evolutionLevel?: number;
+  tiers?: Array<{
+    level: number;
+    duration?: string;
+    cooldown?: string;
+    energyCost?: number;
+    effectDescription?: string;
+  }>;
   tierPreview?: {
     level: number;
     duration?: string;
@@ -562,17 +569,18 @@ export async function createAbility(payload: NewAbilityInput): Promise<{ success
       category: payload.category,
       evolution_ability_id: payload.evolutionId,
       evolution_level: payload.evolutionLevel,
-      tiers: payload.tierPreview
-        ? [
-            {
-              tier_level: payload.tierPreview.level,
-              duration: payload.tierPreview.duration,
-              cooldown: payload.tierPreview.cooldown,
-              energy_cost: payload.tierPreview.energyCost,
-              effect_description: payload.tierPreview.effectDescription,
-            },
-          ]
-        : [],
+      tiers: (payload.tiers && payload.tiers.length > 0
+        ? payload.tiers
+        : payload.tierPreview
+          ? [payload.tierPreview]
+          : []
+      ).map((tier) => ({
+        tier_level: tier.level,
+        duration: tier.duration,
+        cooldown: tier.cooldown,
+        energy_cost: tier.energyCost,
+        effect_description: tier.effectDescription,
+      })),
     });
 
     if (!result.success || !result.ability) return { success: false, error: result.error || 'Failed to create ability' };
