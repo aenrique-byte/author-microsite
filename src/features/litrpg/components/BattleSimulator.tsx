@@ -2,15 +2,14 @@
 import React, { useState } from 'react';
 import { Swords, Calculator, TrendingUp, Users, Check, X, Coins, Package, Bookmark, Trophy, Skull } from 'lucide-react';
 import { Character, Monster, Attribute } from '../types';
-import { DB_CLASSES, ExportedClass } from '../class-constants';
-import { ALL_LOOT } from '../loot-constants';
-import { LitrpgClass } from '../utils/api-litrpg';
+import { LitrpgClass, LitrpgItem } from '../utils/api-litrpg';
 
 interface BattleSimulatorProps {
   character: Character;
   monsters: Monster[];
   onApplyResult: (xp: number, credits: number, description: string, loot: string[]) => void;
   currentDbClass?: LitrpgClass | null;
+  items: LitrpgItem[];
 }
 
 interface SelectedMonster {
@@ -36,7 +35,7 @@ interface BattleLogEntry {
 
 type SimMode = 'combat' | 'reward';
 
-export const BattleSimulator: React.FC<BattleSimulatorProps> = ({ character, monsters, onApplyResult, currentDbClass }) => {
+export const BattleSimulator: React.FC<BattleSimulatorProps> = ({ character, monsters, onApplyResult, currentDbClass, items }) => {
   const [mode, setMode] = useState<SimMode>('combat');
   const [partySize, setPartySize] = useState<number>(1);
   const [chapterRef, setChapterRef] = useState<string>('');
@@ -59,26 +58,19 @@ export const BattleSimulator: React.FC<BattleSimulatorProps> = ({ character, mon
   ]);
   const [battleLog, setBattleLog] = useState<BattleLogEntry[]>([]);
 
-  // Get class from constants by name
-  const getConstantsClass = (): ExportedClass | undefined => {
-    return Object.values(DB_CLASSES).find(c => c.name === character.className);
-  };
-
   // Get primary/secondary attributes from DB class or fallback to constants
   const getPrimaryAttribute = (): Attribute => {
     if (currentDbClass?.primary_attribute) {
       return currentDbClass.primary_attribute as Attribute;
     }
-    const constantsClass = getConstantsClass();
-    return (constantsClass?.primaryAttribute as Attribute) || Attribute.STR;
+    return Attribute.STR;
   };
 
   const getSecondaryAttribute = (): Attribute => {
     if (currentDbClass?.secondary_attribute) {
       return currentDbClass.secondary_attribute as Attribute;
     }
-    const constantsClass = getConstantsClass();
-    return (constantsClass?.secondaryAttribute as Attribute) || Attribute.PER;
+    return Attribute.PER;
   };
 
   const handleSelectMonster = (index: number, monsterId: string) => {
@@ -381,8 +373,10 @@ export const BattleSimulator: React.FC<BattleSimulatorProps> = ({ character, mon
                                 onChange={(e) => handleLootItemChange(idx, e.target.value)}
                             >
                                 <option value="">-- No Loot --</option>
-                                {ALL_LOOT.map(lootItem => (
-                                    <option key={lootItem} value={lootItem}>{lootItem}</option>
+                                {items.map(lootItem => (
+                                    <option key={lootItem.id} value={lootItem.name}>
+                                      {lootItem.name}
+                                    </option>
                                 ))}
                             </select>
                             <input
