@@ -82,6 +82,7 @@ interface AuthorProfile {
   background_image_light?: string
   background_image_dark?: string
   site_domain?: string
+  show_litrpg_tools?: boolean
 }
 
 interface Socials {
@@ -244,8 +245,8 @@ function AuthorHomepageContent() {
             {profile.tagline}
           </p>
           {/* Navigation Buttons */}
-          {!contentLoading && (hasStories || hasGalleries) && (
-            <div className="flex justify-center gap-4 mb-6">
+          {!contentLoading && (
+            <div className="flex flex-wrap justify-center gap-4 mb-6">
               {hasStories && (
                 <a href="/storytime" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors">
                   Stories
@@ -258,6 +259,11 @@ function AuthorHomepageContent() {
                     : 'bg-gray-700 text-white hover:bg-gray-600'
                 }`}>
                   Galleries
+                </a>
+              )}
+              {profile.show_litrpg_tools !== false && (
+                <a href="/litrpg" className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-500 transition-colors">
+                  LitRPG Tools
                 </a>
               )}
             </div>

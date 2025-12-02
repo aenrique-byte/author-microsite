@@ -37,11 +37,14 @@ try {
     $stmt->execute();
     $profile = $stmt->fetch();
 
+    // Convert show_litrpg_tools to integer for database storage
+    $showLitrpg = isset($input['show_litrpg_tools']) ? ($input['show_litrpg_tools'] ? 1 : 0) : 1;
+
     if ($profile) {
         // Update existing profile
         $stmt = $pdo->prepare("
             UPDATE author_profile 
-            SET name = ?, bio = ?, tagline = ?, profile_image = ?, background_image_light = ?, background_image_dark = ?, site_domain = ?, gallery_rating_filter = ?, updated_at = NOW()
+            SET name = ?, bio = ?, tagline = ?, profile_image = ?, background_image_light = ?, background_image_dark = ?, site_domain = ?, gallery_rating_filter = ?, show_litrpg_tools = ?, updated_at = NOW()
             WHERE id = ?
         ");
         $stmt->execute([
@@ -53,13 +56,14 @@ try {
             $input['background_image_dark'] ?? null,
             $input['site_domain'] ?? null,
             $input['gallery_rating_filter'] ?? 'auto',
+            $showLitrpg,
             $profile['id']
         ]);
     } else {
-        // Create new profile
+        // Create new profile (no created_at column in schema, only updated_at)
         $stmt = $pdo->prepare("
-            INSERT INTO author_profile (name, bio, tagline, profile_image, background_image_light, background_image_dark, site_domain, gallery_rating_filter, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+            INSERT INTO author_profile (name, bio, tagline, profile_image, background_image_light, background_image_dark, site_domain, gallery_rating_filter, show_litrpg_tools, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
         ");
         $stmt->execute([
             $input['name'] ?? null,
@@ -69,7 +73,8 @@ try {
             $input['background_image_light'] ?? null,
             $input['background_image_dark'] ?? null,
             $input['site_domain'] ?? null,
-            $input['gallery_rating_filter'] ?? 'auto'
+            $input['gallery_rating_filter'] ?? 'auto',
+            $showLitrpg
         ]);
     }
 
@@ -77,7 +82,19 @@ try {
 
 } catch (Exception $e) {
     error_log("Author update error: " . $e->getMessage());
+    error_log("Stack trace: " . $e->getTraceAsString());
     http_response_code(500);
-    echo json_encode(['error' => 'Failed to update author profile']);
+
+    // Return more descriptive error in development
+    $errorMsg = 'Failed to update author profile';
+    if (defined('DEBUG') && DEBUG) {
+        $errorMsg .= ': ' . $e->getMessage();
+    }
+
+    echo json_encode([
+        'error' => $errorMsg,
+        'details' => $e->getMessage(), // Always include details for admin debugging
+        'code' => $e->getCode()
+    ]);
 }
 ?>

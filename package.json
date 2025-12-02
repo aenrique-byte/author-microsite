@@ -11,8 +11,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@google/genai": "^1.30.0",
     "@tailwindcss/typography": "^0.5.16",
     "dompurify": "^3.2.6",
+    "lucide-react": "^0.555.0",
     "marked": "^16.2.1",
     "png-chunk-text": "^1.0.0",
     "png-chunks-extract": "^1.0.0",

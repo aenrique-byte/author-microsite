@@ -4,7 +4,7 @@ require_once '../bootstrap.php';
 header('Content-Type: application/json');
 
 try {
-    $stmt = $pdo->prepare("SELECT name, bio, tagline, profile_image, background_image_light, background_image_dark, site_domain, gallery_rating_filter, updated_at FROM author_profile LIMIT 1");
+    $stmt = $pdo->prepare("SELECT name, bio, tagline, profile_image, background_image_light, background_image_dark, site_domain, gallery_rating_filter, show_litrpg_tools, updated_at FROM author_profile LIMIT 1");
     $stmt->execute();
     $profile = $stmt->fetch();
 
@@ -19,8 +19,12 @@ try {
             'background_image_dark' => null,
             'site_domain' => 'authorsite.com',
             'gallery_rating_filter' => 'auto',
+            'show_litrpg_tools' => true,
             'updated_at' => date('Y-m-d H:i:s')
         ];
+    } else {
+        // Convert show_litrpg_tools to boolean (default true if column doesn't exist or is null)
+        $profile['show_litrpg_tools'] = isset($profile['show_litrpg_tools']) ? (bool)$profile['show_litrpg_tools'] : true;
     }
 
     jsonResponse([

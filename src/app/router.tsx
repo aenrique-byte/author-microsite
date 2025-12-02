@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { HomeRoute } from '../features/home'
 import { GalleriesRoute } from '../features/galleries'
 import { StorytimeRoute } from '../features/storytime'
+import { LitrpgRoute } from '../features/litrpg'
 import UnifiedAdminDashboard from '../components/admin/UnifiedAdminDashboard'
 import { analytics } from '../lib/analytics'
 
@@ -25,6 +26,7 @@ export function Router() {
         <Route path="/" element={<HomeRoute />} />
         <Route path="/galleries/*" element={<GalleriesRoute />} />
         <Route path="/storytime/*" element={<StorytimeRoute />} />
+        <Route path="/litrpg/*" element={<LitrpgRoute />} />
         <Route path="/admin/*" element={<UnifiedAdminDashboard />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

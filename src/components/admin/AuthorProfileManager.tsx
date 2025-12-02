@@ -9,6 +9,7 @@ interface AuthorProfile {
   background_image_dark?: string
   site_domain?: string
   gallery_rating_filter?: 'always' | 'auto' | 'never'
+  show_litrpg_tools?: boolean
 }
 
 export default function AuthorProfileManager() {
@@ -16,7 +17,8 @@ export default function AuthorProfileManager() {
     name: '',
     bio: '',
     tagline: '',
-    gallery_rating_filter: 'auto'
+    gallery_rating_filter: 'auto',
+    show_litrpg_tools: true
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -58,15 +60,19 @@ export default function AuthorProfileManager() {
       })
 
       const data = await response.json()
-      
+
       if (data.success) {
         setSuccess('Profile updated successfully!')
         setTimeout(() => setSuccess(''), 3000)
       } else {
-        setError(data.error || 'Failed to update profile')
+        // Show detailed error message for debugging
+        const errorMsg = data.details
+          ? `${data.error}\n\nDetails: ${data.details}`
+          : (data.error || 'Failed to update profile')
+        setError(errorMsg)
       }
-    } catch (err) {
-      setError('Network error occurred')
+    } catch (err: any) {
+      setError(`Network error occurred: ${err.message || 'Unknown error'}`)
     } finally {
       setSaving(false)
     }
@@ -224,6 +230,26 @@ export default function AuthorProfileManager() {
           <p className="text-xs text-gray-500 mt-1">
             Controls visibility of the PG/X rating filter on the Galleries page.
           </p>
+        </div>
+
+        <div className="p-4 bg-cyan-50 dark:bg-cyan-900/20 rounded-lg border border-cyan-200 dark:border-cyan-800">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={profile.show_litrpg_tools !== false}
+              onChange={(e) => setProfile({ ...profile, show_litrpg_tools: e.target.checked })}
+              className="mt-1 h-4 w-4 rounded border-gray-300 text-cyan-600 focus:ring-cyan-500"
+            />
+            <div>
+              <span className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Show LitRPG Tools on Homepage
+              </span>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                When enabled, displays a "LitRPG Tools" button on the homepage linking to the interactive game tools.
+                Disable this if deploying to a site that doesn't use the LitRPG features.
+              </p>
+            </div>
+          </label>
         </div>
 
         <div className="pt-4">

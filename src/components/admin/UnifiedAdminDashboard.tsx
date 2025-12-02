@@ -11,6 +11,7 @@ import ModerationManager from './ModerationManager'
 import PasswordManager from './PasswordManager'
 import UploadManager from './UploadManager'
 import AnalyticsManager from './AnalyticsManager'
+import LitrpgManager from './LitrpgManager'
 import Breadcrumb from './Breadcrumb'
 
 interface User {
@@ -115,6 +116,7 @@ export default function UnifiedAdminDashboard() {
           <Route path="/moderation" element={<ModerationManager />} />
           <Route path="/password" element={<PasswordManager />} />
           <Route path="/analytics" element={<AnalyticsManager />} />
+          <Route path="/litrpg" element={<LitrpgManager />} />
         </Routes>
       </div>
     </div>
@@ -330,6 +332,13 @@ function AdminHome() {
             href="/admin/analytics" 
             description="View site statistics and engagement metrics"
             icon="📊"
+          />
+          
+          <AdminCard 
+            title="LitRPG Manager" 
+            href="/admin/litrpg" 
+            description="Manage game data: characters, classes, abilities, monsters, items"
+            icon="⚔️"
           />
         </div>
 
