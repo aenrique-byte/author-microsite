@@ -4,6 +4,46 @@
 
 **Author CMS** is a full-stack author website with content management system, built as a transferable, ready-to-deploy package. The project enables authors to publish stories, manage image galleries, track analytics, and engage with readers through comments and social media.
 
+## Repository Catalog
+
+This catalog orients future agents to the structure of the **author-microsite** codebase. Paths are relative to the repository root unless noted.
+
+### Top-Level Docs & Config
+- `README.md` – Product overview, features, and deployment requirements.
+- `SETUP.md`, `SCHEDULE_SYSTEM.md`, `SCHEDULED_PUBLISHING.md`, `DROP_CAP_FEATURE.md`, and `seo_plan.md` – Supplementary operational notes.
+- TypeScript/Vite/Tailwind configuration: `tsconfig*.json`, `vite.config.ts`, `tailwind.config.js`, `postcss.config.js`.
+- Root build dependencies: `package.json` and `package-lock.json`.
+
+### Frontend (Vite + React, TypeScript)
+- Entry wiring lives in `src/app` (`main.tsx`, `router.tsx`, `providers.tsx`).
+- Shared UI toolkit is under `src/components` (admin widgets, modals, tables) plus shared assets in `shared/components` and `shared/icons`.
+- Global styles and helpers: `src/styles`, `src/utils`, `src/contexts`, `src/lib`, `src/types`.
+- Feature modules in `src/features`:
+  - `home` – Landing page assets and sections.
+  - `galleries` – Gallery cards, filters, and image presentation components.
+  - `storytime` – Story browsing/reading, contexts, and helper utilities.
+  - `litrpg` – LitRPG experience (pages, reusable components, API client in `utils/api-litrpg.ts`, plus legacy constant files for abilities/classes/loot/contracts/monsters/tier/xp).
+
+### Backend API (PHP)
+- API endpoints reside in `api/`, organized by domain: `admin`, `analytics`, `auth`, `author`, `chapters`, `collections`, `galleries`, `images`, `litrpg`, `schedules`, `socials`, `stories`, and more.
+- Database/bootstrap configuration sample: `api/config.example.php`.
+- Reusable SQL snippets live in `api/sql-queries`.
+- LitRPG-specific PHP endpoints and helpers sit in `api/litrpg` (abilities, classes, professions, contracts, monsters, items) alongside `bootstrap-litrpg.php` and `export-to-constants.php`.
+
+### Data & Migrations
+- Primary schema dump: `unified-schema.sql`.
+- Migration scripts in `api/migrations/` (includes `litrpg-full-schema-restore.sql`, seed data, and incremental updates like class tier adjustments and ability evolution changes). `CLOUDFLARE_SETUP.md` documents DNS/traffic setup.
+
+### Static Assets & Public Output
+- Client build entry: `index.html`; static assets under `public/` (favicons in `public/icon`, images in `public/images`).
+- `scripts/postbuild-copy.mjs` handles post-build asset moves.
+
+### Standalone LitRPG Package
+- A separate Vite-based LitRPG bundle lives in `/litrpg` with its own `package.json`, `vite.config.ts`, and constants/components mirroring the main feature bundle. Useful for isolated builds or previews.
+
+### Other Notes
+- Node dependencies are vendored in `node_modules/` (root) and `litrpg/node_modules/` for the standalone package.
+
 ### Technology Stack
 
 - **Frontend:** React 18 + TypeScript + Vite
@@ -657,6 +697,16 @@ CREATE TABLE IF NOT EXISTS my_table (
 - Commit messages: Imperative mood ("Add feature" not "Added feature")
 - Branch naming: `feature/description` or `fix/description`
 - Keep commits focused and atomic
+
+## Agent Workflow Expectations
+
+- **Check agent notes first.** This consolidated guide replaces prior parallel agent docs; review it before editing.
+- **Prefer fast tooling.** Use `rg` instead of recursive `ls`/`grep`, and keep commands scoped to the task.
+- **Testing order of operations:**
+  1. `npm run lint` for quick TypeScript/React feedback.
+  2. `npm run build` to ensure TypeScript compilation and Vite bundling succeed.
+- **Commit hygiene:** Keep commits focused, use imperative commit messages, and describe user-facing impact in the PR summary.
+- **Documentation changes:** If you update workflow or instructions, note the reason for the change to help future agents.
 
 ## Documentation Files
 
