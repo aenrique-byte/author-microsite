@@ -4,6 +4,46 @@
 
 **Author CMS** is a full-stack author website with content management system, built as a transferable, ready-to-deploy package. The project enables authors to publish stories, manage image galleries, track analytics, and engage with readers through comments and social media.
 
+## Repository Catalog
+
+This catalog orients future agents to the structure of the **author-microsite** codebase. Paths are relative to the repository root unless noted.
+
+### Top-Level Docs & Config
+- `README.md` – Product overview, features, and deployment requirements.
+- `SETUP.md`, `SCHEDULE_SYSTEM.md`, `SCHEDULED_PUBLISHING.md`, `DROP_CAP_FEATURE.md`, and `seo_plan.md` – Supplementary operational notes.
+- TypeScript/Vite/Tailwind configuration: `tsconfig*.json`, `vite.config.ts`, `tailwind.config.js`, `postcss.config.js`.
+- Root build dependencies: `package.json` and `package-lock.json`.
+
+### Frontend (Vite + React, TypeScript)
+- Entry wiring lives in `src/app` (`main.tsx`, `router.tsx`, `providers.tsx`).
+- Shared UI toolkit is under `src/components` (admin widgets, modals, tables) plus shared assets in `shared/components` and `shared/icons`.
+- Global styles and helpers: `src/styles`, `src/utils`, `src/contexts`, `src/lib`, `src/types`.
+- Feature modules in `src/features`:
+  - `home` – Landing page assets and sections.
+  - `galleries` – Gallery cards, filters, and image presentation components.
+  - `storytime` – Story browsing/reading, contexts, and helper utilities.
+  - `litrpg` – LitRPG experience (pages, reusable components, API client in `utils/api-litrpg.ts`, plus legacy constant files for abilities/classes/loot/contracts/monsters/tier/xp).
+
+### Backend API (PHP)
+- API endpoints reside in `api/`, organized by domain: `admin`, `analytics`, `auth`, `author`, `chapters`, `collections`, `galleries`, `images`, `litrpg`, `schedules`, `socials`, `stories`, and more.
+- Database/bootstrap configuration sample: `api/config.example.php`.
+- Reusable SQL snippets live in `api/sql-queries`.
+- LitRPG-specific PHP endpoints and helpers sit in `api/litrpg` (abilities, classes, professions, contracts, monsters, items) alongside `bootstrap-litrpg.php` and `export-to-constants.php`.
+
+### Data & Migrations
+- Primary schema dump: `unified-schema.sql`.
+- Migration scripts in `api/migrations/` (includes `litrpg-full-schema-restore.sql`, seed data, and incremental updates like class tier adjustments and ability evolution changes). `CLOUDFLARE_SETUP.md` documents DNS/traffic setup.
+
+### Static Assets & Public Output
+- Client build entry: `index.html`; static assets under `public/` (favicons in `public/icon`, images in `public/images`).
+- `scripts/postbuild-copy.mjs` handles post-build asset moves.
+
+### Standalone LitRPG Package
+- A separate Vite-based LitRPG bundle lives in `/litrpg` with its own `package.json`, `vite.config.ts`, and constants/components mirroring the main feature bundle. Useful for isolated builds or previews.
+
+### Other Notes
+- Node dependencies are vendored in `node_modules/` (root) and `litrpg/node_modules/` for the standalone package.
+
 ### Technology Stack
 
 - **Frontend:** React 18 + TypeScript + Vite
@@ -196,31 +236,34 @@ Website/
 
 ### 6. LitRPG Game System (`litrpg/`)
 
-**Purpose:** Standalone React app for tabletop RPG character/monster management
+**Purpose:** Standalone React app for tabletop RPG character/monster management with database-backed progression.
 
-**Features:**
-- Character sheet builder
-- Monster manual
-- Ability library
-- Loot catalog
-- Battle simulator
-- Quest system
-- Attribute encyclopedia
+**End-to-end flow:**
+- TSX views under `src/features/litrpg` call `utils/api-litrpg.ts` helpers (cached list loaders and CRUD actions).
+- PHP endpoints in `api/litrpg/**` respond with MySQL data (classes, professions, abilities, monsters, items, contracts, characters) instead of static constants.
+- `export-to-constants.php` can still emit TypeScript constants for local use, but normal runtime reads from MySQL.
 
-**Data Structure:**
-- Stored in PHP backend (`api/litrpg/` endpoints)
-- Exported to TypeScript constants via `export-to-constants.php`
-- Separate React app with own build process
-- Uses Google Gemini AI integration
+**Gameplay surfaces:**
+- `LitrpgApp.tsx` renders the database-backed character sheet, including class/profession history, abilities, inventory, and banking of class/profession stat bonuses into base attributes on save.
+- `pages/ClassesPage.tsx`, `AbilitiesPage.tsx`, `BestiaryPage.tsx`, `LootPage.tsx`, and `ContractsPage.tsx` provide admin-friendly CRUD over each content type via the MySQL APIs.
+- Standalone bundle in `/litrpg` mirrors the main feature set for isolated builds.
+
+**Progression model:**
+- Characters track `level`, `xp_current`, and `xp_to_level` in the DB; leveling should award attribute points that then get banked into `attributes` alongside class/profession bonuses.
+- Class and profession assignment/history are stored with activation levels and tier milestones to calculate derived stats and unlocks.
+- Abilities can be unlocked directly or via class/profession associations; tiers describe per-level effects (cooldown, cost, effect text).
+- Contracts/quests award XP/credits/items; monsters and loot tables define encounter rewards.
 
 **Database Tables:**
-- `litrpg_classes` - Character classes
-- `litrpg_abilities` - Skills and spells
-- `litrpg_monsters` - Creature stats
+- `litrpg_classes` - Character classes (tiered, unlock requirements, stat bonuses)
+- `litrpg_professions` - Crafting/support roles with their own bonuses
+- `litrpg_abilities` / `litrpg_ability_tiers` - Skills/spells and their progression
+- `litrpg_monsters` - Creature stats and rewards
 - `litrpg_items` - Equipment and loot
-- `litrpg_characters` - Saved characters
-- `litrpg_professions` - Crafting professions
-- `litrpg_contracts` - Quest system
+- `litrpg_contracts` - Quest system with objectives/rewards
+- `litrpg_characters` - Saved characters with stats, equipment, ability unlocks, histories
+
+**Known gameplay gap to investigate:** After applying a class and profession and banking the associated attributes, leveling up currently fails to grant new attribute points. Reproduce via the character sheet in `LitrpgApp.tsx` and confirm XP/level transitions before addressing the bug.
 
 ### 7. Scheduled Publishing System
 
@@ -657,6 +700,16 @@ CREATE TABLE IF NOT EXISTS my_table (
 - Commit messages: Imperative mood ("Add feature" not "Added feature")
 - Branch naming: `feature/description` or `fix/description`
 - Keep commits focused and atomic
+
+## Agent Workflow Expectations
+
+- **Check agent notes first.** This consolidated guide replaces prior parallel agent docs; review it before editing.
+- **Prefer fast tooling.** Use `rg` instead of recursive `ls`/`grep`, and keep commands scoped to the task.
+- **Testing order of operations:**
+  1. `npm run lint` for quick TypeScript/React feedback.
+  2. `npm run build` to ensure TypeScript compilation and Vite bundling succeed.
+- **Commit hygiene:** Keep commits focused, use imperative commit messages, and describe user-facing impact in the PR summary.
+- **Documentation changes:** If you update workflow or instructions, note the reason for the change to help future agents.
 
 ## Documentation Files
 
