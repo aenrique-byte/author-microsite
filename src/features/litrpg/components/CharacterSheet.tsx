@@ -535,9 +535,20 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
     return Math.max(0, (highestTier - 1) * TIER_UPGRADE_ABILITY_BONUS);
   };
 
+  const calculateUsedAttributePoints = () => {
+    // Only count manually allocated points (exclude base 3 per stat and class/profession bonuses)
+    return (Object.keys(character.attributes) as Attribute[]).reduce((total, attr) => {
+      const baseValue = 3;
+      const classBonus = getClassOnlyBonus(attr);
+      const professionBonus = getProfessionOnlyBonus(attr);
+      const spent = character.attributes[attr] - baseValue - classBonus - professionBonus;
+      return total + Math.max(0, spent);
+    }, 0);
+  };
+
   // Derived calculations
   const cumulative = getCumulativePoints(character.level);
-  const usedAttributePoints = (Object.values(character.attributes) as number[]).reduce((sum, val) => sum + val, 0) - 18;
+  const usedAttributePoints = calculateUsedAttributePoints();
   const availableAttributePoints = Math.max(0, cumulative.attributePoints - usedAttributePoints);
   const usedAbilityPoints = (Object.values(character.abilities) as number[]).reduce((sum, val) => sum + val, 0);
   const tierBonusAbilityPoints = getTierBonusAbilityPoints();
