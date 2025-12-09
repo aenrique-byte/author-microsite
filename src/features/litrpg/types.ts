@@ -84,6 +84,7 @@ export interface Character {
   xp: number;
   credits: number;
   className: ClassName;
+  unspentAttributePoints: number; // Pool of unspent attribute points from leveling (loaded from DB)
   baseStats?: Record<Attribute, number>; // Baseline stats without spent points
   classHistory?: string[]; // Previous class names for ability retention (simple list)
   classHistoryWithLevels?: ClassHistoryEntry[]; // Full history with activation levels for stat bonuses

@@ -18,6 +18,7 @@ const LitrpgApp: React.FC = () => {
     xp: 0,
     credits: 0,
     className: ClassName.RECRUIT,
+    unspentAttributePoints: 0, // Pool of unspent attribute points from leveling
     attributes: {
       [Attribute.STR]: 3,
       [Attribute.PER]: 3,
@@ -200,7 +201,7 @@ const LitrpgApp: React.FC = () => {
     // Parse class and profession history from DB if available
     const classHistoryWithLevels = dbChar.class_history_with_levels || [];
     const professionHistoryWithLevels = dbChar.profession_history_with_levels || [];
-    
+
     setCharacter({
       name: dbChar.name,
       headerImageUrl: dbChar.portrait_image || '/images/litrpg/banner.webp',
@@ -208,6 +209,7 @@ const LitrpgApp: React.FC = () => {
       xp: dbChar.xp_current,
       credits: dbChar.credits,
       className: mappedClassName,
+      unspentAttributePoints: (dbChar as any).unspent_attribute_points ?? 0, // Load from DB, default to 0 if not set
       classActivatedAtLevel: dbChar.class_activated_at_level || 1, // Use stored activation level
       classHistory: classHistoryWithLevels.map(h => h.className), // Extract names for simple history
       classHistoryWithLevels: classHistoryWithLevels, // Keep detailed history
@@ -333,6 +335,18 @@ const LitrpgApp: React.FC = () => {
         CHA: character.attributes[Attribute.CHA] + (accumulatedBonuses['CHA'] || 0)
       };
 
+      // Calculate unspent attribute points correctly
+      // Points spent from the pool = current attributes - base stats (what we loaded from DB)
+      const pointsSpentFromPool = (Object.keys(character.attributes) as Attribute[]).reduce((total, attr) => {
+        const currentValue = character.attributes[attr];
+        const baseValue = character.baseStats?.[attr] ?? currentValue;
+        return total + Math.max(0, currentValue - baseValue);
+      }, 0);
+
+      // New unspent points = what we had in the pool minus what we just spent
+      // Note: character.unspentAttributePoints already includes all available points from leveling
+      const newUnspentPoints = Math.max(0, character.unspentAttributePoints - pointsSpentFromPool);
+
       // Build update payload
       const updatePayload: Parameters<typeof apiUpdateCharacter>[0] = {
         id: selectedDbCharacterId,
@@ -341,6 +355,7 @@ const LitrpgApp: React.FC = () => {
         xp_current: character.xp,
         credits: character.credits,
         highest_tier_achieved: character.highestTierAchieved || 1,
+        unspent_attribute_points: newUnspentPoints, // Save correctly calculated unspent points
         // Save total stats (for display/combat calculations)
         stats: bankedStats,
         // Save base_stats WITH accumulated bonuses banked in (this becomes the new baseline)
@@ -393,6 +408,7 @@ const LitrpgApp: React.FC = () => {
           [Attribute.INT]: bankedStats.INT,
           [Attribute.CHA]: bankedStats.CHA
         },
+        unspentAttributePoints: newUnspentPoints, // Update unspent points in local state
         classActivatedAtLevel: character.level,
         classHistoryWithLevels: [],
         professionActivatedAtLevel: character.professionName ? character.level : undefined,

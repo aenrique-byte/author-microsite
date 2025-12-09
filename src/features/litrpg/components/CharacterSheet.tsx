@@ -535,8 +535,13 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
     return Math.max(0, (highestTier - 1) * TIER_UPGRADE_ABILITY_BONUS);
   };
 
+  // Get the minimum value for an attribute (from baseStats, no hardcoded fallback)
+  const getMinAttributeValue = (attr: Attribute): number => {
+    return character.baseStats?.[attr] ?? character.attributes[attr];
+  };
+
   const getPendingAttributeInvestment = (attr: Attribute): number => {
-    const baseValue = character.baseStats?.[attr] ?? 3;
+    const baseValue = getMinAttributeValue(attr);
     return Math.max(0, character.attributes[attr] - baseValue);
   };
 
@@ -551,7 +556,9 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
   // Derived calculations
   const cumulative = getCumulativePoints(character.level);
   const usedAttributePoints = calculateUsedAttributePoints();
-  const availableAttributePoints = Math.max(0, cumulative.attributePoints - usedAttributePoints);
+
+  // Calculate available points: use unspent points from DB minus what we've spent in the UI
+  const availableAttributePoints = Math.max(0, character.unspentAttributePoints - usedAttributePoints);
   const usedAbilityPoints = (Object.values(character.abilities) as number[]).reduce((sum, val) => sum + val, 0);
   const tierBonusAbilityPoints = getTierBonusAbilityPoints();
   const totalAbilityPoints = cumulative.abilityPoints + tierBonusAbilityPoints;
@@ -592,8 +599,9 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
 
   const handleAttributeChange = (attr: Attribute, delta: number) => {
     const currentVal = character.attributes[attr];
+    const minVal = getMinAttributeValue(attr);
     if (delta > 0 && availableAttributePoints <= 0) return;
-    if (delta < 0 && currentVal <= 3) return;
+    if (delta < 0 && currentVal <= minVal) return;
     updateCharacter({
       ...character,
       attributes: { ...character.attributes, [attr]: currentVal + delta }
@@ -1294,7 +1302,7 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
                   <span className="text-[10px] text-slate-500 truncate w-24">{ATTRIBUTE_DESCRIPTIONS[attr]?.split(',')[0]}</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button onClick={() => handleAttributeChange(attr, -1)} className="w-5 h-5 flex items-center justify-center rounded bg-slate-700 hover:bg-slate-600 text-slate-300 disabled:opacity-30 text-xs" disabled={character.attributes[attr] <= 3}>-</button>
+                  <button onClick={() => handleAttributeChange(attr, -1)} className="w-5 h-5 flex items-center justify-center rounded bg-slate-700 hover:bg-slate-600 text-slate-300 disabled:opacity-30 text-xs" disabled={character.attributes[attr] <= getMinAttributeValue(attr)}>-</button>
                   <div className="flex items-center gap-0.5 min-w-[60px] justify-center">
                     <span className="font-mono font-bold text-sm">{character.attributes[attr]}</span>
                     {pendingInvestment > 0 && (

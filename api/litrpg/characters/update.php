@@ -27,7 +27,8 @@ try {
         'name', 'slug', 'description', 'level', 'xp_current', 'xp_to_level',
         'class_id', 'class_activated_at_level', 'hp_max', 'hp_current', 'ep_max', 'ep_current',
         'credits', 'portrait_image', 'header_image_url', 'status', 'sort_order',
-        'profession_id', 'profession_name', 'profession_activated_at_level', 'highest_tier_achieved'
+        'profession_id', 'profession_name', 'profession_activated_at_level', 'highest_tier_achieved',
+        'unspent_attribute_points'
     ];
     
     $jsonFields = [

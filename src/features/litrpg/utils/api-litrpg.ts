@@ -52,6 +52,7 @@ export interface LitrpgCharacter {
   profession_history_with_levels?: ClassHistoryEntry[];
   stats?: Record<string, number>;
   base_stats?: Record<string, number>; // Base stats without class/profession bonuses
+  unspent_attribute_points?: number; // Pool of unspent attribute points from leveling
   hp_max: number;
   hp_current: number;
   ep_max: number;
