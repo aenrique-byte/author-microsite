@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Swords, Search, Loader2, RefreshCw, Star, ArrowRight, Shield, Brain, Zap, Eye, MessageSquare, Settings, Briefcase } from 'lucide-react';
-import { getCachedClasses, getCachedProfessions, createClass, LitrpgClass, LitrpgProfession } from '../utils/api-litrpg';
+import { Swords, Search, Loader2, RefreshCw, Star, ArrowRight, Shield, Brain, Zap, Eye, MessageSquare, Briefcase } from 'lucide-react';
+import { getCachedClasses, getCachedProfessions, createClass, createProfession, LitrpgClass, LitrpgProfession } from '../utils/api-litrpg';
 import SocialIcons from '../../../components/SocialIcons';
 import LitrpgNav from '../components/LitrpgNav';
-import { ClassAbilitiesManager } from '../components/ClassAbilitiesManager';
+import { AbilityManagerModal } from '../components/AbilityManagerModal';
 import { ClassEditorModal } from '../components/ClassEditorModal';
+import { ProfessionEditorModal } from '../components/ProfessionEditorModal';
 import { useAuth } from '../../../contexts/AuthContext';
 import { TIER_ORDER, TIER_COLORS, TIER_TEXT_COLORS, TIER_BORDER_COLORS, ClassTier, getTierString } from '../tier-constants';
 
@@ -29,8 +30,9 @@ export default function ClassesPage() {
   const [search, setSearch] = useState('');
   const [filterTier, setFilterTier] = useState<string | 'All'>('All');
   const [filterCategory, setFilterCategory] = useState<'combat' | 'professional'>('combat');
+  const [showEditorModal, setShowEditorModal] = useState(false);
   const [showClassEditor, setShowClassEditor] = useState(false);
-  const [showAbilityManager, setShowAbilityManager] = useState(false);
+  const [showProfessionEditor, setShowProfessionEditor] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [newClass, setNewClass] = useState({
     name: '',
@@ -63,22 +65,38 @@ export default function ClassesPage() {
   };
 
   const handleCreate = async () => {
-    const result = await createClass({
-      name: newClass.name,
-      // slug auto-generated from name
-      tier: Number(newClass.tier) || 1,
-      unlock_level: Number(newClass.unlock_level) || 1,
-      description: newClass.description,
-      primary_attribute: newClass.primary_attribute || undefined,
-      secondary_attribute: newClass.secondary_attribute || undefined,
-    });
+    if (filterCategory === 'combat') {
+      const result = await createClass({
+        name: newClass.name,
+        tier: Number(newClass.tier) || 1,
+        unlock_level: Number(newClass.unlock_level) || 1,
+        description: newClass.description,
+        primary_attribute: newClass.primary_attribute || undefined,
+        secondary_attribute: newClass.secondary_attribute || undefined,
+      });
 
-    if (!result.success) {
-      setStatus(result.error || 'Failed to create class');
-      return;
+      if (!result.success) {
+        setStatus(result.error || 'Failed to create class');
+        return;
+      }
+
+      setStatus(`Created ${result.class?.name}`);
+    } else {
+      const result = await createProfession({
+        name: newClass.name,
+        tier: Number(newClass.tier) || 1,
+        unlock_level: Number(newClass.unlock_level) || 1,
+        description: newClass.description,
+      });
+
+      if (!result.success) {
+        setStatus(result.error || 'Failed to create profession');
+        return;
+      }
+
+      setStatus(`Created ${result.profession?.name}`);
     }
 
-    setStatus(`Created ${result.class?.name}`);
     setNewClass({ name: '', tier: 1, unlock_level: 1, description: '', primary_attribute: '', secondary_attribute: '' });
     const refreshed = await Promise.all([getCachedClasses(), getCachedProfessions()]);
     setClasses(refreshed[0]);
@@ -174,23 +192,30 @@ export default function ClassesPage() {
               <div className="flex items-center gap-2">
                 {isAdmin && (
                   <>
-                    <button 
+                    <button
+                      onClick={() => setShowEditorModal(true)}
+                      className="flex items-center gap-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 border border-purple-600/30 hover:border-purple-500 px-4 py-2 rounded-lg transition-all text-sm font-medium"
+                    >
+                      <Zap size={18} />
+                      <span>Manage Abilities</span>
+                    </button>
+                    <button
                       onClick={() => setShowClassEditor(true)}
                       className="flex items-center gap-2 bg-orange-600/20 hover:bg-orange-600/30 text-orange-400 border border-orange-600/30 hover:border-orange-500 px-4 py-2 rounded-lg transition-all text-sm font-medium"
                     >
-                      <Settings size={18} />
+                      <Swords size={18} />
                       <span>Edit Classes</span>
                     </button>
-                    <button 
-                      onClick={() => setShowAbilityManager(true)}
-                      className="flex items-center gap-2 bg-yellow-600/20 hover:bg-yellow-600/30 text-yellow-400 border border-yellow-600/30 hover:border-yellow-500 px-4 py-2 rounded-lg transition-all text-sm font-medium"
+                    <button
+                      onClick={() => setShowProfessionEditor(true)}
+                      className="flex items-center gap-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-600/30 hover:border-blue-500 px-4 py-2 rounded-lg transition-all text-sm font-medium"
                     >
-                      <Settings size={18} />
-                      <span>Manage Abilities</span>
+                      <Briefcase size={18} />
+                      <span>Edit Professions</span>
                     </button>
                   </>
                 )}
-                <button 
+                <button
                   onClick={loadClasses}
                   disabled={loading}
                   className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 px-4 py-2 rounded-lg transition-all text-sm font-medium"
@@ -314,28 +339,32 @@ export default function ClassesPage() {
                     onChange={(e) => setNewClass({ ...newClass, unlock_level: Number(e.target.value) })}
                   />
                 </label>
-                <label className="flex flex-col gap-1 text-slate-400">
-                  <span className="text-[10px] uppercase text-slate-500">Primary Attribute</span>
-                  <input
-                    className="bg-slate-800 border border-slate-700 rounded px-2 py-1"
-                    value={newClass.primary_attribute}
-                    onChange={(e) => setNewClass({ ...newClass, primary_attribute: e.target.value })}
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-slate-400">
-                  <span className="text-[10px] uppercase text-slate-500">Secondary Attribute</span>
-                  <input
-                    className="bg-slate-800 border border-slate-700 rounded px-2 py-1"
-                    value={newClass.secondary_attribute}
-                    onChange={(e) => setNewClass({ ...newClass, secondary_attribute: e.target.value })}
-                  />
-                </label>
+                {filterCategory === 'combat' && (
+                  <>
+                    <label className="flex flex-col gap-1 text-slate-400">
+                      <span className="text-[10px] uppercase text-slate-500">Primary Attribute</span>
+                      <input
+                        className="bg-slate-800 border border-slate-700 rounded px-2 py-1"
+                        value={newClass.primary_attribute}
+                        onChange={(e) => setNewClass({ ...newClass, primary_attribute: e.target.value })}
+                      />
+                    </label>
+                    <label className="flex flex-col gap-1 text-slate-400">
+                      <span className="text-[10px] uppercase text-slate-500">Secondary Attribute</span>
+                      <input
+                        className="bg-slate-800 border border-slate-700 rounded px-2 py-1"
+                        value={newClass.secondary_attribute}
+                        onChange={(e) => setNewClass({ ...newClass, secondary_attribute: e.target.value })}
+                      />
+                    </label>
+                  </>
+                )}
               </div>
               <button
                 onClick={handleCreate}
                 className="w-full bg-nexus-accent/80 hover:bg-nexus-accent text-white rounded py-2 text-sm font-semibold"
               >
-                Create Class
+                {filterCategory === 'combat' ? 'Create Class' : 'Create Profession'}
               </button>
             </div>
             <div className="bg-slate-900 border border-slate-700 rounded-lg p-4 text-sm text-slate-400">
@@ -450,15 +479,22 @@ export default function ClassesPage() {
           </div>
         </main>
 
-        {/* Class Abilities Manager Modal */}
-        <ClassAbilitiesManager
-          isOpen={showAbilityManager}
-          onClose={() => setShowAbilityManager(false)}
+        {/* Unified Ability Manager Modal (Classes & Professions) */}
+        <AbilityManagerModal
+          isOpen={showEditorModal}
+          onClose={() => setShowEditorModal(false)}
         />
 
+        {/* Class Editor Modal */}
         <ClassEditorModal
           isOpen={showClassEditor}
           onClose={() => setShowClassEditor(false)}
+        />
+
+        {/* Profession Editor Modal */}
+        <ProfessionEditorModal
+          isOpen={showProfessionEditor}
+          onClose={() => setShowProfessionEditor(false)}
         />
 
         {/* Footer with Social Icons */}

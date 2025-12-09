@@ -1,10 +1,11 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Search, Zap, Loader2, RefreshCw } from 'lucide-react';
-import { getCachedAbilities, createAbility, LitrpgAbility } from '../utils/api-litrpg';
+import { Search, Zap, Loader2, RefreshCw, Wand2, Edit } from 'lucide-react';
+import { getCachedAbilities, createAbility, updateAbility, LitrpgAbility } from '../utils/api-litrpg';
 import SocialIcons from '../../../components/SocialIcons';
 import LitrpgNav from '../components/LitrpgNav';
 import { useAuth } from '../../../contexts/AuthContext';
+import { generateAbilityTiers } from '../utils/ability-tier-generator';
 
 export default function AbilitiesPage() {
   const [search, setSearch] = useState('');
@@ -31,6 +32,7 @@ export default function AbilitiesPage() {
     tiers: [defaultTier(1)],
   });
   const [tierEditorOpen, setTierEditorOpen] = useState(false);
+  const [editingAbility, setEditingAbility] = useState<LitrpgAbility | null>(null);
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
@@ -68,13 +70,7 @@ export default function AbilitiesPage() {
           effectDescription: tier.effectDescription || undefined,
         };
       })
-      .filter((tier): tier is {
-        level: number;
-        duration?: string;
-        cooldown?: string;
-        energyCost?: number;
-        effectDescription?: string;
-      } => Boolean(tier));
+      .filter((tier): tier is NonNullable<typeof tier> => tier !== null);
 
     const result = await createAbility({
       name: newAbility.name,
@@ -94,6 +90,72 @@ export default function AbilitiesPage() {
     setNewAbility({ name: '', description: '', category: '', maxLevel: 5, tiers: [defaultTier(1)] });
     setTierEditorOpen(false);
     await loadAbilities();
+  };
+
+  const handleEdit = (ability: LitrpgAbility) => {
+    setEditingAbility(ability);
+    setNewAbility({
+      name: ability.name,
+      description: ability.description || '',
+      category: ability.category || '',
+      maxLevel: ability.maxLevel,
+      tiers: ability.tiers && ability.tiers.length > 0
+        ? ability.tiers.map(tier => ({
+            level: tier.level,
+            duration: tier.duration || '',
+            cooldown: tier.cooldown || '',
+            energyCost: tier.energyCost !== undefined ? String(tier.energyCost) : '',
+            effectDescription: tier.effectDescription || '',
+          }))
+        : [defaultTier(1)],
+    });
+    setTierEditorOpen(ability.tiers && ability.tiers.length > 1);
+  };
+
+  const handleUpdate = async () => {
+    if (!editingAbility) return;
+    setStatus(null);
+
+    const normalizedTiers = newAbility.tiers
+      .map((tier, index) => {
+        const hasData = tier.duration || tier.cooldown || tier.energyCost || tier.effectDescription;
+        if (!hasData && index > 0) return null;
+
+        return {
+          level: index + 1,
+          duration: tier.duration || undefined,
+          cooldown: tier.cooldown || undefined,
+          energyCost: tier.energyCost ? Number(tier.energyCost) : undefined,
+          effectDescription: tier.effectDescription || undefined,
+        };
+      })
+      .filter((tier): tier is NonNullable<typeof tier> => tier !== null);
+
+    const result = await updateAbility(editingAbility.id, {
+      name: newAbility.name,
+      description: newAbility.description,
+      category: newAbility.category,
+      maxLevel: Number(newAbility.maxLevel) || 1,
+      tiers: normalizedTiers,
+    });
+
+    if (!result.success) {
+      setStatus(result.error || 'Failed to update ability');
+      return;
+    }
+
+    setStatus(`Updated ability ${result.ability?.name}`);
+    setEditingAbility(null);
+    setNewAbility({ name: '', description: '', category: '', maxLevel: 5, tiers: [defaultTier(1)] });
+    setTierEditorOpen(false);
+    await loadAbilities();
+  };
+
+  const cancelEdit = () => {
+    setEditingAbility(null);
+    setNewAbility({ name: '', description: '', category: '', maxLevel: 5, tiers: [defaultTier(1)] });
+    setTierEditorOpen(false);
+    setStatus(null);
   };
 
   const updateTierField = (index: number, field: 'duration' | 'cooldown' | 'energyCost' | 'effectDescription', value: string) => {
@@ -207,7 +269,9 @@ export default function AbilitiesPage() {
                 {isAdmin && (
                   <div className="mb-6 p-3 bg-slate-800/60 rounded-lg border border-slate-700 space-y-2">
                     <div className="flex items-center justify-between">
-                      <div className="text-xs font-bold text-slate-400 uppercase">Quick Add Ability</div>
+                      <div className="text-xs font-bold text-slate-400 uppercase">
+                        {editingAbility ? `Edit: ${editingAbility.name}` : 'Quick Add Ability'}
+                      </div>
                       {status && <div className="text-[10px] text-green-300">{status}</div>}
                     </div>
                     <input
@@ -283,6 +347,80 @@ export default function AbilitiesPage() {
 
                       {tierEditorOpen && (
                         <div className="px-3 pb-3 space-y-3 text-sm">
+                          {/* Quick Generate Tiers */}
+                          <div className="p-3 rounded border border-purple-700/50 bg-purple-950/20 space-y-2">
+                            <div className="flex items-center gap-2 text-xs font-semibold text-purple-300">
+                              <Wand2 className="h-3.5 w-3.5" />
+                              <span>Quick Generate Tiers (Auto-scale for levels 1-{newAbility.maxLevel})</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 text-xs">
+                              <div>
+                                <label className="block text-slate-400 mb-1">Cooldown Scaling (%/level)</label>
+                                <input
+                                  type="number"
+                                  className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1"
+                                  placeholder="-10"
+                                  id="cooldown-scaling"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-slate-400 mb-1">Duration Scaling (%/level)</label>
+                                <input
+                                  type="number"
+                                  className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1"
+                                  placeholder="30"
+                                  id="duration-scaling"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-slate-400 mb-1">Energy Scaling (+/level)</label>
+                                <input
+                                  type="number"
+                                  className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1"
+                                  placeholder="5"
+                                  id="energy-scaling"
+                                />
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const cooldownScaling = parseFloat((document.getElementById('cooldown-scaling') as HTMLInputElement)?.value || '-10') / 100;
+                                const durationScaling = parseFloat((document.getElementById('duration-scaling') as HTMLInputElement)?.value || '30') / 100;
+                                const energyScaling = parseInt((document.getElementById('energy-scaling') as HTMLInputElement)?.value || '5');
+
+                                const generatedTiers = generateAbilityTiers({
+                                  maxLevel: newAbility.maxLevel,
+                                  baseDuration: newAbility.tiers[0]?.duration || '',
+                                  baseCooldown: newAbility.tiers[0]?.cooldown || '',
+                                  baseEnergyCost: newAbility.tiers[0]?.energyCost ? parseFloat(newAbility.tiers[0].energyCost as string) : 0,
+                                  baseEffect: newAbility.tiers[0]?.effectDescription || '',
+                                  durationScaling,
+                                  cooldownScaling,
+                                  energyCostScaling: energyScaling,
+                                });
+
+                                // Convert generated tiers to form format (energyCost as string)
+                                const formattedTiers = generatedTiers.map(tier => ({
+                                  ...tier,
+                                  duration: tier.duration || '',
+                                  cooldown: tier.cooldown || '',
+                                  energyCost: tier.energyCost !== undefined ? String(tier.energyCost) : '',
+                                  effectDescription: tier.effectDescription || '',
+                                }));
+
+                                setNewAbility({ ...newAbility, tiers: formattedTiers });
+                              }}
+                              className="w-full px-3 py-1.5 rounded bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium flex items-center justify-center gap-1.5"
+                            >
+                              <Wand2 className="h-3.5 w-3.5" />
+                              Generate All Tiers
+                            </button>
+                            <p className="text-xs text-slate-500 italic">
+                              Uses Level 1 values as base. Scaling compounds per level (exponential growth). Effect descriptions are copied from Level 1.
+                            </p>
+                          </div>
+
                           <div className="flex items-center justify-between text-xs text-slate-400">
                             <span>Levels 2-10</span>
                             <button
@@ -342,12 +480,22 @@ export default function AbilitiesPage() {
                         </div>
                       )}
                     </div>
-                    <button
-                      onClick={handleCreate}
-                      className="w-full bg-nexus-accent/80 hover:bg-nexus-accent text-white rounded py-2 text-sm font-semibold"
-                    >
-                      Add Ability
-                    </button>
+                    <div className="flex gap-2">
+                      {editingAbility && (
+                        <button
+                          onClick={cancelEdit}
+                          className="flex-1 bg-slate-700 hover:bg-slate-600 text-white rounded py-2 text-sm font-semibold"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                      <button
+                        onClick={editingAbility ? handleUpdate : handleCreate}
+                        className="flex-1 bg-nexus-accent/80 hover:bg-nexus-accent text-white rounded py-2 text-sm font-semibold"
+                      >
+                        {editingAbility ? 'Update Ability' : 'Add Ability'}
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -418,7 +566,18 @@ export default function AbilitiesPage() {
                                         <div key={ability.id} id={`ability-${ability.id}`} className="bg-slate-900 border border-slate-800 rounded-xl p-5 hover:border-slate-600 transition-colors group scroll-mt-20">
                                             <div className="flex justify-between items-start mb-2">
                                                 <h3 className="font-bold text-lg text-slate-200 group-hover:text-white transition-colors">{ability.name}</h3>
-                                                <span className="text-xs bg-slate-800 text-slate-500 px-2 py-1 rounded font-mono">Max Lvl {ability.maxLevel}</span>
+                                                <div className="flex items-center gap-2">
+                                                  <span className="text-xs bg-slate-800 text-slate-500 px-2 py-1 rounded font-mono">Max Lvl {ability.maxLevel}</span>
+                                                  {isAdmin && (
+                                                    <button
+                                                      onClick={() => handleEdit(ability)}
+                                                      className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-nexus-accent transition-colors"
+                                                      title="Edit ability"
+                                                    >
+                                                      <Edit size={14} />
+                                                    </button>
+                                                  )}
+                                                </div>
                                             </div>
                                             
                                             <p className="text-sm text-slate-400 mb-4 h-10 line-clamp-2">{ability.description || 'No description available.'}</p>

@@ -44,14 +44,16 @@ export const ClassAbilitiesManager: React.FC<ClassAbilitiesManagerProps> = ({ is
     if (!selectedClass?.ability_ids) return [];
     return selectedClass.ability_ids
       .map((id) => abilitiesArray.find((a) => a.id === id))
-      .filter((a): a is LitrpgAbility => Boolean(a));
+      .filter((a): a is LitrpgAbility => Boolean(a))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [selectedClass, abilitiesArray]);
 
   const availableAbilities = useMemo(() => {
     const assignedIds = new Set(selectedClass?.ability_ids || []);
     return abilitiesArray
       .filter((a) => !assignedIds.has(a.id))
-      .filter((a) => !abilitySearch || a.name.toLowerCase().includes(abilitySearch.toLowerCase()));
+      .filter((a) => !abilitySearch || a.name.toLowerCase().includes(abilitySearch.toLowerCase()))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [abilitiesArray, selectedClass, abilitySearch]);
 
   const toggleAbility = (id: number, add: boolean) => {

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { BookOpen, ScrollText, Upload, Save, Zap, Shield, Package, Users, RefreshCw, ChevronLeft, Database, Swords, Plus, X } from 'lucide-react';
 import { Character, ClassName, Attribute, Monster, Quest, SaveData } from './types';
 import { CharacterSheet } from './components/CharacterSheet';
-import { listCharacters, updateCharacter as apiUpdateCharacter, createCharacter as apiCreateCharacter, LitrpgCharacter, getCachedClasses, getCachedAbilities, getCachedMonsters, LitrpgMonster } from './utils/api-litrpg';
+import { listCharacters, updateCharacter as apiUpdateCharacter, createCharacter as apiCreateCharacter, LitrpgCharacter, getCachedClasses, getCachedAbilities, getCachedProfessions, getCachedMonsters, LitrpgMonster } from './utils/api-litrpg';
 import { useAuth } from '../../contexts/AuthContext';
 
 const LitrpgApp: React.FC = () => {
@@ -139,11 +139,23 @@ const LitrpgApp: React.FC = () => {
   const handleSelectDbCharacter = async (dbChar: LitrpgCharacter) => {
     // Convert database character to local Character format
     const stats = dbChar.stats || {};
+    const baseStats = dbChar.base_stats || stats; // Use base_stats if available, fallback to stats
+
+    // Get the actual class name from class_id if class_name is not set
+    const dbClasses = await getCachedClasses();
+    // Professions are loaded but not needed for name lookup since profession_name is stored directly
+    await getCachedProfessions(); // Pre-cache for CharacterSheet
+    let mappedClassName: ClassName;
+
+    if (dbChar.class_id) {
+      const classObj = dbClasses.find(c => c.id === dbChar.class_id);
+      mappedClassName = (classObj?.name || 'Recruit') as ClassName;
+    } else {
+      mappedClassName = (dbChar.class_name || 'Recruit') as ClassName;
+    }
     
-    // Use the database class name directly (cast to ClassName for type compatibility)
-    // This allows DB classes like "Soldier", "Engineer", "Medic" to display correctly
-    // even if they're not in the frontend ClassName enum
-    const mappedClassName = (dbChar.class_name || 'Recruit') as ClassName;
+    // Get profession name directly from DB (table uses profession_name column, not profession_id)
+    let professionName: string | undefined = dbChar.profession_name;
     
     // Convert unlocked_abilities from DB format to frontend format
     // DB could store: { "ability_id": level } or just [ability_id, ...]
@@ -172,11 +184,14 @@ const LitrpgApp: React.FC = () => {
         }
       }
     }
-    
+
     // Get the tier of the current class to initialize highestTierAchieved
-    const dbClasses = await getCachedClasses();
     const currentClass = dbClasses.find(c => c.name === mappedClassName);
     const currentTier = currentClass ? parseInt(currentClass.tier.replace('tier-', '')) : 1;
+    
+    // Parse class and profession history from DB if available
+    const classHistoryWithLevels = dbChar.class_history_with_levels || [];
+    const professionHistoryWithLevels = dbChar.profession_history_with_levels || [];
     
     setCharacter({
       name: dbChar.name,
@@ -185,16 +200,22 @@ const LitrpgApp: React.FC = () => {
       xp: dbChar.xp_current,
       credits: dbChar.credits,
       className: mappedClassName,
-      classActivatedAtLevel: dbChar.level, // When loading from DB, assume current class was activated at current level
-      classHistory: [], // Start fresh - will be built as classes change
-      highestTierAchieved: currentTier,
+      classActivatedAtLevel: dbChar.class_activated_at_level || 1, // Use stored activation level
+      classHistory: classHistoryWithLevels.map(h => h.className), // Extract names for simple history
+      classHistoryWithLevels: classHistoryWithLevels, // Keep detailed history
+      highestTierAchieved: dbChar.highest_tier_achieved || currentTier,
+      // Load profession data
+      professionName: professionName,
+      professionActivatedAtLevel: dbChar.profession_activated_at_level,
+      professionHistoryWithLevels: professionHistoryWithLevels,
+      // Use BASE stats only - bonuses are calculated separately in CharacterSheet
       attributes: {
-        [Attribute.STR]: stats.STR || 3,
-        [Attribute.PER]: stats.PER || 3,
-        [Attribute.DEX]: stats.DEX || 3,
-        [Attribute.MEM]: stats.MEM || 3,
-        [Attribute.INT]: stats.INT || 3,
-        [Attribute.CHA]: stats.CHA || 3
+        [Attribute.STR]: baseStats.STR || 3,
+        [Attribute.PER]: baseStats.PER || 3,
+        [Attribute.DEX]: baseStats.DEX || 3,
+        [Attribute.MEM]: baseStats.MEM || 3,
+        [Attribute.INT]: baseStats.INT || 3,
+        [Attribute.CHA]: baseStats.CHA || 3
       },
       abilities: abilitiesMap,
       inventory: [], // DB uses item IDs (numbers), local uses strings - keeping local for now
@@ -208,11 +229,94 @@ const LitrpgApp: React.FC = () => {
 
   const handleSaveToDatabase = async () => {
     if (!selectedDbCharacterId || !isAdmin) return;
-    
+
     setIsSaving(true);
     setSaveMessage(null);
-    
+
     try {
+      const dbClasses = await getCachedClasses();
+      const dbProfessions = await getCachedProfessions();
+      
+      // Get class_id: use saved one, or lookup from DB by className
+      let classIdToSave = selectedDbClassId;
+      if (classIdToSave === null) {
+        const matchingClass = dbClasses.find(c => c.name === character.className);
+        if (matchingClass) {
+          classIdToSave = matchingClass.id;
+        }
+      }
+
+      // ======= BANKING: Calculate accumulated bonuses and consolidate into base stats =======
+      // Calculate class bonuses from history
+      const accumulatedBonuses: Record<string, number> = {};
+      
+      // Add bonuses from all previous classes
+      if (character.classHistoryWithLevels && character.classHistoryWithLevels.length > 0) {
+        for (const entry of character.classHistoryWithLevels) {
+          const historicalClass = dbClasses.find(c => c.name === entry.className);
+          if (historicalClass?.stat_bonuses) {
+            const levelsHeld = (entry.deactivatedAtLevel || character.level) - entry.activatedAtLevel;
+            if (levelsHeld > 0) {
+              for (const [stat, bonusPerLevel] of Object.entries(historicalClass.stat_bonuses)) {
+                accumulatedBonuses[stat] = (accumulatedBonuses[stat] || 0) + (bonusPerLevel * levelsHeld);
+              }
+            }
+          }
+        }
+      }
+      
+      // Add bonuses from current class (levels since activation)
+      const currentClass = dbClasses.find(c => c.name === character.className);
+      if (currentClass?.stat_bonuses) {
+        const activationLevel = character.classActivatedAtLevel || 1;
+        const levelsSinceActivation = Math.max(0, character.level - activationLevel);
+        // Only add bonuses after gaining levels (not immediately on selection)
+        if (levelsSinceActivation > 0) {
+          for (const [stat, bonusPerLevel] of Object.entries(currentClass.stat_bonuses)) {
+            accumulatedBonuses[stat] = (accumulatedBonuses[stat] || 0) + (bonusPerLevel * levelsSinceActivation);
+          }
+        }
+      }
+
+      // Add bonuses from all previous professions
+      if (character.professionHistoryWithLevels && character.professionHistoryWithLevels.length > 0) {
+        for (const entry of character.professionHistoryWithLevels) {
+          const historicalProfession = dbProfessions.find(p => p.name === entry.className);
+          if (historicalProfession?.stat_bonuses) {
+            const levelsHeld = (entry.deactivatedAtLevel || character.level) - entry.activatedAtLevel;
+            if (levelsHeld > 0) {
+              for (const [stat, bonusPerLevel] of Object.entries(historicalProfession.stat_bonuses)) {
+                accumulatedBonuses[stat] = (accumulatedBonuses[stat] || 0) + (bonusPerLevel * levelsHeld);
+              }
+            }
+          }
+        }
+      }
+
+      // Add bonuses from current profession
+      if (character.professionName && character.professionActivatedAtLevel) {
+        const currentProfession = dbProfessions.find(p => p.name === character.professionName);
+        if (currentProfession?.stat_bonuses) {
+          const levelsHeld = character.level - character.professionActivatedAtLevel;
+          // Only add bonuses after gaining levels (not immediately on selection)
+          if (levelsHeld > 0) {
+            for (const [stat, bonusPerLevel] of Object.entries(currentProfession.stat_bonuses)) {
+              accumulatedBonuses[stat] = (accumulatedBonuses[stat] || 0) + (bonusPerLevel * levelsHeld);
+            }
+          }
+        }
+      }
+      
+      // Create the "banked" stats (base + accumulated bonuses)
+      const bankedStats = {
+        STR: character.attributes[Attribute.STR] + (accumulatedBonuses['STR'] || 0),
+        PER: character.attributes[Attribute.PER] + (accumulatedBonuses['PER'] || 0),
+        DEX: character.attributes[Attribute.DEX] + (accumulatedBonuses['DEX'] || 0),
+        MEM: character.attributes[Attribute.MEM] + (accumulatedBonuses['MEM'] || 0),
+        INT: character.attributes[Attribute.INT] + (accumulatedBonuses['INT'] || 0),
+        CHA: character.attributes[Attribute.CHA] + (accumulatedBonuses['CHA'] || 0)
+      };
+
       // Build update payload
       const updatePayload: Parameters<typeof apiUpdateCharacter>[0] = {
         id: selectedDbCharacterId,
@@ -220,28 +324,65 @@ const LitrpgApp: React.FC = () => {
         level: character.level,
         xp_current: character.xp,
         credits: character.credits,
-        stats: {
-          STR: character.attributes[Attribute.STR],
-          PER: character.attributes[Attribute.PER],
-          DEX: character.attributes[Attribute.DEX],
-          MEM: character.attributes[Attribute.MEM],
-          INT: character.attributes[Attribute.INT],
-          CHA: character.attributes[Attribute.CHA]
-        },
+        highest_tier_achieved: character.highestTierAchieved || 1,
+        // Save total stats (for display/combat calculations)
+        stats: bankedStats,
+        // Save base_stats WITH accumulated bonuses banked in (this becomes the new baseline)
+        base_stats: bankedStats,
         equipped_items: character.equippedItems,
-        portrait_image: character.headerImageUrl
+        portrait_image: character.headerImageUrl,
+        // Reset activation levels to current level (bonuses are now banked)
+        class_activated_at_level: character.level,
+        class_history_with_levels: [], // Clear history since bonuses are banked
+        // Save profession data - reset activation level
+        profession_name: character.professionName,
+        profession_activated_at_level: character.professionName ? character.level : undefined,
+        profession_history_with_levels: [] // Clear history since bonuses are banked
       };
+
+      // Debug: Log save data
+      console.log('💾 BEFORE SAVE - Character state:', {
+        level: character.level,
+        className: character.className,
+        classActivatedAtLevel: character.classActivatedAtLevel,
+        professionName: character.professionName,
+        professionActivatedAtLevel: character.professionActivatedAtLevel,
+        baseStats: character.attributes,
+        accumulatedBonuses
+      });
+      console.log('💾 SAVE PAYLOAD:', {
+        stats: bankedStats,
+        base_stats: bankedStats,
+        class_activated_at_level: updatePayload.class_activated_at_level,
+        profession_activated_at_level: updatePayload.profession_activated_at_level
+      });
+
+      // Update local character state - bank the bonuses into attributes
+      const bankedCharacter = {
+        ...character,
+        // Bank the accumulated bonuses into attributes (this becomes the new base)
+        attributes: {
+          [Attribute.STR]: bankedStats.STR,
+          [Attribute.PER]: bankedStats.PER,
+          [Attribute.DEX]: bankedStats.DEX,
+          [Attribute.MEM]: bankedStats.MEM,
+          [Attribute.INT]: bankedStats.INT,
+          [Attribute.CHA]: bankedStats.CHA
+        },
+        classActivatedAtLevel: character.level,
+        classHistoryWithLevels: [],
+        professionActivatedAtLevel: character.professionName ? character.level : undefined,
+        professionHistoryWithLevels: []
+      };
+      console.log('💾 AFTER SAVE - Updated character state:', {
+        level: bankedCharacter.level,
+        classActivatedAtLevel: bankedCharacter.classActivatedAtLevel,
+        professionActivatedAtLevel: bankedCharacter.professionActivatedAtLevel,
+        baseStats: bankedCharacter.attributes,
+        totalStatsWithBonuses: bankedStats
+      });
+      setCharacter(bankedCharacter);
       
-      // Get class_id: use saved one, or lookup from DB by className
-      let classIdToSave = selectedDbClassId;
-      if (classIdToSave === null) {
-        // Lookup class_id from database based on character.className
-        const dbClasses = await getCachedClasses();
-        const matchingClass = dbClasses.find(c => c.name === character.className);
-        if (matchingClass) {
-          classIdToSave = matchingClass.id;
-        }
-      }
       if (classIdToSave !== null) {
         updatePayload.class_id = classIdToSave;
       }
@@ -571,12 +712,16 @@ const LitrpgApp: React.FC = () => {
 
       {/* Main Content Area */}
       <main className="flex-1 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto py-8 w-full">
-        <CharacterSheet 
-          character={character} 
-          updateCharacter={setCharacter} 
+        <CharacterSheet
+          character={character}
+          updateCharacter={setCharacter}
           monsters={monsters}
           currentDbClassId={selectedDbClassId}
-          onDbClassChange={setSelectedDbClassId}
+          onDbClassChange={(classId) => {
+            setSelectedDbClassId(classId);
+            // Don't auto-save on class change - let user manually save
+            // Auto-save was causing loops with the tier upgrade modal
+          }}
         />
       </main>
     </div>

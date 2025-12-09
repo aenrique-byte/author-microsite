@@ -97,32 +97,48 @@ export const applyCooldownReduction = (baseCooldown: string, mem: number): strin
     return baseCooldown;
   }
 
-  // Parse String (e.g., "10m", "30s", "1h")
-  const regex = /^(\d+(\.\d+)?)\s*([smh])$/i;
-  const match = baseCooldown.match(regex);
-
-  if (!match) return baseCooldown;
-
-  const val = parseFloat(match[1]);
-  const unit = match[3].toLowerCase();
-
+  // Parse compound format: "5 min 45 sec" or single format: "10 min", "30 sec", "1 hr"
+  // Also supports short format: "5m", "30s", "1h"
   let totalSeconds = 0;
-  if (unit === 's') totalSeconds = val;
-  if (unit === 'm') totalSeconds = val * 60;
-  if (unit === 'h') totalSeconds = val * 3600;
+
+  // Match all time components (e.g., "5 min", "45 sec", "1 hr")
+  const timeRegex = /(\d+(?:\.\d+)?)\s*(hr|min|sec|h|m|s)/gi;
+  const matches = Array.from(baseCooldown.matchAll(timeRegex));
+
+  if (matches.length === 0) return baseCooldown;
+
+  for (const match of matches) {
+    const val = parseFloat(match[1]);
+    const unit = match[2].toLowerCase();
+
+    if (unit === 'sec' || unit === 's') totalSeconds += val;
+    else if (unit === 'min' || unit === 'm') totalSeconds += val * 60;
+    else if (unit === 'hr' || unit === 'h') totalSeconds += val * 3600;
+  }
 
   const reduction = getCooldownReduction(mem);
   const reducedSeconds = totalSeconds * (1 - reduction);
 
-  // Re-format
+  // Re-format to human-readable
   if (reducedSeconds < 60) {
-    return `${reducedSeconds.toFixed(1)}s`;
+    return `${reducedSeconds.toFixed(1)} sec`;
   } else if (reducedSeconds < 3600) {
-    const mins = reducedSeconds / 60;
-    return `${mins.toFixed(1)}m`;
+    const mins = Math.floor(reducedSeconds / 60);
+    const secs = reducedSeconds % 60;
+    if (secs < 1) {
+      return `${mins} min`;
+    }
+    return `${mins} min ${secs.toFixed(0)} sec`;
   } else {
-    const hrs = reducedSeconds / 3600;
-    return `${hrs.toFixed(1)}h`;
+    const hrs = Math.floor(reducedSeconds / 3600);
+    const remainingSeconds = reducedSeconds % 3600;
+    const mins = Math.floor(remainingSeconds / 60);
+    const secs = remainingSeconds % 60;
+
+    let result = `${hrs} hr`;
+    if (mins > 0) result += ` ${mins} min`;
+    if (secs >= 1) result += ` ${secs.toFixed(0)} sec`;
+    return result;
   }
 };
 
@@ -138,20 +154,50 @@ export const applyDurationExtension = (baseDuration: string, int: number): strin
         return baseDuration;
     }
 
-    const regex = /^(\d+(\.\d+)?)\s*([smh])$/i;
-    const match = baseDuration.match(regex);
+    // Parse compound format: "5 min 45 sec" or single format: "10 min", "30 sec", "1 hr"
+    // Also supports short format: "5m", "30s", "1h"
+    let totalSeconds = 0;
 
-    if (!match) return baseDuration;
+    // Match all time components
+    const timeRegex = /(\d+(?:\.\d+)?)\s*(hr|min|sec|h|m|s)/gi;
+    const matches = Array.from(baseDuration.matchAll(timeRegex));
 
-    const val = parseFloat(match[1]);
-    const unit = match[3].toLowerCase();
+    if (matches.length === 0) return baseDuration;
+
+    for (const match of matches) {
+        const val = parseFloat(match[1]);
+        const unit = match[2].toLowerCase();
+
+        if (unit === 'sec' || unit === 's') totalSeconds += val;
+        else if (unit === 'min' || unit === 'm') totalSeconds += val * 60;
+        else if (unit === 'hr' || unit === 'h') totalSeconds += val * 3600;
+    }
 
     // Determine multiplier (e.g. 1.125 for 25 INT)
     const multiplier = 1 + getDurationExtension(int);
-    
-    // Apply
-    const extendedVal = val * multiplier;
 
-    // Return with same unit, but formatted
-    return `${extendedVal.toFixed(1)}${unit}`;
+    // Apply extension
+    const extendedSeconds = totalSeconds * multiplier;
+
+    // Re-format to human-readable
+    if (extendedSeconds < 60) {
+        return `${extendedSeconds.toFixed(1)} sec`;
+    } else if (extendedSeconds < 3600) {
+        const mins = Math.floor(extendedSeconds / 60);
+        const secs = extendedSeconds % 60;
+        if (secs < 1) {
+            return `${mins} min`;
+        }
+        return `${mins} min ${secs.toFixed(0)} sec`;
+    } else {
+        const hrs = Math.floor(extendedSeconds / 3600);
+        const remainingSeconds = extendedSeconds % 3600;
+        const mins = Math.floor(remainingSeconds / 60);
+        const secs = remainingSeconds % 60;
+
+        let result = `${hrs} hr`;
+        if (mins > 0) result += ` ${mins} min`;
+        if (secs >= 1) result += ` ${secs.toFixed(0)} sec`;
+        return result;
+    }
 };

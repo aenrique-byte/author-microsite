@@ -25,6 +25,12 @@ export interface EquippedItems {
   accessory_3?: number | null;
 }
 
+export interface ClassHistoryEntry {
+  className: string;
+  activatedAtLevel: number;
+  deactivatedAtLevel?: number;
+}
+
 export interface LitrpgCharacter {
   id: number;
   slug: string;
@@ -37,7 +43,15 @@ export interface LitrpgCharacter {
   class_level: number;
   class_name?: string;
   class_slug?: string;
+  class_activated_at_level?: number;
+  class_history_with_levels?: ClassHistoryEntry[];
+  highest_tier_achieved?: number;
+  profession_id?: number;
+  profession_name?: string;
+  profession_activated_at_level?: number;
+  profession_history_with_levels?: ClassHistoryEntry[];
   stats?: Record<string, number>;
+  base_stats?: Record<string, number>; // Base stats without class/profession bonuses
   hp_max: number;
   hp_current: number;
   ep_max: number;
@@ -114,6 +128,8 @@ export interface LitrpgProfession {
   tier: string;
   unlock_level: number;
   prerequisite_profession_id?: number;
+  primary_attribute?: string;
+  secondary_attribute?: string;
   stat_bonuses?: Record<string, number>;
   ability_ids?: number[];
   icon_image?: string;
@@ -182,6 +198,7 @@ export interface NewClassInput {
   description?: string;
   tier: number;
   unlock_level: number;
+  prerequisite_class_id?: number;
   primary_attribute?: string;
   secondary_attribute?: string;
   ability_ids?: number[];
@@ -482,6 +499,46 @@ export async function createClass(payload: NewClassInput): Promise<{ success: bo
   }
 }
 
+export async function updateClass(id: number, payload: Partial<NewClassInput & { stat_bonuses?: Record<string, number> }>): Promise<{ success: boolean; class?: LitrpgClass; error?: string }> {
+  try {
+    const updatePayload: any = { id };
+
+    if (payload.name) updatePayload.name = payload.name;
+    if (payload.description !== undefined) updatePayload.description = payload.description;
+    if (payload.tier !== undefined) updatePayload.tier = payload.tier;
+    if (payload.unlock_level !== undefined) updatePayload.unlock_level = payload.unlock_level;
+    if (payload.primary_attribute !== undefined) updatePayload.primary_attribute = payload.primary_attribute;
+    if (payload.secondary_attribute !== undefined) updatePayload.secondary_attribute = payload.secondary_attribute;
+    if (payload.stat_bonuses !== undefined) updatePayload.stat_bonuses = payload.stat_bonuses;
+    if (payload.ability_ids !== undefined) updatePayload.ability_ids = payload.ability_ids;
+
+    const result = await postJson<{ success: boolean; class?: any; error?: string }>(`${API_BASE}/litrpg/classes/update.php`, updatePayload);
+
+    if (!result.success || !result.class) return { success: false, error: result.error || 'Failed to update class' };
+
+    classesCache = null;
+    const cls: LitrpgClass = {
+      id: result.class.id,
+      slug: result.class.slug,
+      name: result.class.name,
+      description: result.class.description,
+      tier: result.class.tier,
+      unlock_level: result.class.unlock_level,
+      prerequisite_class_id: result.class.prerequisite_class_id || undefined,
+      stat_bonuses: result.class.stat_bonuses || {},
+      primary_attribute: result.class.primary_attribute,
+      secondary_attribute: result.class.secondary_attribute,
+      starting_item: result.class.starting_item,
+      ability_ids: result.class.ability_ids || [],
+      upgrade_ids: result.class.upgrade_ids || [],
+    };
+
+    return { success: true, class: cls };
+  } catch (error) {
+    return { success: false, error: String(error) };
+  }
+}
+
 export async function updateClassAbilities(classId: number, abilityIds: number[]): Promise<{ success: boolean; error?: string }> {
   try {
     const result = await postJson<{ success: boolean; error?: string }>(`${API_BASE}/litrpg/classes/update.php`, {
@@ -490,6 +547,17 @@ export async function updateClassAbilities(classId: number, abilityIds: number[]
     });
 
     if (!result.success) return { success: false, error: result.error || 'Failed to update abilities' };
+    classesCache = null;
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: String(error) };
+  }
+}
+
+export async function deleteClass(id: number): Promise<{ success: boolean; error?: string }> {
+  try {
+    const result = await postJson<{ success: boolean; error?: string }>(`${API_BASE}/litrpg/classes/delete.php`, { id });
+    if (!result.success) return { success: false, error: result.error || 'Failed to delete class' };
     classesCache = null;
     return { success: true };
   } catch (error) {
@@ -520,6 +588,75 @@ export async function getCachedProfessions(): Promise<LitrpgProfession[]> {
   if (professionsCache) return professionsCache;
   const result = await listProfessions();
   return result.success ? result.professions : [];
+}
+
+export async function createProfession(payload: Omit<NewClassInput, 'primary_attribute' | 'secondary_attribute'>): Promise<{ success: boolean; profession?: LitrpgProfession; error?: string }> {
+  try {
+    const result = await postJson<{ success: boolean; profession?: any; error?: string }>(`${API_BASE}/litrpg/professions/create.php`, {
+      name: payload.name,
+      description: payload.description,
+      tier: payload.tier,
+      unlock_level: payload.unlock_level,
+      ability_ids: payload.ability_ids || [],
+    });
+
+    if (!result.success || !result.profession) return { success: false, error: result.error || 'Failed to create profession' };
+
+    professionsCache = null;
+    const prof: LitrpgProfession = {
+      ...result.profession,
+      tier: normalizeTier(result.profession.tier),
+      stat_bonuses: result.profession.stat_bonuses || {},
+      ability_ids: result.profession.ability_ids || [],
+    };
+
+    return { success: true, profession: prof };
+  } catch (error) {
+    return { success: false, error: String(error) };
+  }
+}
+
+export async function updateProfession(id: number, payload: Partial<NewClassInput & { stat_bonuses?: Record<string, number> }>): Promise<{ success: boolean; profession?: LitrpgProfession; error?: string }> {
+  try {
+    const updatePayload: any = { id };
+
+    if (payload.name) updatePayload.name = payload.name;
+    if (payload.description !== undefined) updatePayload.description = payload.description;
+    if (payload.tier !== undefined) updatePayload.tier = payload.tier;
+    if (payload.unlock_level !== undefined) updatePayload.unlock_level = payload.unlock_level;
+    if (payload.primary_attribute !== undefined) updatePayload.primary_attribute = payload.primary_attribute;
+    if (payload.secondary_attribute !== undefined) updatePayload.secondary_attribute = payload.secondary_attribute;
+    if (payload.stat_bonuses !== undefined) updatePayload.stat_bonuses = payload.stat_bonuses;
+    if (payload.ability_ids !== undefined) updatePayload.ability_ids = payload.ability_ids;
+    if (payload.prerequisite_class_id !== undefined) updatePayload.prerequisite_profession_id = payload.prerequisite_class_id;
+
+    const result = await postJson<{ success: boolean; profession?: any; error?: string }>(`${API_BASE}/litrpg/professions/update.php`, updatePayload);
+
+    if (!result.success || !result.profession) return { success: false, error: result.error || 'Failed to update profession' };
+
+    professionsCache = null;
+    const prof: LitrpgProfession = {
+      ...result.profession,
+      tier: normalizeTier(result.profession.tier),
+      stat_bonuses: result.profession.stat_bonuses || {},
+      ability_ids: result.profession.ability_ids || [],
+    };
+
+    return { success: true, profession: prof };
+  } catch (error) {
+    return { success: false, error: String(error) };
+  }
+}
+
+export async function deleteProfession(id: number): Promise<{ success: boolean; error?: string }> {
+  try {
+    const result = await postJson<{ success: boolean; error?: string }>(`${API_BASE}/litrpg/professions/delete.php`, { id });
+    if (!result.success) return { success: false, error: result.error || 'Failed to delete profession' };
+    professionsCache = null;
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: String(error) };
+  }
 }
 
 export async function listAbilities(): Promise<{ success: boolean; abilities: LitrpgAbility[]; error?: string }> {
@@ -611,6 +748,57 @@ export async function createAbility(payload: NewAbilityInput): Promise<{ success
   }
 }
 
+export async function updateAbility(id: number, payload: Partial<NewAbilityInput>): Promise<{ success: boolean; ability?: LitrpgAbility; error?: string }> {
+  try {
+    const updatePayload: any = { id };
+
+    if (payload.name) updatePayload.name = payload.name;
+    if (payload.description !== undefined) updatePayload.description = payload.description;
+    if (payload.maxLevel !== undefined) updatePayload.max_level = payload.maxLevel;
+    if (payload.category !== undefined) updatePayload.category = payload.category;
+    if (payload.evolutionId !== undefined) updatePayload.evolution_ability_id = payload.evolutionId;
+    if (payload.evolutionLevel !== undefined) updatePayload.evolution_level = payload.evolutionLevel;
+
+    if (payload.tiers !== undefined) {
+      updatePayload.tiers = payload.tiers.map((tier) => ({
+        tier_level: tier.level,
+        duration: tier.duration,
+        cooldown: tier.cooldown,
+        energy_cost: tier.energyCost,
+        effect_description: tier.effectDescription,
+      }));
+    }
+
+    const result = await postJson<{ success: boolean; ability?: any; error?: string }>(`${API_BASE}/litrpg/abilities/update.php`, updatePayload);
+
+    if (!result.success || !result.ability) return { success: false, error: result.error || 'Failed to update ability' };
+
+    abilitiesCache = null;
+    const normalized: LitrpgAbility = {
+      id: result.ability.id,
+      slug: result.ability.slug,
+      name: result.ability.name,
+      description: result.ability.description,
+      maxLevel: result.ability.max_level,
+      evolutionId: result.ability.evolution_ability_id || undefined,
+      evolutionLevel: result.ability.evolution_level || undefined,
+      category: result.ability.category,
+      icon_image: result.ability.icon_image,
+      tiers: (result.ability.tiers || []).map((tier: any) => ({
+        level: tier.tier_level,
+        duration: tier.duration || undefined,
+        cooldown: tier.cooldown || undefined,
+        energyCost: tier.energy_cost || undefined,
+        effectDescription: tier.effect_description || undefined,
+      })),
+    };
+
+    return { success: true, ability: normalized };
+  } catch (error) {
+    return { success: false, error: String(error) };
+  }
+}
+
 export async function listMonsters(): Promise<{ success: boolean; monsters: LitrpgMonster[]; error?: string }> {
   try {
     const data = await fetchJson<{ success: boolean; monsters: any[]; error?: string }>(`${API_BASE}/litrpg/monsters/list.php`);
@@ -653,6 +841,47 @@ export async function createMonster(payload: NewMonsterInput): Promise<{ success
     };
 
     return { success: true, monster };
+  } catch (error) {
+    return { success: false, error: String(error) };
+  }
+}
+
+export async function updateMonster(id: number, payload: Partial<NewMonsterInput>): Promise<{ success: boolean; monster?: LitrpgMonster; error?: string }> {
+  try {
+    const updatePayload: any = { id };
+
+    if (payload.name) updatePayload.name = payload.name;
+    if (payload.description !== undefined) updatePayload.description = payload.description;
+    if (payload.level !== undefined) updatePayload.level = payload.level;
+    if (payload.rank !== undefined) updatePayload.rank = payload.rank;
+    if (payload.xp_reward !== undefined) updatePayload.xp_reward = payload.xp_reward;
+    if (payload.credits !== undefined) updatePayload.credits = payload.credits;
+    if (payload.hp !== undefined) updatePayload.hp = payload.hp;
+
+    const result = await postJson<{ success: boolean; monster?: any; error?: string }>(`${API_BASE}/litrpg/monsters/update.php`, updatePayload);
+
+    if (!result.success || !result.monster) return { success: false, error: result.error || 'Failed to update monster' };
+
+    monstersCache = null;
+    const monster: LitrpgMonster = {
+      ...result.monster,
+      stats: result.monster.stats || {},
+      abilities: result.monster.abilities || [],
+      loot_table: result.monster.loot_table || [],
+    };
+
+    return { success: true, monster };
+  } catch (error) {
+    return { success: false, error: String(error) };
+  }
+}
+
+export async function deleteMonster(id: number): Promise<{ success: boolean; error?: string }> {
+  try {
+    const result = await postJson<{ success: boolean; error?: string }>(`${API_BASE}/litrpg/monsters/delete.php`, { id });
+    if (!result.success) return { success: false, error: result.error || 'Failed to delete monster' };
+    monstersCache = null;
+    return { success: true };
   } catch (error) {
     return { success: false, error: String(error) };
   }

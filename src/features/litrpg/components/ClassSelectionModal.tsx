@@ -109,32 +109,36 @@ export const ClassSelectionModal: React.FC<ClassSelectionModalProps> = ({
 
   const handleConfirm = () => {
     if (selectedClassId) {
-      // Search in both regular classes and professions
-      let cls = classes.find(c => c.id === selectedClassId);
-      if (!cls) {
-        // Also search in professions if not found in classes
+      let cls: LitrpgClass | undefined;
+
+      // Search in the correct array based on category
+      if (category === 'professional') {
+        // For professions, search professions array ONLY
         const profession = professions.find(p => p.id === selectedClassId);
-          if (profession) {
-            cls = {
-              id: profession.id,
-              name: profession.name,
-              slug: profession.slug,
-              description: profession.description,
-              tier: profession.tier,
-              unlock_level: profession.unlock_level,
-              prerequisite_class_id: profession.prerequisite_profession_id,
-              stat_bonuses: profession.stat_bonuses,
-              primary_attribute: undefined,
-              secondary_attribute: undefined,
-              starting_item: undefined,
-              ability_ids: profession.ability_ids,
-              upgrade_ids: [],
-              created_at: '',
-              updated_at: ''
+        if (profession) {
+          cls = {
+            id: profession.id,
+            name: profession.name,
+            slug: profession.slug,
+            description: profession.description,
+            tier: profession.tier,
+            unlock_level: profession.unlock_level,
+            prerequisite_class_id: profession.prerequisite_profession_id,
+            stat_bonuses: profession.stat_bonuses,
+            primary_attribute: undefined,
+            secondary_attribute: undefined,
+            starting_item: undefined,
+            ability_ids: profession.ability_ids,
+            upgrade_ids: [],
+            created_at: '',
+            updated_at: ''
           } as LitrpgClass;
         }
+      } else {
+        // For combat classes, search classes array ONLY
+        cls = classes.find(c => c.id === selectedClassId);
       }
-      
+
       if (cls) {
         onSelectClass(selectedClassId, cls.name);
       }

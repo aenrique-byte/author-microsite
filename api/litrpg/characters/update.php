@@ -27,11 +27,11 @@ try {
         'name', 'slug', 'description', 'level', 'xp_current', 'xp_to_level',
         'class_id', 'class_activated_at_level', 'hp_max', 'hp_current', 'ep_max', 'ep_current',
         'credits', 'portrait_image', 'header_image_url', 'status', 'sort_order',
-        'profession_name', 'profession_activated_at_level', 'highest_tier_achieved'
+        'profession_id', 'profession_name', 'profession_activated_at_level', 'highest_tier_achieved'
     ];
     
     $jsonFields = [
-        'stats', 'equipped_items', 'inventory', 'unlocked_abilities',
+        'stats', 'base_stats', 'equipped_items', 'inventory', 'unlocked_abilities',
         'class_history', 'class_history_with_levels', 
         'profession_history_with_levels', 'history'
     ];
@@ -84,7 +84,7 @@ try {
     
     // Parse JSON fields for response
     $jsonFieldsToParse = [
-        'stats', 'equipped_items', 'inventory', 'unlocked_abilities',
+        'stats', 'base_stats', 'equipped_items', 'inventory', 'unlocked_abilities',
         'class_history', 'class_history_with_levels', 
         'profession_history_with_levels', 'history'
     ];

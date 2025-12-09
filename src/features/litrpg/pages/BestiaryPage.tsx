@@ -1,9 +1,10 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Ghost, Skull, Coins, Search, BookOpen, AlertTriangle } from 'lucide-react';
+import { Ghost, Skull, Coins, Search, BookOpen, AlertTriangle, Settings } from 'lucide-react';
 import { getCachedMonsters, createMonster, LitrpgMonster } from '../utils/api-litrpg';
 import SocialIcons from '../../../components/SocialIcons';
 import LitrpgNav from '../components/LitrpgNav';
+import { MonsterEditorModal } from '../components/MonsterEditorModal';
 import { useAuth } from '../../../contexts/AuthContext';
 
 type MonsterRank = 'Trash' | 'Regular' | 'Champion' | 'Boss';
@@ -32,6 +33,7 @@ export default function BestiaryPage() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
 
+  const [showEditorModal, setShowEditorModal] = useState(false);
   const [newMonster, setNewMonster] = useState({
     name: '',
     rank: 'Regular' as MonsterRank,
@@ -114,6 +116,16 @@ export default function BestiaryPage() {
                     <BookOpen className="text-purple-400" size={24} />
                     <h1 className="text-xl font-bold text-white font-mono tracking-wider">BESTIARY</h1>
                   </div>
+                  {isAdmin && (
+                    <button
+                      onClick={() => setShowEditorModal(true)}
+                      className="flex items-center gap-1 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-600/30 hover:border-red-500 px-3 py-1.5 rounded-lg transition-all text-xs font-medium"
+                      title="Edit Monsters"
+                    >
+                      <Settings size={14} />
+                      Edit
+                    </button>
+                  )}
                 </div>
 
                 {/* Filters */}
@@ -164,39 +176,50 @@ export default function BestiaryPage() {
                            value={newMonster.name}
                            onChange={(e) => setNewMonster({ ...newMonster, name: e.target.value })}
                          />
-                         <select
-                           className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
-                           value={newMonster.rank}
-                           onChange={(e) => setNewMonster({ ...newMonster, rank: e.target.value as MonsterRank })}
-                         >
-                           {(['Trash', 'Regular', 'Champion', 'Boss'] as const).map((rank) => (
-                             <option key={rank} value={rank}>{rank}</option>
-                           ))}
-                         </select>
-                         <div className="grid grid-cols-2 gap-2 text-sm">
-                           <input
-                             className="bg-slate-900 border border-slate-700 rounded px-2 py-1"
-                             type="number"
-                             min={1}
-                             value={newMonster.level}
-                             onChange={(e) => setNewMonster({ ...newMonster, level: Number(e.target.value) })}
-                             placeholder="Level"
-                           />
-                           <input
-                             className="bg-slate-900 border border-slate-700 rounded px-2 py-1"
-                             type="number"
-                             value={newMonster.xp_reward}
-                             onChange={(e) => setNewMonster({ ...newMonster, xp_reward: Number(e.target.value) })}
-                             placeholder="XP"
-                           />
-                           <input
-                             className="bg-slate-900 border border-slate-700 rounded px-2 py-1"
-                             type="number"
-                             value={newMonster.credits}
-                             onChange={(e) => setNewMonster({ ...newMonster, credits: Number(e.target.value) })}
-                             placeholder="Credits"
-                           />
-                           <div />
+                         <div>
+                           <label className="block text-[10px] text-slate-500 uppercase mb-1 font-semibold">Rank</label>
+                           <select
+                             className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
+                             value={newMonster.rank}
+                             onChange={(e) => setNewMonster({ ...newMonster, rank: e.target.value as MonsterRank })}
+                           >
+                             {(['Trash', 'Regular', 'Champion', 'Boss'] as const).map((rank) => (
+                               <option key={rank} value={rank}>{rank}</option>
+                             ))}
+                           </select>
+                         </div>
+                         <div className="grid grid-cols-3 gap-2 text-sm">
+                           <div>
+                             <label className="block text-[10px] text-slate-500 uppercase mb-1 font-semibold">Level</label>
+                             <input
+                               className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1"
+                               type="number"
+                               min={1}
+                               value={newMonster.level}
+                               onChange={(e) => setNewMonster({ ...newMonster, level: Number(e.target.value) })}
+                               placeholder="1"
+                             />
+                           </div>
+                           <div>
+                             <label className="block text-[10px] text-slate-500 uppercase mb-1 font-semibold">XP Reward</label>
+                             <input
+                               className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1"
+                               type="number"
+                               value={newMonster.xp_reward}
+                               onChange={(e) => setNewMonster({ ...newMonster, xp_reward: Number(e.target.value) })}
+                               placeholder="10"
+                             />
+                           </div>
+                           <div>
+                             <label className="block text-[10px] text-slate-500 uppercase mb-1 font-semibold">Credits</label>
+                             <input
+                               className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1"
+                               type="number"
+                               value={newMonster.credits}
+                               onChange={(e) => setNewMonster({ ...newMonster, credits: Number(e.target.value) })}
+                               placeholder="5"
+                             />
+                           </div>
                          </div>
                          <textarea
                            className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
@@ -318,6 +341,16 @@ export default function BestiaryPage() {
             </div>
           </div>
         </footer>
+
+        {/* Monster Editor Modal */}
+        <MonsterEditorModal
+          isOpen={showEditorModal}
+          onClose={() => {
+            setShowEditorModal(false);
+            // Reload monsters after editing
+            getCachedMonsters().then(setMonsters);
+          }}
+        />
       </div>
     </>
   );

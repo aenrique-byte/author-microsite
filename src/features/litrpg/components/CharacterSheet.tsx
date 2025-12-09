@@ -223,46 +223,61 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
   // Check if a class upgrade is required (higher tier classes now available)
   const checkClassUpgradeRequired = (): { targetTier: ClassTier; availableClasses: LitrpgClass[] } | null => {
     if (!currentDbClass) return null;
-    
+
     const currentTierNum = getTierNumber(currentDbClass.tier);
-    
-    // Combine combat classes and professions
-    const professionsAsClasses = dbProfessions.map(p => ({
-      id: p.id,
-      name: p.name,
-      slug: p.slug,
-      description: p.description,
-      tier: p.tier,
-      unlock_level: p.unlock_level,
-      prerequisite_class_id: p.prerequisite_profession_id,
-      stat_bonuses: p.stat_bonuses,
-      primary_attribute: undefined,
-      secondary_attribute: undefined,
-      starting_item: undefined,
-      ability_ids: p.ability_ids,
-      upgrade_ids: [],
-      created_at: '',
-      updated_at: ''
-    } as LitrpgClass));
-    
-    const allClasses = [...dbClasses, ...professionsAsClasses];
-    
-    // Find all classes of higher tiers that are now unlocked
-    const higherTierClasses = allClasses.filter(cls => {
-      const clsTierNum = getTierNumber(cls.tier);
-      return clsTierNum > currentTierNum && character.level >= cls.unlock_level;
-    });
-    
-    if (higherTierClasses.length === 0) return null;
-    
-    // Find the minimum required tier among available higher classes
-    const nextTierNum = Math.min(...higherTierClasses.map(c => getTierNumber(c.tier)));
-    const targetTier = `tier-${nextTierNum}` as ClassTier;
-    
-    // Get classes of that target tier that are available
-    const availableClasses = higherTierClasses.filter(c => getTierNumber(c.tier) === nextTierNum);
-    
-    return { targetTier, availableClasses };
+    const highestTierAchieved = character.highestTierAchieved || 1;
+
+    // If the player has already selected a class for this tier level, don't prompt again
+    // (i.e., if current class tier matches or exceeds the highest tier they've achieved)
+    if (currentTierNum >= highestTierAchieved) {
+      // They've already chosen a class for their current tier, check if they can upgrade HIGHER
+      // But only if their level qualifies for the NEXT tier
+
+      // Combine combat classes and professions
+      const professionsAsClasses = dbProfessions.map(p => ({
+        id: p.id,
+        name: p.name,
+        slug: p.slug,
+        description: p.description,
+        tier: p.tier,
+        unlock_level: p.unlock_level,
+        prerequisite_class_id: p.prerequisite_profession_id,
+        stat_bonuses: p.stat_bonuses,
+        primary_attribute: undefined,
+        secondary_attribute: undefined,
+        starting_item: undefined,
+        ability_ids: p.ability_ids,
+        upgrade_ids: [],
+        created_at: '',
+        updated_at: ''
+      } as LitrpgClass));
+
+      const allClasses = [...dbClasses, ...professionsAsClasses];
+
+      // Find all classes of STRICTLY higher tiers that are now unlocked
+      // AND have the current class as a prerequisite
+      const higherTierClasses = allClasses.filter(cls => {
+        const clsTierNum = getTierNumber(cls.tier);
+        const meetsLevelRequirement = character.level >= cls.unlock_level;
+        const hasCorrectPrerequisite = cls.prerequisite_class_id === currentDbClass.id;
+
+        return clsTierNum > currentTierNum && meetsLevelRequirement && hasCorrectPrerequisite;
+      });
+
+      if (higherTierClasses.length === 0) return null;
+
+      // Find the minimum required tier among available higher classes
+      const nextTierNum = Math.min(...higherTierClasses.map(c => getTierNumber(c.tier)));
+      const targetTier = `tier-${nextTierNum}` as ClassTier;
+
+      // Get classes of that target tier that are available
+      const availableClasses = higherTierClasses.filter(c => getTierNumber(c.tier) === nextTierNum);
+
+      return { targetTier, availableClasses };
+    }
+
+    // Player needs to catch up - they haven't selected a class for their achieved tier yet
+    return null;
   };
 
   // Effect: Check for class upgrade requirement when level or classes change
@@ -325,20 +340,25 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
     return { targetTier, availableProfessions };
   };
   
-  // Effect: Check if professions are newly available (level 16 without profession, or level 42 for tier 2)
+  // Effect: Check if professions are newly available based on actual unlock levels in database
   React.useEffect(() => {
-    if (!isLoadingData) {
-      // Check if professions just unlocked (T1 at level 16)
+    if (!isLoadingData && dbProfessions.length > 0) {
       const hasNoProfession = !character.professionName;
-      const isLevel16OrHigher = character.level >= 16;
-      
-      if (hasNoProfession && isLevel16OrHigher) {
-        setProfessionUnlockAvailable(true);
+
+      if (hasNoProfession) {
+        // Find the lowest unlock level among all tier 1 professions
+        const tier1Professions = dbProfessions.filter(p => getTierNumber(p.tier) === 1);
+        if (tier1Professions.length > 0) {
+          const minUnlockLevel = Math.min(...tier1Professions.map(p => p.unlock_level));
+          setProfessionUnlockAvailable(character.level >= minUnlockLevel);
+        } else {
+          setProfessionUnlockAvailable(false);
+        }
       } else {
         setProfessionUnlockAvailable(false);
       }
-      
-      // Check if profession upgrade is available (T2 at level 42, etc.)
+
+      // Check if profession upgrade is available (higher tier professions unlocked)
       if (character.professionName) {
         const upgradeInfo = checkProfessionUpgradeAvailable();
         setProfessionUpgradeAvailable(upgradeInfo);
@@ -346,7 +366,7 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
         setProfessionUpgradeAvailable(null);
       }
     }
-  }, [character.level, character.professionName, isLoadingData]);
+  }, [character.level, character.professionName, isLoadingData, dbProfessions]);
 
   // Helper: Get levels gained since current class was activated
   const getLevelsSinceClassActivation = (): number => {
@@ -378,6 +398,7 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
     // Add bonuses from current class (levels since activation)
     if (currentDbClass?.stat_bonuses) {
       const levelsSinceActivation = getLevelsSinceClassActivation();
+      // Only show bonuses after gaining levels (not immediately on selection)
       if (levelsSinceActivation > 0) {
         for (const [stat, bonusPerLevel] of Object.entries(currentDbClass.stat_bonuses)) {
           totalBonuses[stat] = (totalBonuses[stat] || 0) + (bonusPerLevel * levelsSinceActivation);
@@ -404,7 +425,8 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
     if (character.professionName && character.professionActivatedAtLevel) {
       const currentProfession = dbProfessions.find(p => p.name === character.professionName);
       if (currentProfession?.stat_bonuses) {
-        const levelsHeld = Math.max(0, character.level - character.professionActivatedAtLevel);
+        const levelsHeld = character.level - character.professionActivatedAtLevel;
+        // Only show bonuses after gaining levels (not immediately on selection)
         if (levelsHeld > 0) {
           for (const [stat, bonusPerLevel] of Object.entries(currentProfession.stat_bonuses)) {
             totalBonuses[stat] = (totalBonuses[stat] || 0) + (bonusPerLevel * levelsHeld);
@@ -412,7 +434,7 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
         }
       }
     }
-    
+
     return totalBonuses;
   };
 
@@ -423,10 +445,87 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
     return base + (accumulatedBonuses[attr] || 0);
   };
 
-  // Helper: Get total class bonus for an attribute (from all classes)
-  const getClassBonus = (attr: Attribute): number => {
-    const accumulatedBonuses = getAccumulatedClassBonuses();
-    return accumulatedBonuses[attr] || 0;
+  // Helper: Get ONLY class bonuses (not profession) for an attribute
+  const getClassOnlyBonus = (attr: Attribute): number => {
+    let total = 0;
+    let historyBonus = 0;
+
+    // Add bonuses from all previous classes
+    if (character.classHistoryWithLevels && character.classHistoryWithLevels.length > 0) {
+      for (const entry of character.classHistoryWithLevels) {
+        const historicalClass = dbClasses.find(c => c.name === entry.className);
+        if (historicalClass?.stat_bonuses) {
+          const levelsHeld = (entry.deactivatedAtLevel || character.level) - entry.activatedAtLevel;
+          if (levelsHeld > 0) {
+            const bonus = (historicalClass.stat_bonuses[attr] || 0) * levelsHeld;
+            historyBonus += bonus;
+            total += bonus;
+          }
+        }
+      }
+    }
+
+    // Add bonuses from current class
+    if (currentDbClass?.stat_bonuses) {
+      const levelsSinceActivation = getLevelsSinceClassActivation();
+      console.log(`🔍 Class Bonus Debug (${attr}):`, {
+        className: character.className,
+        level: character.level,
+        classActivatedAtLevel: character.classActivatedAtLevel,
+        historyLength: character.classHistoryWithLevels?.length || 0,
+        historyBonus,
+        levelsSinceActivation,
+        statBonus: currentDbClass.stat_bonuses[attr],
+        currentClassWillShowBonus: levelsSinceActivation > 0,
+        totalBonus: total + (levelsSinceActivation > 0 ? (currentDbClass.stat_bonuses[attr] || 0) * levelsSinceActivation : 0)
+      });
+      // Only show bonuses after gaining levels (not immediately on selection)
+      if (levelsSinceActivation > 0) {
+        total += (currentDbClass.stat_bonuses[attr] || 0) * levelsSinceActivation;
+      }
+    }
+
+    return total;
+  };
+
+  // Helper: Get ONLY profession bonuses (not class) for an attribute
+  const getProfessionOnlyBonus = (attr: Attribute): number => {
+    let total = 0;
+
+    // Add bonuses from all previous professions
+    if (character.professionHistoryWithLevels && character.professionHistoryWithLevels.length > 0) {
+      for (const entry of character.professionHistoryWithLevels) {
+        const historicalProfession = dbProfessions.find(p => p.name === entry.className);
+        if (historicalProfession?.stat_bonuses) {
+          const levelsHeld = (entry.deactivatedAtLevel || character.level) - entry.activatedAtLevel;
+          if (levelsHeld > 0) {
+            total += (historicalProfession.stat_bonuses[attr] || 0) * levelsHeld;
+          }
+        }
+      }
+    }
+
+    // Add bonuses from current profession
+    if (character.professionName && character.professionActivatedAtLevel) {
+      const currentProfession = dbProfessions.find(p => p.name === character.professionName);
+      if (currentProfession?.stat_bonuses) {
+        const levelsHeld = character.level - character.professionActivatedAtLevel;
+        console.log(`🔍 Profession Bonus Debug (${attr}):`, {
+          professionName: character.professionName,
+          level: character.level,
+          professionActivatedAtLevel: character.professionActivatedAtLevel,
+          levelsHeld,
+          statBonus: currentProfession.stat_bonuses[attr],
+          willShowBonus: levelsHeld > 0
+        });
+        // Only show bonuses after gaining levels (not immediately on selection)
+        if (levelsHeld > 0) {
+          total += (currentProfession.stat_bonuses[attr] || 0) * levelsHeld;
+        }
+      }
+    }
+
+    return total;
   };
 
   // Calculate tier bonus ability points (5 points per tier upgrade beyond tier 1)
@@ -650,10 +749,31 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
     }
     
     // Add manually learned combat abilities (from ability disks)
+    // But exclude abilities that come from professions
+    const professionalAbilityIds = new Set<number>();
+
+    // Collect all professional ability IDs
+    if (character.professionHistoryWithLevels && character.professionHistoryWithLevels.length > 0) {
+      character.professionHistoryWithLevels.forEach(entry => {
+        const historicalProfession = dbProfessions.find(p => p.name === entry.className);
+        if (historicalProfession?.ability_ids) {
+          historicalProfession.ability_ids.forEach(id => professionalAbilityIds.add(id));
+        }
+      });
+    }
+
+    if (character.professionName) {
+      const currentProfession = dbProfessions.find(p => p.name === character.professionName);
+      if (currentProfession?.ability_ids) {
+        currentProfession.ability_ids.forEach(id => professionalAbilityIds.add(id));
+      }
+    }
+
     Object.keys(character.abilities).forEach(learnedName => {
       if (!addedNames.has(learnedName)) {
         const dbAbility = findAbilityByName(learnedName);
-        if (dbAbility) {
+        // Only add if it's NOT a professional ability
+        if (dbAbility && !professionalAbilityIds.has(dbAbility.id)) {
           displayList.push(convertToDisplayAbility(dbAbility));
           addedNames.add(learnedName);
         }
@@ -1159,11 +1279,18 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
               </div>
               <div className="flex items-center gap-1">
                 <button onClick={() => handleAttributeChange(attr, -1)} className="w-5 h-5 flex items-center justify-center rounded bg-slate-700 hover:bg-slate-600 text-slate-300 disabled:opacity-30 text-xs" disabled={character.attributes[attr] <= 3}>-</button>
-                <div className="flex items-center gap-0.5 min-w-[40px] justify-center">
+                <div className="flex items-center gap-0.5 min-w-[60px] justify-center">
                   <span className="font-mono font-bold text-sm">{character.attributes[attr]}</span>
-                  {getClassBonus(attr) !== 0 && (
-                    <span className={`text-[10px] font-bold ${getClassBonus(attr) > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {getClassBonus(attr) > 0 ? '+' : ''}{getClassBonus(attr)}
+                  {/* Show class bonus in orange */}
+                  {getClassOnlyBonus(attr) > 0 && (
+                    <span className="text-[10px] font-bold text-orange-400" title="Class bonus">
+                      +{getClassOnlyBonus(attr)}
+                    </span>
+                  )}
+                  {/* Show profession bonus in blue */}
+                  {getProfessionOnlyBonus(attr) > 0 && (
+                    <span className="text-[10px] font-bold text-blue-400" title="Profession bonus">
+                      +{getProfessionOnlyBonus(attr)}
                     </span>
                   )}
                 </div>
@@ -1202,7 +1329,13 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
                 deactivatedAtLevel: character.level
               });
             }
-            
+
+            console.log('✨ Selecting profession:', {
+              className,
+              level: character.level,
+              professionActivatedAtLevel: character.level
+            });
+
             updateCharacter({
               ...character,
               professionName: className,
@@ -1391,8 +1524,9 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
               (() => {
                 const currentProfession = dbProfessions.find(p => p.name === character.professionName);
                 if (!currentProfession) return null;
-                
-                const levelsHeld = character.professionActivatedAtLevel 
+
+                // Calculate levels held for display
+                const levelsHeld = character.professionActivatedAtLevel
                   ? Math.max(0, character.level - character.professionActivatedAtLevel)
                   : 0;
                 
