@@ -236,31 +236,34 @@ Website/
 
 ### 6. LitRPG Game System (`litrpg/`)
 
-**Purpose:** Standalone React app for tabletop RPG character/monster management
+**Purpose:** Standalone React app for tabletop RPG character/monster management with database-backed progression.
 
-**Features:**
-- Character sheet builder
-- Monster manual
-- Ability library
-- Loot catalog
-- Battle simulator
-- Quest system
-- Attribute encyclopedia
+**End-to-end flow:**
+- TSX views under `src/features/litrpg` call `utils/api-litrpg.ts` helpers (cached list loaders and CRUD actions).
+- PHP endpoints in `api/litrpg/**` respond with MySQL data (classes, professions, abilities, monsters, items, contracts, characters) instead of static constants.
+- `export-to-constants.php` can still emit TypeScript constants for local use, but normal runtime reads from MySQL.
 
-**Data Structure:**
-- Stored in PHP backend (`api/litrpg/` endpoints)
-- Exported to TypeScript constants via `export-to-constants.php`
-- Separate React app with own build process
-- Uses Google Gemini AI integration
+**Gameplay surfaces:**
+- `LitrpgApp.tsx` renders the database-backed character sheet, including class/profession history, abilities, inventory, and banking of class/profession stat bonuses into base attributes on save.
+- `pages/ClassesPage.tsx`, `AbilitiesPage.tsx`, `BestiaryPage.tsx`, `LootPage.tsx`, and `ContractsPage.tsx` provide admin-friendly CRUD over each content type via the MySQL APIs.
+- Standalone bundle in `/litrpg` mirrors the main feature set for isolated builds.
+
+**Progression model:**
+- Characters track `level`, `xp_current`, and `xp_to_level` in the DB; leveling should award attribute points that then get banked into `attributes` alongside class/profession bonuses.
+- Class and profession assignment/history are stored with activation levels and tier milestones to calculate derived stats and unlocks.
+- Abilities can be unlocked directly or via class/profession associations; tiers describe per-level effects (cooldown, cost, effect text).
+- Contracts/quests award XP/credits/items; monsters and loot tables define encounter rewards.
 
 **Database Tables:**
-- `litrpg_classes` - Character classes
-- `litrpg_abilities` - Skills and spells
-- `litrpg_monsters` - Creature stats
+- `litrpg_classes` - Character classes (tiered, unlock requirements, stat bonuses)
+- `litrpg_professions` - Crafting/support roles with their own bonuses
+- `litrpg_abilities` / `litrpg_ability_tiers` - Skills/spells and their progression
+- `litrpg_monsters` - Creature stats and rewards
 - `litrpg_items` - Equipment and loot
-- `litrpg_characters` - Saved characters
-- `litrpg_professions` - Crafting professions
-- `litrpg_contracts` - Quest system
+- `litrpg_contracts` - Quest system with objectives/rewards
+- `litrpg_characters` - Saved characters with stats, equipment, ability unlocks, histories
+
+**Known gameplay gap to investigate:** After applying a class and profession and banking the associated attributes, leveling up currently fails to grant new attribute points. Reproduce via the character sheet in `LitrpgApp.tsx` and confirm XP/level transitions before addressing the bug.
 
 ### 7. Scheduled Publishing System
 
