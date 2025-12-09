@@ -26,6 +26,14 @@ const LitrpgApp: React.FC = () => {
       [Attribute.INT]: 3,
       [Attribute.CHA]: 3
     },
+    baseStats: {
+      [Attribute.STR]: 3,
+      [Attribute.PER]: 3,
+      [Attribute.DEX]: 3,
+      [Attribute.MEM]: 3,
+      [Attribute.INT]: 3,
+      [Attribute.CHA]: 3
+    },
     abilities: {},
     inventory: ['Standard Issue Kinetic Pistol'],
     history: ['Initialized in the Nexus.']
@@ -217,6 +225,14 @@ const LitrpgApp: React.FC = () => {
         [Attribute.INT]: baseStats.INT || 3,
         [Attribute.CHA]: baseStats.CHA || 3
       },
+      baseStats: {
+        [Attribute.STR]: baseStats.STR || 3,
+        [Attribute.PER]: baseStats.PER || 3,
+        [Attribute.DEX]: baseStats.DEX || 3,
+        [Attribute.MEM]: baseStats.MEM || 3,
+        [Attribute.INT]: baseStats.INT || 3,
+        [Attribute.CHA]: baseStats.CHA || 3
+      },
       abilities: abilitiesMap,
       inventory: [], // DB uses item IDs (numbers), local uses strings - keeping local for now
       history: [],
@@ -362,6 +378,14 @@ const LitrpgApp: React.FC = () => {
         ...character,
         // Bank the accumulated bonuses into attributes (this becomes the new base)
         attributes: {
+          [Attribute.STR]: bankedStats.STR,
+          [Attribute.PER]: bankedStats.PER,
+          [Attribute.DEX]: bankedStats.DEX,
+          [Attribute.MEM]: bankedStats.MEM,
+          [Attribute.INT]: bankedStats.INT,
+          [Attribute.CHA]: bankedStats.CHA
+        },
+        baseStats: {
           [Attribute.STR]: bankedStats.STR,
           [Attribute.PER]: bankedStats.PER,
           [Attribute.DEX]: bankedStats.DEX,
