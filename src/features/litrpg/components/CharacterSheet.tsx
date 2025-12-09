@@ -535,9 +535,22 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
     return Math.max(0, (highestTier - 1) * TIER_UPGRADE_ABILITY_BONUS);
   };
 
+  const getPendingAttributeInvestment = (attr: Attribute): number => {
+    const baseValue = character.baseStats?.[attr] ?? 3;
+    return Math.max(0, character.attributes[attr] - baseValue);
+  };
+
+  const calculateUsedAttributePoints = () => {
+    // Only count manually allocated points (exclude starting stats and class/profession bonuses)
+    return (Object.keys(character.attributes) as Attribute[]).reduce((total, attr) => {
+      const spent = getPendingAttributeInvestment(attr);
+      return total + spent;
+    }, 0);
+  };
+
   // Derived calculations
   const cumulative = getCumulativePoints(character.level);
-  const usedAttributePoints = (Object.values(character.attributes) as number[]).reduce((sum, val) => sum + val, 0) - 18;
+  const usedAttributePoints = calculateUsedAttributePoints();
   const availableAttributePoints = Math.max(0, cumulative.attributePoints - usedAttributePoints);
   const usedAbilityPoints = (Object.values(character.abilities) as number[]).reduce((sum, val) => sum + val, 0);
   const tierBonusAbilityPoints = getTierBonusAbilityPoints();
@@ -1265,39 +1278,48 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
           <h2 className="text-lg font-bold text-slate-200 flex items-center gap-2"><Shield size={18} className="text-nexus-accent" />Attributes</h2>
           <div className={`text-xs px-2 py-0.5 rounded-full border ${availableAttributePoints > 0 ? 'bg-nexus-accent/20 border-nexus-accent text-nexus-accent' : 'bg-slate-800 border-slate-600 text-slate-500'}`}>Points: {availableAttributePoints}</div>
         </div>
+        <p className="text-xs text-pink-300 mb-3">Pink + values are unbanked level-up points—apply them now and press Save to lock them in.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-          {(Object.keys(character.attributes) as Attribute[]).map((attr) => (
-            <div key={attr} className="flex items-center justify-between p-2 rounded bg-slate-800/50 border border-slate-700">
-              <div className="flex flex-col">
-                <div className="flex items-center gap-1.5">
-                  <AttrIcon attr={attr} />
-                  <span className="font-bold text-sm text-slate-300">{attr}</span>
-                  {attr === Attribute.MEM && <span className="text-[9px] uppercase bg-purple-900/50 text-purple-300 px-1 rounded">-{cdrPercent}% CD</span>}
-                  {attr === Attribute.INT && <span className="text-[9px] uppercase bg-blue-900/50 text-blue-300 px-1 rounded">+{durationExtPercent}% Dur</span>}
+          {(Object.keys(character.attributes) as Attribute[]).map((attr) => {
+            const pendingInvestment = getPendingAttributeInvestment(attr);
+            return (
+              <div key={attr} className="flex items-center justify-between p-2 rounded bg-slate-800/50 border border-slate-700">
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-1.5">
+                    <AttrIcon attr={attr} />
+                    <span className="font-bold text-sm text-slate-300">{attr}</span>
+                    {attr === Attribute.MEM && <span className="text-[9px] uppercase bg-purple-900/50 text-purple-300 px-1 rounded">-{cdrPercent}% CD</span>}
+                    {attr === Attribute.INT && <span className="text-[9px] uppercase bg-blue-900/50 text-blue-300 px-1 rounded">+{durationExtPercent}% Dur</span>}
+                  </div>
+                  <span className="text-[10px] text-slate-500 truncate w-24">{ATTRIBUTE_DESCRIPTIONS[attr]?.split(',')[0]}</span>
                 </div>
-                <span className="text-[10px] text-slate-500 truncate w-24">{ATTRIBUTE_DESCRIPTIONS[attr]?.split(',')[0]}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <button onClick={() => handleAttributeChange(attr, -1)} className="w-5 h-5 flex items-center justify-center rounded bg-slate-700 hover:bg-slate-600 text-slate-300 disabled:opacity-30 text-xs" disabled={character.attributes[attr] <= 3}>-</button>
-                <div className="flex items-center gap-0.5 min-w-[60px] justify-center">
-                  <span className="font-mono font-bold text-sm">{character.attributes[attr]}</span>
-                  {/* Show class bonus in orange */}
-                  {getClassOnlyBonus(attr) > 0 && (
-                    <span className="text-[10px] font-bold text-orange-400" title="Class bonus">
-                      +{getClassOnlyBonus(attr)}
-                    </span>
-                  )}
-                  {/* Show profession bonus in blue */}
-                  {getProfessionOnlyBonus(attr) > 0 && (
-                    <span className="text-[10px] font-bold text-blue-400" title="Profession bonus">
-                      +{getProfessionOnlyBonus(attr)}
-                    </span>
-                  )}
+                <div className="flex items-center gap-1">
+                  <button onClick={() => handleAttributeChange(attr, -1)} className="w-5 h-5 flex items-center justify-center rounded bg-slate-700 hover:bg-slate-600 text-slate-300 disabled:opacity-30 text-xs" disabled={character.attributes[attr] <= 3}>-</button>
+                  <div className="flex items-center gap-0.5 min-w-[60px] justify-center">
+                    <span className="font-mono font-bold text-sm">{character.attributes[attr]}</span>
+                    {pendingInvestment > 0 && (
+                      <span className="text-[10px] font-bold text-pink-300" title="Unbanked level-up points">
+                        +{pendingInvestment}
+                      </span>
+                    )}
+                    {/* Show class bonus in orange */}
+                    {getClassOnlyBonus(attr) > 0 && (
+                      <span className="text-[10px] font-bold text-orange-400" title="Class bonus">
+                        +{getClassOnlyBonus(attr)}
+                      </span>
+                    )}
+                    {/* Show profession bonus in blue */}
+                    {getProfessionOnlyBonus(attr) > 0 && (
+                      <span className="text-[10px] font-bold text-blue-400" title="Profession bonus">
+                        +{getProfessionOnlyBonus(attr)}
+                      </span>
+                    )}
+                  </div>
+                  <button onClick={() => handleAttributeChange(attr, 1)} className="w-5 h-5 flex items-center justify-center rounded bg-nexus-accent/20 hover:bg-nexus-accent/40 text-nexus-accent disabled:opacity-30 disabled:bg-slate-800 disabled:text-slate-600 text-xs" disabled={availableAttributePoints <= 0}>+</button>
                 </div>
-                <button onClick={() => handleAttributeChange(attr, 1)} className="w-5 h-5 flex items-center justify-center rounded bg-nexus-accent/20 hover:bg-nexus-accent/40 text-nexus-accent disabled:opacity-30 disabled:bg-slate-800 disabled:text-slate-600 text-xs" disabled={availableAttributePoints <= 0}>+</button>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

@@ -84,6 +84,7 @@ export interface Character {
   xp: number;
   credits: number;
   className: ClassName;
+  baseStats?: Record<Attribute, number>; // Baseline stats without spent points
   classHistory?: string[]; // Previous class names for ability retention (simple list)
   classHistoryWithLevels?: ClassHistoryEntry[]; // Full history with activation levels for stat bonuses
   highestTierAchieved?: number; // Track highest tier reached for bonus ability points
