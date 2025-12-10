@@ -608,13 +608,24 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
     });
   };
 
+  const getPerLevelBonus = (statBonuses?: Record<string, number>): number => {
+    if (!statBonuses) return 0;
+    return Object.values(statBonuses).reduce((total, bonus) => total + (bonus || 0), 0);
+  };
+
   const handleLevelChange = (delta: number) => {
     const newLevel = Math.max(1, character.level + delta);
     let newXp = character.xp;
     if (delta > 0 && character.xp < getTotalXpRequired(newLevel)) {
       newXp = getTotalXpRequired(newLevel);
     }
-    updateCharacter({ ...character, level: newLevel, xp: newXp });
+    const perLevelGain = 2
+      + getPerLevelBonus(currentDbClass?.stat_bonuses)
+      + getPerLevelBonus(dbProfessions.find(p => p.name === character.professionName)?.stat_bonuses);
+    const levelDelta = newLevel - character.level;
+    const updatedUnspent = Math.max(0, character.unspentAttributePoints + (levelDelta * perLevelGain));
+
+    updateCharacter({ ...character, level: newLevel, xp: newXp, unspentAttributePoints: updatedUnspent });
   };
 
   const handleAbilityChange = (abilityName: string, delta: number, maxLevel: number) => {
