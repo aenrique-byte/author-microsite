@@ -35,7 +35,7 @@ try {
     
     // Parse JSON fields
     $jsonFieldsToParse = [
-        'stats', 'equipped_items', 'inventory', 'unlocked_abilities',
+        'stats', 'base_stats', 'equipped_items', 'inventory', 'unlocked_abilities',
         'class_history', 'class_history_with_levels', 
         'profession_history_with_levels', 'history'
     ];

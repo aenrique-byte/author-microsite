@@ -374,63 +374,31 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
     return Math.max(0, character.level - activationLevel);
   };
 
-  // Helper: Calculate TOTAL accumulated class AND profession bonuses
-  // Returns the sum of (bonusPerLevel * levelsHeldForEachClass) for each attribute
+  // Helper: Get levels gained since current profession was activated
+  const getLevelsSinceProfessionActivation = (): number => {
+    if (!character.professionActivatedAtLevel) return 0;
+    return Math.max(0, character.level - character.professionActivatedAtLevel);
+  };
+
+  // Helper: Calculate TOTAL class + profession bonuses (simplified - only current class/profession)
   const getAccumulatedClassBonuses = (): Record<string, number> => {
     const totalBonuses: Record<string, number> = {};
     
-    // Add bonuses from all previous classes (stored in classHistoryWithLevels)
-    if (character.classHistoryWithLevels && character.classHistoryWithLevels.length > 0) {
-      for (const entry of character.classHistoryWithLevels) {
-        const historicalClass = findClassByName(entry.className);
-        if (historicalClass?.stat_bonuses) {
-          // Calculate levels held for this class
-          const levelsHeld = (entry.deactivatedAtLevel || character.level) - entry.activatedAtLevel;
-          if (levelsHeld > 0) {
-            for (const [stat, bonusPerLevel] of Object.entries(historicalClass.stat_bonuses)) {
-              totalBonuses[stat] = (totalBonuses[stat] || 0) + (bonusPerLevel * levelsHeld);
-            }
-          }
-        }
-      }
-    }
-    
-    // Add bonuses from current class (levels since activation)
+    // Add bonuses from current class: (level - activated_at_level) × stat_bonuses
     if (currentDbClass?.stat_bonuses) {
       const levelsSinceActivation = getLevelsSinceClassActivation();
-      // Only show bonuses after gaining levels (not immediately on selection)
-      if (levelsSinceActivation > 0) {
-        for (const [stat, bonusPerLevel] of Object.entries(currentDbClass.stat_bonuses)) {
-          totalBonuses[stat] = (totalBonuses[stat] || 0) + (bonusPerLevel * levelsSinceActivation);
-        }
+      for (const [stat, bonusPerLevel] of Object.entries(currentDbClass.stat_bonuses)) {
+        totalBonuses[stat] = (totalBonuses[stat] || 0) + ((bonusPerLevel as number) * levelsSinceActivation);
       }
     }
     
-    // Add bonuses from all previous professions
-    if (character.professionHistoryWithLevels && character.professionHistoryWithLevels.length > 0) {
-      for (const entry of character.professionHistoryWithLevels) {
-        const historicalProfession = dbProfessions.find(p => p.name === entry.className);
-        if (historicalProfession?.stat_bonuses) {
-          const levelsHeld = (entry.deactivatedAtLevel || character.level) - entry.activatedAtLevel;
-          if (levelsHeld > 0) {
-            for (const [stat, bonusPerLevel] of Object.entries(historicalProfession.stat_bonuses)) {
-              totalBonuses[stat] = (totalBonuses[stat] || 0) + (bonusPerLevel * levelsHeld);
-            }
-          }
-        }
-      }
-    }
-
-    // Add bonuses from current profession
+    // Add bonuses from current profession: (level - activated_at_level) × stat_bonuses
     if (character.professionName && character.professionActivatedAtLevel) {
       const currentProfession = dbProfessions.find(p => p.name === character.professionName);
       if (currentProfession?.stat_bonuses) {
-        const levelsHeld = character.level - character.professionActivatedAtLevel;
-        // Only show bonuses after gaining levels (not immediately on selection)
-        if (levelsHeld > 0) {
-          for (const [stat, bonusPerLevel] of Object.entries(currentProfession.stat_bonuses)) {
-            totalBonuses[stat] = (totalBonuses[stat] || 0) + (bonusPerLevel * levelsHeld);
-          }
+        const levelsSinceActivation = getLevelsSinceProfessionActivation();
+        for (const [stat, bonusPerLevel] of Object.entries(currentProfession.stat_bonuses)) {
+          totalBonuses[stat] = (totalBonuses[stat] || 0) + ((bonusPerLevel as number) * levelsSinceActivation);
         }
       }
     }
@@ -446,86 +414,21 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
   };
 
   // Helper: Get ONLY class bonuses (not profession) for an attribute
+  // Simplified: only current class matters, bonuses = (level - activated_at_level) × bonus
   const getClassOnlyBonus = (attr: Attribute): number => {
-    let total = 0;
-    let historyBonus = 0;
-
-    // Add bonuses from all previous classes
-    if (character.classHistoryWithLevels && character.classHistoryWithLevels.length > 0) {
-      for (const entry of character.classHistoryWithLevels) {
-        const historicalClass = dbClasses.find(c => c.name === entry.className);
-        if (historicalClass?.stat_bonuses) {
-          const levelsHeld = (entry.deactivatedAtLevel || character.level) - entry.activatedAtLevel;
-          if (levelsHeld > 0) {
-            const bonus = (historicalClass.stat_bonuses[attr] || 0) * levelsHeld;
-            historyBonus += bonus;
-            total += bonus;
-          }
-        }
-      }
-    }
-
-    // Add bonuses from current class
-    if (currentDbClass?.stat_bonuses) {
-      const levelsSinceActivation = getLevelsSinceClassActivation();
-      console.log(`🔍 Class Bonus Debug (${attr}):`, {
-        className: character.className,
-        level: character.level,
-        classActivatedAtLevel: character.classActivatedAtLevel,
-        historyLength: character.classHistoryWithLevels?.length || 0,
-        historyBonus,
-        levelsSinceActivation,
-        statBonus: currentDbClass.stat_bonuses[attr],
-        currentClassWillShowBonus: levelsSinceActivation > 0,
-        totalBonus: total + (levelsSinceActivation > 0 ? (currentDbClass.stat_bonuses[attr] || 0) * levelsSinceActivation : 0)
-      });
-      // Only show bonuses after gaining levels (not immediately on selection)
-      if (levelsSinceActivation > 0) {
-        total += (currentDbClass.stat_bonuses[attr] || 0) * levelsSinceActivation;
-      }
-    }
-
-    return total;
+    if (!currentDbClass?.stat_bonuses) return 0;
+    const levelsSinceActivation = getLevelsSinceClassActivation();
+    return (currentDbClass.stat_bonuses[attr] || 0) * levelsSinceActivation;
   };
 
   // Helper: Get ONLY profession bonuses (not class) for an attribute
+  // Simplified: only current profession matters, bonuses = (level - activated_at_level) × bonus
   const getProfessionOnlyBonus = (attr: Attribute): number => {
-    let total = 0;
-
-    // Add bonuses from all previous professions
-    if (character.professionHistoryWithLevels && character.professionHistoryWithLevels.length > 0) {
-      for (const entry of character.professionHistoryWithLevels) {
-        const historicalProfession = dbProfessions.find(p => p.name === entry.className);
-        if (historicalProfession?.stat_bonuses) {
-          const levelsHeld = (entry.deactivatedAtLevel || character.level) - entry.activatedAtLevel;
-          if (levelsHeld > 0) {
-            total += (historicalProfession.stat_bonuses[attr] || 0) * levelsHeld;
-          }
-        }
-      }
-    }
-
-    // Add bonuses from current profession
-    if (character.professionName && character.professionActivatedAtLevel) {
-      const currentProfession = dbProfessions.find(p => p.name === character.professionName);
-      if (currentProfession?.stat_bonuses) {
-        const levelsHeld = character.level - character.professionActivatedAtLevel;
-        console.log(`🔍 Profession Bonus Debug (${attr}):`, {
-          professionName: character.professionName,
-          level: character.level,
-          professionActivatedAtLevel: character.professionActivatedAtLevel,
-          levelsHeld,
-          statBonus: currentProfession.stat_bonuses[attr],
-          willShowBonus: levelsHeld > 0
-        });
-        // Only show bonuses after gaining levels (not immediately on selection)
-        if (levelsHeld > 0) {
-          total += (currentProfession.stat_bonuses[attr] || 0) * levelsHeld;
-        }
-      }
-    }
-
-    return total;
+    if (!character.professionName || !character.professionActivatedAtLevel) return 0;
+    const currentProfession = dbProfessions.find(p => p.name === character.professionName);
+    if (!currentProfession?.stat_bonuses) return 0;
+    const levelsSinceActivation = getLevelsSinceProfessionActivation();
+    return (currentProfession.stat_bonuses[attr] || 0) * levelsSinceActivation;
   };
 
   // Calculate tier bonus ability points (5 points per tier upgrade beyond tier 1)
@@ -614,7 +517,17 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
     if (delta > 0 && character.xp < getTotalXpRequired(newLevel)) {
       newXp = getTotalXpRequired(newLevel);
     }
-    updateCharacter({ ...character, level: newLevel, xp: newXp });
+    // Add +2 attribute points per level gained (free points go to unspent pool)
+    const levelDelta = newLevel - character.level;
+    const freePointsGained = levelDelta * 2; // +2 per level
+    const newUnspentPoints = Math.max(0, character.unspentAttributePoints + freePointsGained);
+    
+    updateCharacter({ 
+      ...character, 
+      level: newLevel, 
+      xp: newXp,
+      unspentAttributePoints: newUnspentPoints
+    });
   };
 
   const handleAbilityChange = (abilityName: string, delta: number, maxLevel: number) => {

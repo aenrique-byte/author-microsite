@@ -10,7 +10,8 @@ header('Content-Type: application/json');
 
 try {
     $sql = "SELECT c.id, c.slug, c.name, c.description, c.level, c.xp_current, c.xp_to_level,
-                   c.class_id, c.stats, c.hp_max, c.hp_current, c.ep_max, c.ep_current,
+                   c.class_id, c.stats, c.base_stats, c.unspent_attribute_points,
+                   c.hp_max, c.hp_current, c.ep_max, c.ep_current,
                    c.credits, c.equipped_items, c.inventory, c.unlocked_abilities,
                    c.portrait_image, c.status, c.sort_order,
                    c.class_history, c.class_history_with_levels, c.class_activated_at_level,
@@ -25,7 +26,7 @@ try {
     
     // Parse JSON fields
     $jsonFieldsToParse = [
-        'stats', 'equipped_items', 'inventory', 'unlocked_abilities',
+        'stats', 'base_stats', 'equipped_items', 'inventory', 'unlocked_abilities',
         'class_history', 'class_history_with_levels', 
         'profession_history_with_levels', 'history'
     ];

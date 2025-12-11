@@ -264,88 +264,46 @@ const LitrpgApp: React.FC = () => {
         }
       }
 
-      // ======= BANKING: Calculate accumulated bonuses and consolidate into base stats =======
-      // Calculate class bonuses from history
-      const accumulatedBonuses: Record<string, number> = {};
-      
-      // Add bonuses from all previous classes
-      if (character.classHistoryWithLevels && character.classHistoryWithLevels.length > 0) {
-        for (const entry of character.classHistoryWithLevels) {
-          const historicalClass = dbClasses.find(c => c.name === entry.className);
-          if (historicalClass?.stat_bonuses) {
-            const levelsHeld = (entry.deactivatedAtLevel || character.level) - entry.activatedAtLevel;
-            if (levelsHeld > 0) {
-              for (const [stat, bonusPerLevel] of Object.entries(historicalClass.stat_bonuses)) {
-                accumulatedBonuses[stat] = (accumulatedBonuses[stat] || 0) + (bonusPerLevel * levelsHeld);
-              }
-            }
-          }
-        }
-      }
-      
-      // Add bonuses from current class (levels since activation)
+      // ======= SIMPLIFIED BANKING =======
+      // Calculate current class bonus: (level - activated_at_level) × stat_bonuses
+      const classBonus: Record<string, number> = {};
       const currentClass = dbClasses.find(c => c.name === character.className);
       if (currentClass?.stat_bonuses) {
-        const activationLevel = character.classActivatedAtLevel || 1;
-        const levelsSinceActivation = Math.max(0, character.level - activationLevel);
-        // Only add bonuses after gaining levels (not immediately on selection)
-        if (levelsSinceActivation > 0) {
-          for (const [stat, bonusPerLevel] of Object.entries(currentClass.stat_bonuses)) {
-            accumulatedBonuses[stat] = (accumulatedBonuses[stat] || 0) + (bonusPerLevel * levelsSinceActivation);
-          }
+        const levelsSinceActivation = Math.max(0, character.level - (character.classActivatedAtLevel || 1));
+        for (const [stat, bonusPerLevel] of Object.entries(currentClass.stat_bonuses)) {
+          classBonus[stat] = (bonusPerLevel as number) * levelsSinceActivation;
         }
       }
-
-      // Add bonuses from all previous professions
-      if (character.professionHistoryWithLevels && character.professionHistoryWithLevels.length > 0) {
-        for (const entry of character.professionHistoryWithLevels) {
-          const historicalProfession = dbProfessions.find(p => p.name === entry.className);
-          if (historicalProfession?.stat_bonuses) {
-            const levelsHeld = (entry.deactivatedAtLevel || character.level) - entry.activatedAtLevel;
-            if (levelsHeld > 0) {
-              for (const [stat, bonusPerLevel] of Object.entries(historicalProfession.stat_bonuses)) {
-                accumulatedBonuses[stat] = (accumulatedBonuses[stat] || 0) + (bonusPerLevel * levelsHeld);
-              }
-            }
-          }
-        }
-      }
-
-      // Add bonuses from current profession
+      
+      // Calculate current profession bonus: (level - activated_at_level) × stat_bonuses
+      const professionBonus: Record<string, number> = {};
       if (character.professionName && character.professionActivatedAtLevel) {
         const currentProfession = dbProfessions.find(p => p.name === character.professionName);
         if (currentProfession?.stat_bonuses) {
-          const levelsHeld = character.level - character.professionActivatedAtLevel;
-          // Only add bonuses after gaining levels (not immediately on selection)
-          if (levelsHeld > 0) {
-            for (const [stat, bonusPerLevel] of Object.entries(currentProfession.stat_bonuses)) {
-              accumulatedBonuses[stat] = (accumulatedBonuses[stat] || 0) + (bonusPerLevel * levelsHeld);
-            }
+          const levelsSinceActivation = Math.max(0, character.level - character.professionActivatedAtLevel);
+          for (const [stat, bonusPerLevel] of Object.entries(currentProfession.stat_bonuses)) {
+            professionBonus[stat] = (bonusPerLevel as number) * levelsSinceActivation;
           }
         }
       }
       
-      // Create the "banked" stats (base + accumulated bonuses)
+      // Create banked stats: current attributes + class bonus + profession bonus
       const bankedStats = {
-        STR: character.attributes[Attribute.STR] + (accumulatedBonuses['STR'] || 0),
-        PER: character.attributes[Attribute.PER] + (accumulatedBonuses['PER'] || 0),
-        DEX: character.attributes[Attribute.DEX] + (accumulatedBonuses['DEX'] || 0),
-        MEM: character.attributes[Attribute.MEM] + (accumulatedBonuses['MEM'] || 0),
-        INT: character.attributes[Attribute.INT] + (accumulatedBonuses['INT'] || 0),
-        CHA: character.attributes[Attribute.CHA] + (accumulatedBonuses['CHA'] || 0)
+        STR: character.attributes[Attribute.STR] + (classBonus['STR'] || 0) + (professionBonus['STR'] || 0),
+        PER: character.attributes[Attribute.PER] + (classBonus['PER'] || 0) + (professionBonus['PER'] || 0),
+        DEX: character.attributes[Attribute.DEX] + (classBonus['DEX'] || 0) + (professionBonus['DEX'] || 0),
+        MEM: character.attributes[Attribute.MEM] + (classBonus['MEM'] || 0) + (professionBonus['MEM'] || 0),
+        INT: character.attributes[Attribute.INT] + (classBonus['INT'] || 0) + (professionBonus['INT'] || 0),
+        CHA: character.attributes[Attribute.CHA] + (classBonus['CHA'] || 0) + (professionBonus['CHA'] || 0)
       };
 
-      // Calculate unspent attribute points correctly
-      // Points spent from the pool = current attributes - base stats (what we loaded from DB)
-      const pointsSpentFromPool = (Object.keys(character.attributes) as Attribute[]).reduce((total, attr) => {
-        const currentValue = character.attributes[attr];
-        const baseValue = character.baseStats?.[attr] ?? currentValue;
-        return total + Math.max(0, currentValue - baseValue);
+      // Calculate points spent from unspent pool
+      const pointsSpent = (Object.keys(character.attributes) as Attribute[]).reduce((total, attr) => {
+        const current = character.attributes[attr];
+        const base = character.baseStats?.[attr] ?? current;
+        return total + Math.max(0, current - base);
       }, 0);
-
-      // New unspent points = what we had in the pool minus what we just spent
-      // Note: character.unspentAttributePoints already includes all available points from leveling
-      const newUnspentPoints = Math.max(0, character.unspentAttributePoints - pointsSpentFromPool);
+      const newUnspentPoints = Math.max(0, character.unspentAttributePoints - pointsSpent);
 
       // Build update payload
       const updatePayload: Parameters<typeof apiUpdateCharacter>[0] = {
@@ -355,43 +313,20 @@ const LitrpgApp: React.FC = () => {
         xp_current: character.xp,
         credits: character.credits,
         highest_tier_achieved: character.highestTierAchieved || 1,
-        unspent_attribute_points: newUnspentPoints, // Save correctly calculated unspent points
-        // Save total stats (for display/combat calculations)
+        unspent_attribute_points: newUnspentPoints,
         stats: bankedStats,
-        // Save base_stats WITH accumulated bonuses banked in (this becomes the new baseline)
         base_stats: bankedStats,
         equipped_items: character.equippedItems,
         portrait_image: character.headerImageUrl,
-        // Reset activation levels to current level (bonuses are now banked)
+        // Reset activation levels (bonuses now banked)
         class_activated_at_level: character.level,
-        class_history_with_levels: [], // Clear history since bonuses are banked
-        // Save profession data - reset activation level
         profession_name: character.professionName,
-        profession_activated_at_level: character.professionName ? character.level : undefined,
-        profession_history_with_levels: [] // Clear history since bonuses are banked
+        profession_activated_at_level: character.professionName ? character.level : undefined
       };
 
-      // Debug: Log save data
-      console.log('💾 BEFORE SAVE - Character state:', {
-        level: character.level,
-        className: character.className,
-        classActivatedAtLevel: character.classActivatedAtLevel,
-        professionName: character.professionName,
-        professionActivatedAtLevel: character.professionActivatedAtLevel,
-        baseStats: character.attributes,
-        accumulatedBonuses
-      });
-      console.log('💾 SAVE PAYLOAD:', {
-        stats: bankedStats,
-        base_stats: bankedStats,
-        class_activated_at_level: updatePayload.class_activated_at_level,
-        profession_activated_at_level: updatePayload.profession_activated_at_level
-      });
-
-      // Update local character state - bank the bonuses into attributes
-      const bankedCharacter = {
+      // Update local state
+      setCharacter({
         ...character,
-        // Bank the accumulated bonuses into attributes (this becomes the new base)
         attributes: {
           [Attribute.STR]: bankedStats.STR,
           [Attribute.PER]: bankedStats.PER,
@@ -408,20 +343,10 @@ const LitrpgApp: React.FC = () => {
           [Attribute.INT]: bankedStats.INT,
           [Attribute.CHA]: bankedStats.CHA
         },
-        unspentAttributePoints: newUnspentPoints, // Update unspent points in local state
+        unspentAttributePoints: newUnspentPoints,
         classActivatedAtLevel: character.level,
-        classHistoryWithLevels: [],
-        professionActivatedAtLevel: character.professionName ? character.level : undefined,
-        professionHistoryWithLevels: []
-      };
-      console.log('💾 AFTER SAVE - Updated character state:', {
-        level: bankedCharacter.level,
-        classActivatedAtLevel: bankedCharacter.classActivatedAtLevel,
-        professionActivatedAtLevel: bankedCharacter.professionActivatedAtLevel,
-        baseStats: bankedCharacter.attributes,
-        totalStatsWithBonuses: bankedStats
+        professionActivatedAtLevel: character.professionName ? character.level : undefined
       });
-      setCharacter(bankedCharacter);
       
       if (classIdToSave !== null) {
         updatePayload.class_id = classIdToSave;
