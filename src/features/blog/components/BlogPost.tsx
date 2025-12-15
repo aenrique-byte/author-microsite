@@ -3,6 +3,8 @@ import { Link, useParams, useNavigate } from 'react-router-dom'
 import { useTheme } from '../../storytime/contexts/ThemeContext'
 import PageNavbar from '../../../components/PageNavbar'
 import SocialIcons from '../../../components/SocialIcons'
+import NewsletterCTA from '../../../components/NewsletterCTA'
+import PatreonCTA from '../../../components/PatreonCTA'
 import { BlogCard } from './BlogCard'
 import { List } from 'lucide-react'
 import { 
@@ -1042,6 +1044,20 @@ export function BlogPost() {
           </div>
         )}
 
+        {/* Dual CTA: Newsletter + Patreon */}
+        <div className={`mt-8 ${cardBg} border rounded-2xl p-6`}>
+          <h3 className={`text-xl font-bold ${textPrimary} mb-4 text-center`}>
+            📬 Enjoyed this post?
+          </h3>
+          <p className={`text-sm ${textSecondary} text-center mb-6`}>
+            Get notified when I publish new content, or support me on Patreon for exclusive access.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <NewsletterCTA variant="button" source="blog_post_bottom" />
+            <PatreonCTA variant="button" />
+          </div>
+        </div>
+
         {/* Related Posts */}
         {relatedPosts.length > 0 && (
           <section className="mt-16">
@@ -1086,13 +1102,18 @@ export function BlogPost() {
 
           {/* Table of Contents - Right Sidebar */}
           {tocItems.length > 0 && (
-            <aside className="hidden lg:block w-64 flex-shrink-0">
-              <TableOfContents 
+            <aside className="hidden lg:flex w-64 flex-shrink-0 flex-col gap-4">
+              <TableOfContents
                 items={tocItems}
                 activeId={activeHeadingId}
                 textPrimary={textPrimary}
                 textSecondary={textSecondary}
                 cardBg={cardBg}
+              />
+              <NewsletterCTA
+                variant="card"
+                source="blog_post_top"
+                className={`sticky top-36 ${cardBg}`}
               />
             </aside>
           )}

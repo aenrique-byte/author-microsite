@@ -6,6 +6,8 @@ import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { CommentsSection } from './CommentsSection';
 import SocialIcons from '../../../components/SocialIcons';
+import NewsletterCTA from '../../../components/NewsletterCTA';
+import PatreonCTA from '../../../components/PatreonCTA';
 import ThemeToggle from '../../../components/ThemeToggle';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth, canEditChapter } from '../../../contexts/AuthContext';
@@ -585,6 +587,18 @@ export function Chapter() {
             <article className={`prose max-w-[80ch] mx-auto prose-p:mb-6 text-left ${cardClass} rounded-xl p-6 ${
               theme === 'light' ? 'prose-gray' : 'prose-invert'
             }`} dangerouslySetInnerHTML={sanitizedHtml} />
+          </div>
+          <div className="max-w-3xl mx-auto px-4 md:px-6 pb-8">
+            <div className={`text-center ${cardClass} border rounded-xl p-6`}>
+              <h3 className={`text-xl font-bold ${textClass}`}>⭐ Enjoying the story?</h3>
+              <p className={`mt-2 text-sm ${subtextClass}`}>
+                Get notified when new chapters drop, or support me on Patreon for early access.
+              </p>
+              <div className="mt-4 flex flex-col sm:flex-row gap-3 justify-center">
+                <NewsletterCTA variant="button" source="chapter_end" />
+                <PatreonCTA variant="button" />
+              </div>
+            </div>
           </div>
           {nextChapterId && (
             <div className="max-w-3xl mx-auto px-4 md:px-6 pb-8 text-center">

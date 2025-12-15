@@ -26,6 +26,7 @@ export default function Breadcrumb() {
       'galleries': 'Image Galleries',
       'stories': 'Stories & Chapters',
       'socials': 'Social Media',
+      'newsletter': 'Newsletter',
       'moderation': 'Moderation',
       'password': 'Change Password',
       'analytics': 'Analytics'
