@@ -18,6 +18,7 @@ import {
   createBlogComment,
   type BlogComment
 } from '../../../utils/api-blog'
+import { processYouTubeEmbeds } from '../../../utils/youtube-handler'
 import type { BlogPost as BlogPostType, BlogPostSummary } from '../../../types/blog'
 
 interface AuthorProfile {
@@ -494,6 +495,20 @@ export function BlogPost() {
     const html = addHeadingIds(post.content_html)
     return { tocItems: items, processedHtml: html }
   }, [post?.content_html])
+
+  // Process YouTube embeds after content renders
+  // This reconstructs iframes from data-youtube-id attributes
+  // (iframes are stripped by PHP sanitizer for security)
+  useEffect(() => {
+    if (!processedHtml) return
+    
+    // Small delay to ensure DOM has updated
+    const timeoutId = setTimeout(() => {
+      processYouTubeEmbeds()
+    }, 100)
+    
+    return () => clearTimeout(timeoutId)
+  }, [processedHtml])
 
   // Scroll observer for active heading
   useEffect(() => {
