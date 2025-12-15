@@ -1,6 +1,6 @@
 <?php
 // Bootstrap file for Author CMS API
-require_once 'config.php';
+require_once __DIR__ . '/config.php';
 
 // Set error reporting
 error_reporting(E_ALL);

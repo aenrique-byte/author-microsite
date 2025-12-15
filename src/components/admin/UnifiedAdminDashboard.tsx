@@ -7,11 +7,15 @@ import StoryManager from './StoryManager'
 import AuthorProfileManager from './AuthorProfileManager'
 import CollectionGalleryManager from './CollectionGalleryManager'
 import SocialMediaManager from './SocialMediaManager'
+import SocialCredentialsManager from './SocialCredentialsManager'
+import EmailSettingsManager from './EmailSettingsManager'
 import ModerationManager from './ModerationManager'
 import PasswordManager from './PasswordManager'
 import UploadManager from './UploadManager'
 import AnalyticsManager from './AnalyticsManager'
 import LitrpgManager from './LitrpgManager'
+import HomepageManager from './HomepageManager'
+import BlogManager from './BlogManager'
 import Breadcrumb from './Breadcrumb'
 
 interface User {
@@ -113,10 +117,14 @@ export default function UnifiedAdminDashboard() {
           <Route path="/stories/*" element={<StoryManager />} />
           <Route path="/uploads" element={<UploadManager />} />
           <Route path="/socials" element={<SocialMediaManager />} />
+          <Route path="/social-api" element={<SocialCredentialsManager />} />
+          <Route path="/email" element={<EmailSettingsManager />} />
           <Route path="/moderation" element={<ModerationManager />} />
           <Route path="/password" element={<PasswordManager />} />
           <Route path="/analytics" element={<AnalyticsManager />} />
           <Route path="/litrpg" element={<LitrpgManager />} />
+          <Route path="/homepage" element={<HomepageManager />} />
+          <Route path="/blog" element={<BlogManager />} />
         </Routes>
       </div>
     </div>
@@ -278,6 +286,13 @@ function AdminHome() {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <AdminCard 
+            title="Homepage Manager" 
+            href="/admin/homepage" 
+            description="Configure hero section, activity feed, and tools"
+            icon="🏠"
+          />
+
+          <AdminCard 
             title="Author Profile" 
             href="/admin/author" 
             description="Manage author bio, tagline, and profile images"
@@ -300,6 +315,13 @@ function AdminHome() {
           />
 
           <AdminCard
+            title="Blog Manager"
+            href="/admin/blog"
+            description="Create and manage blog posts with TipTap editor"
+            icon="✍️"
+          />
+
+          <AdminCard
             title="Upload Manager"
             href="/admin/uploads"
             description="Manage uploaded images and files"
@@ -311,6 +333,20 @@ function AdminHome() {
             href="/admin/socials" 
             description="Update social media links across all sites"
             icon="🔗"
+          />
+
+          <AdminCard 
+            title="Social API Credentials" 
+            href="/admin/social-api" 
+            description="Connect Instagram, Twitter, Facebook, Discord for blog crossposting"
+            icon="🔑"
+          />
+          
+          <AdminCard 
+            title="Email Settings"
+            href="/admin/email" 
+            description="Configure SMTP settings for emails (shoutouts, blog, etc.)"
+            icon="📧"
           />
           
           <AdminCard 

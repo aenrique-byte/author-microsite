@@ -86,9 +86,24 @@ try {
         $updateValues[] = (int)$input['enable_drop_cap'];
     }
 
+    // Handle show_on_homepage as boolean/int
+    if (isset($input['show_on_homepage'])) {
+        $updateFields[] = "show_on_homepage = ?";
+        $updateValues[] = (int)$input['show_on_homepage'];
+    }
+
+    // Handle latest_chapter_number as int (allow null)
+    if (isset($input['latest_chapter_number'])) {
+        $updateFields[] = "latest_chapter_number = ?";
+        $updateValues[] = $input['latest_chapter_number'] !== '' && $input['latest_chapter_number'] !== null
+            ? (int)$input['latest_chapter_number']
+            : null;
+    }
+
     // Simple fields that can be directly updated
-    $simpleFields = ['title', 'slug', 'description', 'primary_keywords', 'longtail_keywords',
-                     'target_audience', 'cover_image', 'break_image', 'drop_cap_font', 'status'];
+    $simpleFields = ['title', 'slug', 'description', 'homepage_description', 'tagline', 'primary_keywords', 'longtail_keywords',
+                     'target_audience', 'cover_image', 'break_image', 'drop_cap_font', 'status',
+                     'latest_chapter_title', 'cta_text'];
 
     foreach ($simpleFields as $field) {
         if (isset($input[$field])) {

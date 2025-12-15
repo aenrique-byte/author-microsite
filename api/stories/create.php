@@ -56,14 +56,16 @@ try {
     }
 
     $stmt = $pdo->prepare("
-        INSERT INTO stories (title, slug, description, genres, external_links, primary_keywords, longtail_keywords, target_audience, cover_image, break_image, enable_drop_cap, drop_cap_font, status, schedule_id, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+        INSERT INTO stories (title, slug, description, homepage_description, tagline, genres, external_links, primary_keywords, longtail_keywords, target_audience, cover_image, break_image, enable_drop_cap, drop_cap_font, status, schedule_id, latest_chapter_number, latest_chapter_title, cta_text, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
     ");
 
     $stmt->execute([
         $input['title'],
         $input['slug'],
         $input['description'] ?? null,
+        $input['homepage_description'] ?? null,
+        $input['tagline'] ?? null,
         $genres_json,
         $external_links_json,
         $input['primary_keywords'] ?? null,
@@ -74,7 +76,10 @@ try {
         isset($input['enable_drop_cap']) ? (int)$input['enable_drop_cap'] : 0,
         $input['drop_cap_font'] ?? 'serif',
         $input['status'] ?? 'draft',
-        $input['schedule_id'] ?? null
+        $input['schedule_id'] ?? null,
+        isset($input['latest_chapter_number']) ? (int)$input['latest_chapter_number'] : null,
+        $input['latest_chapter_title'] ?? null,
+        $input['cta_text'] ?? null
     ]);
 
     $storyId = $pdo->lastInsertId();

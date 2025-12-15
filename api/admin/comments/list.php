@@ -35,7 +35,7 @@ try {
 
     $whereClause = !empty($whereConditions) ? 'WHERE ' . implode(' AND ', $whereConditions) : '';
 
-    // Get comments from both tables with proper content context and links
+    // Get comments from all three tables with proper content context and links
     $sql = "
         SELECT 
             ic.id,
@@ -87,6 +87,22 @@ try {
         LEFT JOIN chapters ch ON c.chapter_id = ch.id
         LEFT JOIN stories s ON ch.story_id = s.id
         " . str_replace('is_approved', 'c.is_approved', $whereClause) . "
+        UNION ALL
+        SELECT 
+            bc.id,
+            bc.author_name,
+            bc.content,
+            CASE WHEN bc.status = 'approved' THEN 1 ELSE 0 END as is_approved,
+            bc.ip_address,
+            bc.created_at,
+            'blog' as comment_type,
+            COALESCE(bp.title, 'Untitled Post') as content_title,
+            'Blog Post' as content_context,
+            CONCAT('/blog/', bp.slug) as content_link,
+            bc.post_id as content_id
+        FROM blog_comments bc
+        LEFT JOIN blog_posts bp ON bc.post_id = bp.id
+        " . str_replace('is_approved', "(bc.status = 'approved')", str_replace('is_approved = 0', "bc.status != 'approved'", str_replace('is_approved = 1', "bc.status = 'approved'", $whereClause))) . "
         ORDER BY created_at DESC
         LIMIT ? OFFSET ?
     ";
@@ -97,6 +113,8 @@ try {
             SELECT id FROM image_comments $whereClause
             UNION ALL
             SELECT id FROM chapter_comments " . str_replace('is_approved', 'is_approved', $whereClause) . "
+            UNION ALL
+            SELECT id FROM blog_comments " . str_replace('is_approved', "(status = 'approved')", str_replace('is_approved = 0', "status != 'approved'", str_replace('is_approved = 1', "status = 'approved'", $whereClause))) . "
         ) total_comments
     ";
     

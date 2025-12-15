@@ -1,0 +1,457 @@
+/**
+ * Blog Editor Styles
+ * 
+ * Styles for the TipTap blog editor including:
+ * - Image alignment (left, center, right)
+ * - Image resizing
+ * - Selected image state
+ */
+
+/* Image container with alignment support */
+.blog-editor-content figure.blog-image,
+.prose figure.blog-image {
+  margin: 1.5rem 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.blog-editor-content figure.blog-image img,
+.prose figure.blog-image img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  transition: box-shadow 0.2s ease;
+}
+
+/* Left Alignment */
+.blog-editor-content figure.blog-image--left,
+.prose figure.blog-image--left {
+  align-items: flex-start;
+}
+
+.blog-editor-content figure.blog-image--left img,
+.prose figure.blog-image--left img {
+  margin-right: auto;
+}
+
+/* Center Alignment (default) */
+.blog-editor-content figure.blog-image--center,
+.prose figure.blog-image--center {
+  align-items: center;
+}
+
+.blog-editor-content figure.blog-image--center img,
+.prose figure.blog-image--center img {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Right Alignment */
+.blog-editor-content figure.blog-image--right,
+.prose figure.blog-image--right {
+  align-items: flex-end;
+}
+
+.blog-editor-content figure.blog-image--right img,
+.prose figure.blog-image--right img {
+  margin-left: auto;
+}
+
+/* Selected Image State (in editor) */
+.blog-editor-content .ProseMirror-selectednode figure.blog-image,
+.blog-editor-content figure.blog-image.ProseMirror-selectednode,
+.blog-editor-content .ProseMirror-selectednode img,
+.blog-editor-content img.ProseMirror-selectednode {
+  outline: 2px solid #10b981;
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+
+/* Fallback for non-figure images in editor */
+.blog-editor-content .ProseMirror img[data-alignment="left"] {
+  display: block;
+  margin-right: auto;
+}
+
+.blog-editor-content .ProseMirror img[data-alignment="center"] {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.blog-editor-content .ProseMirror img[data-alignment="right"] {
+  display: block;
+  margin-left: auto;
+}
+
+/* Image with width set */
+.blog-editor-content .ProseMirror img[data-display-width],
+.prose img[data-display-width] {
+  max-width: none; /* Override to allow custom width */
+}
+
+/* Hover state for images in editor */
+.blog-editor-content .ProseMirror img:hover {
+  cursor: pointer;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
+}
+
+/* Caption styling (future enhancement) */
+.blog-editor-content figcaption,
+.prose figcaption {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+  text-align: center;
+  font-style: italic;
+}
+
+/* Dark mode adjustments */
+.dark .blog-editor-content figcaption,
+.dark .prose figcaption {
+  color: #9ca3af;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .blog-editor-content figure.blog-image img,
+  .prose figure.blog-image img {
+    width: 100% !important; /* Force full width on mobile */
+  }
+}
+
+/* Transition for smooth resizing */
+.blog-editor-content .ProseMirror img,
+.prose img {
+  transition: width 0.2s ease-in-out;
+}
+
+/* Public blog display styles */
+.blog-content figure.blog-image {
+  margin: 2rem 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.blog-content figure.blog-image--left {
+  align-items: flex-start;
+}
+
+.blog-content figure.blog-image--center {
+  align-items: center;
+}
+
+.blog-content figure.blog-image--right {
+  align-items: flex-end;
+}
+
+.blog-content figure.blog-image img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.dark .blog-content figure.blog-image img {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+}
+
+/* ============================================
+   SPOILER STYLES
+   ============================================ */
+
+/* Spoiler text - hidden by default */
+.spoiler,
+span[data-spoiler="true"] {
+  background-color: #374151;
+  color: transparent;
+  border-radius: 0.25rem;
+  padding: 0 0.25rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+/* Hover hint */
+.spoiler:hover,
+span[data-spoiler="true"]:hover {
+  background-color: #4b5563;
+}
+
+/* Revealed state (when clicked) */
+.spoiler.revealed,
+span[data-spoiler="true"].revealed {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.dark .spoiler.revealed,
+.dark span[data-spoiler="true"].revealed {
+  background-color: #78350f;
+  color: #fef3c7;
+}
+
+/* In editor - always show text for editing */
+.blog-editor-content .spoiler,
+.blog-editor-content span[data-spoiler="true"],
+.ProseMirror .spoiler,
+.ProseMirror span[data-spoiler="true"] {
+  background-color: #fef3c7;
+  color: #92400e;
+  border: 1px dashed #d97706;
+}
+
+.dark .blog-editor-content .spoiler,
+.dark .blog-editor-content span[data-spoiler="true"],
+.dark .ProseMirror .spoiler,
+.dark .ProseMirror span[data-spoiler="true"] {
+  background-color: #78350f;
+  color: #fef3c7;
+  border: 1px dashed #f59e0b;
+}
+
+/* ============================================
+   FOOTNOTE STYLES
+   ============================================ */
+
+/* Footnote reference (superscript in text) */
+.footnote-ref,
+sup[data-footnote="true"] {
+  vertical-align: super;
+  font-size: 0.75em;
+  line-height: 0;
+}
+
+.footnote-link {
+  color: #059669;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.footnote-link:hover {
+  color: #047857;
+  text-decoration: underline;
+}
+
+.dark .footnote-link {
+  color: #34d399;
+}
+
+.dark .footnote-link:hover {
+  color: #6ee7b7;
+}
+
+/* Footnote section at bottom */
+.footnotes {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.dark .footnotes {
+  border-top-color: #374151;
+}
+
+.footnotes-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 1rem;
+}
+
+.dark .footnotes-title {
+  color: #e5e7eb;
+}
+
+.footnote-item {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.dark .footnote-item {
+  color: #9ca3af;
+}
+
+.footnote-number {
+  color: #059669;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.dark .footnote-number {
+  color: #34d399;
+}
+
+.footnote-backref {
+  color: #059669;
+  text-decoration: none;
+  margin-left: 0.5rem;
+}
+
+.footnote-backref:hover {
+  text-decoration: underline;
+}
+
+.dark .footnote-backref {
+  color: #34d399;
+}
+
+/* In editor - highlight footnotes */
+.blog-editor-content .footnote-ref,
+.blog-editor-content sup[data-footnote="true"],
+.ProseMirror .footnote-ref,
+.ProseMirror sup[data-footnote="true"] {
+  background-color: #d1fae5;
+  padding: 0 0.25rem;
+  border-radius: 0.25rem;
+}
+
+.dark .blog-editor-content .footnote-ref,
+.dark .blog-editor-content sup[data-footnote="true"],
+.dark .ProseMirror .footnote-ref,
+.dark .ProseMirror sup[data-footnote="true"] {
+  background-color: #064e3b;
+}
+
+/* Footnote highlight animation (when scrolling to footnote) */
+.footnote-highlight {
+  animation: footnoteFlash 2s ease-out;
+}
+
+@keyframes footnoteFlash {
+  0% {
+    background-color: #fef3c7;
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.dark .footnote-highlight {
+  animation: footnoteFlashDark 2s ease-out;
+}
+
+@keyframes footnoteFlashDark {
+  0% {
+    background-color: #78350f;
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+/* ============================================
+   YOUTUBE EMBED STYLES
+   ============================================ */
+
+/* Responsive YouTube embed container */
+.youtube-embed {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  margin: 1.5rem 0;
+  padding-bottom: 56.25%; /* 16:9 aspect ratio */
+  height: 0;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  background-color: #000;
+}
+
+.youtube-embed iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 0.5rem;
+}
+
+/* In editor - show border for visibility */
+.blog-editor-content .youtube-embed,
+.ProseMirror .youtube-embed {
+  border: 2px dashed #dc2626;
+  background-color: #1f2937;
+}
+
+.blog-editor-content .youtube-embed::before,
+.ProseMirror .youtube-embed::before {
+  content: '📺 YouTube Video';
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  background-color: #dc2626;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 0.25rem;
+  z-index: 10;
+}
+
+/* Public display - clean look */
+.blog-content .youtube-embed {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.dark .blog-content .youtube-embed {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+}
+
+/* ============================================
+   LINK STYLES
+   ============================================ */
+
+/* Links in editor */
+.blog-editor-content a,
+.ProseMirror a {
+  color: #059669;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.blog-editor-content a:hover,
+.ProseMirror a:hover {
+  color: #047857;
+}
+
+.dark .blog-editor-content a,
+.dark .ProseMirror a {
+  color: #34d399;
+}
+
+.dark .blog-editor-content a:hover,
+.dark .ProseMirror a:hover {
+  color: #6ee7b7;
+}
+
+/* Links in public blog */
+.blog-content a {
+  color: #059669;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.blog-content a:hover {
+  color: #047857;
+}
+
+.dark .blog-content a {
+  color: #34d399;
+}
+
+.dark .blog-content a:hover {
+  color: #6ee7b7;
+}
+
+/* External link indicator */
+.blog-content a[target="_blank"]::after {
+  content: '↗';
+  margin-left: 0.25rem;
+  font-size: 0.75em;
+  vertical-align: super;
+}

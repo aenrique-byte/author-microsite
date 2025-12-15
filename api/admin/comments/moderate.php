@@ -34,22 +34,59 @@ if (!in_array($input['action'], $allowedActions)) {
 try {
     // First, find which table the comment is in
     $commentId = $input['id'];
+    $commentType = $input['type'] ?? null; // Optional: 'image', 'chapter', 'blog'
     $commentTable = null;
     $commentExists = false;
+    $isBlogComment = false;
 
-    // Check image_comments table
-    $stmt = $pdo->prepare("SELECT id FROM image_comments WHERE id = ?");
-    $stmt->execute([$commentId]);
-    if ($stmt->fetch()) {
-        $commentTable = 'image_comments';
-        $commentExists = true;
-    } else {
-        // Check chapter_comments table
+    // If type is specified, check that table first
+    if ($commentType === 'blog') {
+        $stmt = $pdo->prepare("SELECT id FROM blog_comments WHERE id = ?");
+        $stmt->execute([$commentId]);
+        if ($stmt->fetch()) {
+            $commentTable = 'blog_comments';
+            $commentExists = true;
+            $isBlogComment = true;
+        }
+    } elseif ($commentType === 'image') {
+        $stmt = $pdo->prepare("SELECT id FROM image_comments WHERE id = ?");
+        $stmt->execute([$commentId]);
+        if ($stmt->fetch()) {
+            $commentTable = 'image_comments';
+            $commentExists = true;
+        }
+    } elseif ($commentType === 'chapter') {
         $stmt = $pdo->prepare("SELECT id FROM chapter_comments WHERE id = ?");
         $stmt->execute([$commentId]);
         if ($stmt->fetch()) {
             $commentTable = 'chapter_comments';
             $commentExists = true;
+        }
+    } else {
+        // Check all tables if type not specified
+        // Check image_comments table
+        $stmt = $pdo->prepare("SELECT id FROM image_comments WHERE id = ?");
+        $stmt->execute([$commentId]);
+        if ($stmt->fetch()) {
+            $commentTable = 'image_comments';
+            $commentExists = true;
+        } else {
+            // Check chapter_comments table
+            $stmt = $pdo->prepare("SELECT id FROM chapter_comments WHERE id = ?");
+            $stmt->execute([$commentId]);
+            if ($stmt->fetch()) {
+                $commentTable = 'chapter_comments';
+                $commentExists = true;
+            } else {
+                // Check blog_comments table
+                $stmt = $pdo->prepare("SELECT id FROM blog_comments WHERE id = ?");
+                $stmt->execute([$commentId]);
+                if ($stmt->fetch()) {
+                    $commentTable = 'blog_comments';
+                    $commentExists = true;
+                    $isBlogComment = true;
+                }
+            }
         }
     }
 
@@ -65,9 +102,17 @@ try {
         $stmt->execute([$commentId]);
     } else {
         // Update comment status (approve/reject)
-        $isApproved = $input['action'] === 'approve' ? 1 : 0;
-        $stmt = $pdo->prepare("UPDATE {$commentTable} SET is_approved = ? WHERE id = ?");
-        $stmt->execute([$isApproved, $commentId]);
+        if ($isBlogComment) {
+            // Blog comments use status enum
+            $status = $input['action'] === 'approve' ? 'approved' : 'pending';
+            $stmt = $pdo->prepare("UPDATE blog_comments SET status = ? WHERE id = ?");
+            $stmt->execute([$status, $commentId]);
+        } else {
+            // Image/chapter comments use is_approved boolean
+            $isApproved = $input['action'] === 'approve' ? 1 : 0;
+            $stmt = $pdo->prepare("UPDATE {$commentTable} SET is_approved = ? WHERE id = ?");
+            $stmt->execute([$isApproved, $commentId]);
+        }
     }
 
     echo json_encode(['success' => true]);

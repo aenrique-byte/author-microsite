@@ -39,12 +39,14 @@ try {
 
     // Convert show_litrpg_tools to integer for database storage
     $showLitrpg = isset($input['show_litrpg_tools']) ? ($input['show_litrpg_tools'] ? 1 : 0) : 1;
+    // Convert show_shoutouts to integer for database storage
+    $showShoutouts = isset($input['show_shoutouts']) ? ($input['show_shoutouts'] ? 1 : 0) : 0;
 
     if ($profile) {
         // Update existing profile
         $stmt = $pdo->prepare("
-            UPDATE author_profile 
-            SET name = ?, bio = ?, tagline = ?, profile_image = ?, background_image_light = ?, background_image_dark = ?, site_domain = ?, gallery_rating_filter = ?, show_litrpg_tools = ?, updated_at = NOW()
+            UPDATE author_profile
+            SET name = ?, bio = ?, tagline = ?, profile_image = ?, background_image_light = ?, background_image_dark = ?, site_domain = ?, gallery_rating_filter = ?, show_litrpg_tools = ?, show_shoutouts = ?, updated_at = NOW()
             WHERE id = ?
         ");
         $stmt->execute([
@@ -57,13 +59,14 @@ try {
             $input['site_domain'] ?? null,
             $input['gallery_rating_filter'] ?? 'auto',
             $showLitrpg,
+            $showShoutouts,
             $profile['id']
         ]);
     } else {
         // Create new profile (no created_at column in schema, only updated_at)
         $stmt = $pdo->prepare("
-            INSERT INTO author_profile (name, bio, tagline, profile_image, background_image_light, background_image_dark, site_domain, gallery_rating_filter, show_litrpg_tools, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            INSERT INTO author_profile (name, bio, tagline, profile_image, background_image_light, background_image_dark, site_domain, gallery_rating_filter, show_litrpg_tools, show_shoutouts, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
         ");
         $stmt->execute([
             $input['name'] ?? null,
@@ -74,7 +77,8 @@ try {
             $input['background_image_dark'] ?? null,
             $input['site_domain'] ?? null,
             $input['gallery_rating_filter'] ?? 'auto',
-            $showLitrpg
+            $showLitrpg,
+            $showShoutouts
         ]);
     }
 

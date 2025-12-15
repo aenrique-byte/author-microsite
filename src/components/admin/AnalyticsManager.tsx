@@ -190,6 +190,75 @@ interface GalleryData {
   period_days: number
 }
 
+interface BlogPostItem {
+  id: number
+  slug: string
+  title: string
+  status: string
+  view_count: number
+  like_count: number
+  comment_count: number
+  reading_time: number
+  published_at: string | null
+  created_at: string
+  period_views: number
+  period_likes: number
+  period_shares: number
+  unique_visitors: number
+}
+
+interface BlogData {
+  posts?: BlogPostItem[]
+  post?: {
+    id: number
+    slug: string
+    title: string
+    status: string
+    view_count: number
+    like_count: number
+  }
+  summary?: {
+    total_views: number
+    total_likes: number
+    total_shares: number
+    unique_visitors: number
+    posts_with_views: number
+    published_count: number
+    draft_count: number
+    scheduled_count: number
+  }
+  totals?: {
+    total_views: number
+    total_likes: number
+    total_shares: number
+    unique_visitors: number
+  }
+  daily_trend?: Array<{
+    date: string
+    views: number
+    likes: number
+    unique_visitors: number
+  }>
+  daily_stats?: Array<{
+    date: string
+    views: number
+    likes: number
+    shares: number
+    unique_visitors: number
+  }>
+  referrers?: Array<{
+    source: string
+    count: number
+    unique_visitors: number
+  }>
+  countries?: Array<{
+    country_code: string
+    views: number
+    unique_visitors: number
+  }>
+  period_days: number
+}
+
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16']
 
 export default function AnalyticsManager() {
@@ -199,14 +268,16 @@ export default function AnalyticsManager() {
   const [activityData, setActivityData] = useState<ActivityData | null>(null)
   const [storyData, setStoryData] = useState<StoryData | null>(null)
   const [galleryData, setGalleryData] = useState<GalleryData | null>(null)
+  const [blogData, setBlogData] = useState<BlogData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   // Filters
   const [days, setDays] = useState(30)
-  const [activeTab, setActiveTab] = useState<'overview' | 'visitors' | 'geography' | 'activity' | 'stories' | 'galleries'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'visitors' | 'geography' | 'activity' | 'stories' | 'galleries' | 'blog'>('overview')
   const [selectedStoryId, setSelectedStoryId] = useState<number | null>(null)
   const [selectedGalleryId, setSelectedGalleryId] = useState<number | null>(null)
+  const [selectedBlogPostId, setSelectedBlogPostId] = useState<number | null>(null)
 
   useEffect(() => {
     loadAnalyticsData()
@@ -223,6 +294,31 @@ export default function AnalyticsManager() {
       loadGalleryData()
     }
   }, [activeTab, selectedGalleryId, days])
+
+  useEffect(() => {
+    if (activeTab === 'blog') {
+      loadBlogData()
+    }
+  }, [activeTab, selectedBlogPostId, days])
+
+  const loadBlogData = async () => {
+    try {
+      const url = selectedBlogPostId
+        ? `/api/admin/analytics/blog-details.php?days=${days}&post_id=${selectedBlogPostId}`
+        : `/api/admin/analytics/blog-details.php?days=${days}`
+
+      const response = await fetch(url, { credentials: 'same-origin' })
+
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success) {
+          setBlogData(result.data)
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load blog data:', err)
+    }
+  }
 
   const loadStoryData = async () => {
     try {
@@ -455,6 +551,19 @@ export default function AnalyticsManager() {
                 } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
               >
                 Galleries
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab('blog')
+                  setSelectedBlogPostId(null)
+                }}
+                className={`${
+                  activeTab === 'blog'
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+              >
+                Blog
               </button>
             </nav>
           </div>
@@ -1301,6 +1410,276 @@ export default function AnalyticsManager() {
                 </div>
               </div>
             </div>
+          )}
+        </>
+      )}
+
+      {/* Blog Tab */}
+      {activeTab === 'blog' && blogData && (
+        <>
+          {/* Blog Summary Cards */}
+          {!selectedBlogPostId && blogData.summary && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <StatCard
+                title="Total Views"
+                value={formatNumber(blogData.summary.total_views || 0)}
+                subtitle={`${blogData.period_days} days`}
+                icon="👁️"
+              />
+              <StatCard
+                title="Total Likes"
+                value={formatNumber(blogData.summary.total_likes || 0)}
+                subtitle="Reader engagement"
+                icon="❤️"
+              />
+              <StatCard
+                title="Unique Visitors"
+                value={formatNumber(blogData.summary.unique_visitors || 0)}
+                subtitle="Unique readers"
+                icon="👥"
+              />
+              <StatCard
+                title="Published Posts"
+                value={formatNumber(blogData.summary.published_count || 0)}
+                subtitle={`${blogData.summary.draft_count || 0} drafts, ${blogData.summary.scheduled_count || 0} scheduled`}
+                icon="📝"
+              />
+            </div>
+          )}
+
+          {/* Blog Post Selector */}
+          <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+            <div className="px-4 py-5 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 sm:mb-0">
+                  {selectedBlogPostId && blogData.post ? `${blogData.post.title} - Analytics` : 'Blog Posts Overview'}
+                </h3>
+                {blogData.posts && blogData.posts.length > 0 && (
+                  <select
+                    value={selectedBlogPostId || ''}
+                    onChange={(e) => setSelectedBlogPostId(e.target.value ? Number(e.target.value) : null)}
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                  >
+                    <option value="">All Posts Overview</option>
+                    {blogData.posts.map((post) => (
+                      <option key={post.id} value={post.id}>
+                        {post.title}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Daily Trend Chart */}
+          {!selectedBlogPostId && blogData.daily_trend && blogData.daily_trend.length > 0 && (
+            <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+              <div className="px-4 py-5 sm:p-6">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                  Daily Blog Views
+                </h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={blogData.daily_trend}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="views" stroke="#3b82f6" name="Views" strokeWidth={2} />
+                    <Line type="monotone" dataKey="likes" stroke="#ef4444" name="Likes" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
+          {/* All Blog Posts Table */}
+          {!selectedBlogPostId && blogData.posts && (
+            <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+              <div className="px-4 py-5 sm:p-6">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                  All Blog Posts ({blogData.period_days} days)
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-700">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Post
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Period Views
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Period Likes
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Unique Visitors
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Total Views
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Total Likes
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      {blogData.posts.map((post) => (
+                        <tr key={post.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer" onClick={() => setSelectedBlogPostId(post.id)}>
+                          <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                            <div>
+                              <div className="font-medium">{post.title}</div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">{post.slug}</div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              post.status === 'published' 
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                : post.status === 'scheduled'
+                                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                                  : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                            }`}>
+                              {post.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            {formatNumber(post.period_views)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            {formatNumber(post.period_likes)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            {formatNumber(post.unique_visitors)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            {formatNumber(post.view_count)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            {formatNumber(post.like_count)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Selected Post Details */}
+          {selectedBlogPostId && blogData.post && (
+            <>
+              {/* Post Stats */}
+              {blogData.totals && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <StatCard
+                    title="Period Views"
+                    value={formatNumber(blogData.totals.total_views || 0)}
+                    subtitle={`Last ${blogData.period_days} days`}
+                    icon="👁️"
+                  />
+                  <StatCard
+                    title="Period Likes"
+                    value={formatNumber(blogData.totals.total_likes || 0)}
+                    subtitle={`Last ${blogData.period_days} days`}
+                    icon="❤️"
+                  />
+                  <StatCard
+                    title="Shares"
+                    value={formatNumber(blogData.totals.total_shares || 0)}
+                    subtitle="Social shares"
+                    icon="📤"
+                  />
+                  <StatCard
+                    title="Unique Visitors"
+                    value={formatNumber(blogData.totals.unique_visitors || 0)}
+                    subtitle="Unique readers"
+                    icon="👥"
+                  />
+                </div>
+              )}
+
+              {/* Daily Stats Chart */}
+              {blogData.daily_stats && blogData.daily_stats.length > 0 && (
+                <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+                  <div className="px-4 py-5 sm:p-6">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                      Daily Views & Likes
+                    </h3>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <LineChart data={blogData.daily_stats}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="date" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Line type="monotone" dataKey="views" stroke="#3b82f6" name="Views" strokeWidth={2} />
+                        <Line type="monotone" dataKey="likes" stroke="#ef4444" name="Likes" strokeWidth={2} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              )}
+
+              {/* Traffic Sources */}
+              {blogData.referrers && blogData.referrers.length > 0 && (
+                <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+                  <div className="px-4 py-5 sm:p-6">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                      Traffic Sources
+                    </h3>
+                    <div className="space-y-3">
+                      {blogData.referrers.map((referrer, index) => (
+                        <div key={referrer.source} className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <span className="text-sm text-gray-500 dark:text-gray-400 w-6">
+                              #{index + 1}
+                            </span>
+                            <span className="text-sm text-gray-900 dark:text-white ml-3">
+                              {referrer.source}
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-medium text-gray-900 dark:text-white">
+                              {formatNumber(referrer.count)} views
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              {formatNumber(referrer.unique_visitors)} visitors
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Geographic Breakdown */}
+              {blogData.countries && blogData.countries.length > 0 && (
+                <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
+                  <div className="px-4 py-5 sm:p-6">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                      Top Countries
+                    </h3>
+                    <ResponsiveContainer width="100%" height={250}>
+                      <BarChart data={blogData.countries.slice(0, 10)}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="country_code" />
+                        <YAxis />
+                        <Tooltip />
+                        <Bar dataKey="views" fill="#3b82f6" name="Views" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </>
       )}

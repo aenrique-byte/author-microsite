@@ -52,7 +52,7 @@ foreach ($required_fields as $field) {
 }
 
 // Validate event_type
-$allowed_events = ['page_view', 'story_view', 'gallery_view', 'image_view', 'chapter_view', 'chapter_depth', 'click'];
+$allowed_events = ['page_view', 'story_view', 'gallery_view', 'image_view', 'chapter_view', 'chapter_depth', 'click', 'blog_view', 'blog_like', 'blog_share'];
 if (!in_array($input['event_type'], $allowed_events)) {
     http_response_code(400);
     echo json_encode(['error' => 'Invalid event_type']);
@@ -61,7 +61,7 @@ if (!in_array($input['event_type'], $allowed_events)) {
 
 // Validate content_type if provided
 if (isset($input['content_type'])) {
-    $allowed_content_types = ['site', 'story', 'gallery', 'chapter', 'image'];
+    $allowed_content_types = ['site', 'story', 'gallery', 'chapter', 'image', 'blog', 'blog_post'];
     if (!in_array($input['content_type'], $allowed_content_types)) {
         http_response_code(400);
         echo json_encode(['error' => 'Invalid content_type']);

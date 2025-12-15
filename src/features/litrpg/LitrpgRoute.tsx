@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
-import { Routes, Route, Link } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import LitrpgApp from './LitrpgApp';
 import SocialIcons from '../../components/SocialIcons';
+import PageNavbar from '../../components/PageNavbar';
 import AttributesPage from './pages/AttributesPage';
 import AbilitiesPage from './pages/AbilitiesPage';
 import BestiaryPage from './pages/BestiaryPage';
@@ -23,20 +24,9 @@ function LitrpgHome() {
         <meta name="description" content="Interactive character sheet, bestiary, and game tools for Destiny Among the Stars LitRPG." />
       </Helmet>
       
+      <PageNavbar breadcrumbs={[{ label: 'Tools' }]} />
+      
       <div className="min-h-screen bg-nexus-dark text-slate-200 font-sans selection:bg-nexus-accent/30 selection:text-white flex flex-col">
-        {/* Breadcrumb Navigation */}
-        <div className="bg-slate-900/90 border-b border-slate-700 py-3 px-6">
-          <div className="max-w-5xl mx-auto">
-            <div className="flex items-center gap-2 text-sm text-slate-400">
-              <Link to="/" className="hover:text-nexus-accent hover:underline transition-colors">
-                Home
-              </Link>
-              <span className="text-slate-600">/</span>
-              <span className="text-slate-200">LitRPG Tools</span>
-            </div>
-          </div>
-        </div>
-
         {/* Main App Content */}
         <LitrpgApp />
 

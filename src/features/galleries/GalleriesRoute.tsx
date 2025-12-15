@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Routes, Route, useNavigate, useParams, Link } from "react-router-dom";
+import { Routes, Route, useNavigate, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import type { ImageMeta, Rating, Socials, CollectionCardItem } from "./types";
 import { ImageCard } from "./components/ImageCard";
 import { API_BASE } from "../../lib/apiBase";
-import ThemeToggle from "../../components/ThemeToggle";
+import PageNavbar from "../../components/PageNavbar";
 import SocialIcons from "../../components/SocialIcons";
 import { ApiGalleryCards, type ApiGalleryCardItem } from "./components/ApiGalleryCards";
 import { analytics } from "../../lib/analytics";
@@ -90,22 +90,9 @@ function CollectionsList() {
         <meta name="twitter:description" content={description} />
         <meta name="author" content={authorName} />
       </Helmet>
-      <ThemeToggle />
+      <PageNavbar breadcrumbs={[{ label: 'Galleries' }]} />
       
       <div className="relative z-10 mx-auto max-w-6xl px-4 py-8">
-        {/* Breadcrumbs */}
-        <div className="mb-6">
-          <div className="bg-white/70 border-gray-300 dark:bg-black/70 dark:border-white/20 rounded-xl p-4">
-            <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-neutral-300">
-              <Link to="/" className="hover:underline hover:text-gray-900 dark:hover:text-neutral-200">
-                Home
-              </Link>
-              <span>/</span>
-              <span className="text-gray-900 dark:text-white">Galleries</span>
-            </div>
-          </div>
-        </div>
-
         <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-white">
             Collections
@@ -302,26 +289,12 @@ function CollectionGalleries() {
         <meta name="twitter:title" content={collection?.title || 'Collection'} />
         <meta name="twitter:description" content={galleriesDescription} />
       </Helmet>
-      <ThemeToggle />
+      <PageNavbar breadcrumbs={[
+        { label: 'Galleries', path: '/galleries' },
+        { label: collection?.title || cslug || 'Collection' }
+      ]} />
       
       <div className="relative z-10 mx-auto max-w-6xl px-4 py-8">
-        {/* Breadcrumbs */}
-        <div className="mb-6">
-          <div className="bg-white/70 border-gray-300 dark:bg-black/70 dark:border-white/20 rounded-xl p-4">
-            <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-neutral-300">
-              <Link to="/" className="hover:underline hover:text-gray-900 dark:hover:text-neutral-200">
-                Home
-              </Link>
-              <span>/</span>
-              <Link to="/galleries" className="hover:underline hover:text-gray-900 dark:hover:text-neutral-200">
-                Galleries
-              </Link>
-              <span>/</span>
-              <span className="text-gray-900 dark:text-white">{collection?.title || cslug}</span>
-            </div>
-          </div>
-        </div>
-
         <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-white">
             {collection?.title || "Collection"}
@@ -483,26 +456,12 @@ function GalleryList() {
         <meta name="twitter:description" content={galleriesDescription} />
         <meta name="author" content={authorName} />
       </Helmet>
-      <ThemeToggle />
+      <PageNavbar breadcrumbs={[
+        { label: 'Galleries', path: '/galleries' },
+        { label: 'All' }
+      ]} />
       
       <div className="relative z-10 mx-auto max-w-6xl px-4 py-8">
-        {/* Breadcrumbs */}
-        <div className="mb-6">
-          <div className="bg-white/70 border-gray-300 dark:bg-black/70 dark:border-white/20 rounded-xl p-4">
-            <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-neutral-300">
-              <Link to="/" className="hover:underline hover:text-gray-900 dark:hover:text-neutral-200">
-                Home
-              </Link>
-              <span>/</span>
-              <Link to="/galleries" className="hover:underline hover:text-gray-900 dark:hover:text-neutral-200">
-                Galleries
-              </Link>
-              <span>/</span>
-              <span className="text-gray-900 dark:text-white">All</span>
-            </div>
-          </div>
-        </div>
-
         {/* Header with controls */}
         <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-white">
@@ -770,26 +729,12 @@ function GalleryView() {
         <meta name="author" content={authorName} />
         <meta name="keywords" content="digital artwork, concept art, character design, illustration, visual art, creative design" />
       </Helmet>
-      <ThemeToggle />
+      <PageNavbar breadcrumbs={[
+        { label: 'Galleries', path: '/galleries' },
+        { label: currentGallery?.title || slug || 'Gallery' }
+      ]} />
       
       <div className="relative z-10 mx-auto max-w-6xl px-4 py-8">
-        {/* Breadcrumbs */}
-        <div className="mb-6">
-          <div className="bg-white/70 border-gray-300 dark:bg-black/70 dark:border-white/20 rounded-xl p-4">
-            <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-neutral-300">
-              <Link to="/" className="hover:underline hover:text-gray-900 dark:hover:text-neutral-200">
-                Home
-              </Link>
-              <span>/</span>
-              <Link to="/galleries" className="hover:underline hover:text-gray-900 dark:hover:text-neutral-200">
-                Galleries
-              </Link>
-              <span>/</span>
-              <span className="text-gray-900 dark:text-white">{currentGallery?.title || slug}</span>
-            </div>
-          </div>
-        </div>
-
         {/* Header with controls */}
         <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-white">

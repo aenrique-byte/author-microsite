@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { getAllStories, loadProgress } from '../utils/api-story';
 import { RenderedMarkdown } from './RenderedMarkdown';
 import SocialIcons from '../../../components/SocialIcons';
-import ThemeToggle from '../../../components/ThemeToggle';
+import PageNavbar from '../../../components/PageNavbar';
 import { useTheme } from '../contexts/ThemeContext';
 import { getRandomBackground } from '../../../utils/backgroundUtils';
 
@@ -89,7 +89,7 @@ export function StorytimeHome() {
 
   return (
     <>
-      <ThemeToggle />
+      <PageNavbar breadcrumbs={[{ label: 'Stories' }]} />
       <div className="relative min-h-screen w-full">
         {/* Fixed background layer */}
         <div
@@ -103,18 +103,6 @@ export function StorytimeHome() {
         <div className={`fixed inset-0 ${overlayClass} -z-10`} />
         
         <div className="relative z-10 mx-auto max-w-6xl px-4 py-8">
-          {/* Enhanced Breadcrumbs */}
-          <div className="mb-6">
-            <div className={`${cardClass} rounded-xl p-4`}>
-              <div className={`flex items-center gap-2 text-sm ${subtextClass}`}>
-                <a href="/" className={`hover:underline ${theme === 'light' ? 'hover:text-gray-900' : 'hover:text-neutral-200'}`}>
-                  Home
-                </a>
-                <span>/</span>
-                <span className={textClass}>Stories</span>
-              </div>
-            </div>
-          </div>
         <h1 className={`mb-12 text-center text-4xl font-bold tracking-tight ${textClass}`}>All Stories</h1>
         
         <ul className="space-y-8">

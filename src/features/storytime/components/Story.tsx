@@ -4,7 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import { getStory, loadProgress, resetProgress, getAuthorProfile } from '../utils/api-story';
 import { RenderedMarkdown } from './RenderedMarkdown';
 import SocialIcons from '../../../components/SocialIcons';
-import ThemeToggle from '../../../components/ThemeToggle';
+import PageNavbar from '../../../components/PageNavbar';
 import { useTheme } from '../contexts/ThemeContext';
 import { API_BASE } from '../../../lib/apiBase';
 import { analytics } from '../../../lib/analytics';
@@ -248,7 +248,10 @@ export function Story() {
           })}
         </script>
       </Helmet>
-      <ThemeToggle />
+      <PageNavbar breadcrumbs={[
+        { label: 'Stories', path: '/storytime' },
+        { label: story.title }
+      ]} />
       <div className="relative min-h-screen w-full">
         {/* Fixed background layer */}
         <div
@@ -262,23 +265,6 @@ export function Story() {
         <div className={`fixed inset-0 ${overlayClass} -z-10`} />
         
         <div className="relative z-10 max-w-3xl mx-auto px-4 py-8">
-          {/* Enhanced Breadcrumbs */}
-          <div className="mb-6">
-            <div className={`${cardClass} rounded-xl p-4`}>
-              <div className={`flex items-center gap-2 text-sm ${subtextClass}`}>
-                <a href="/" className={`hover:underline ${theme === 'light' ? 'hover:text-gray-900' : 'hover:text-neutral-200'}`}>
-                  Home
-                </a>
-                <span>/</span>
-                <Link to="/storytime" className={`hover:underline ${theme === 'light' ? 'hover:text-gray-900' : 'hover:text-neutral-200'}`}>
-                  Stories
-                </Link>
-                <span>/</span>
-                <span className={textClass}>{story.title}</span>
-              </div>
-            </div>
-          </div>
-      
           <div className={`${cardClass} rounded-xl p-6 mb-6`}>
             <div className="flex flex-col lg:flex-row items-start gap-6">
               <div className="lg:w-48 lg:flex-shrink-0 w-full">

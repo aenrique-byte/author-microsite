@@ -5,6 +5,8 @@ type Story = {
   title: string;
   slug: string;
   description?: string | null;
+  homepage_description?: string | null;
+  tagline?: string | null;
   genres?: string[] | null;
   primary_keywords?: string | null;
   longtail_keywords?: string | null;
@@ -18,6 +20,10 @@ type Story = {
   updated_at: string;
   chapter_count?: number;
   external_links?: { label: string; url: string }[] | null;
+  latest_chapter_number?: number | null;
+  latest_chapter_title?: string | null;
+  cta_text?: string | null;
+  show_on_homepage?: boolean;
 };
 
 type Chapter = {
@@ -48,6 +54,8 @@ export default function StoryManager() {
     title: "",
     slug: "",
     description: "",
+    homepage_description: "",
+    tagline: "",
     genres: [] as string[],
     primary_keywords: "",
     longtail_keywords: "",
@@ -57,7 +65,11 @@ export default function StoryManager() {
     enable_drop_cap: false,
     drop_cap_font: "serif",
     status: "draft" as Story['status'],
-    external_links: [] as { label: string; url: string }[]
+    external_links: [] as { label: string; url: string }[],
+    latest_chapter_number: null as number | null,
+    latest_chapter_title: "",
+    cta_text: "",
+    show_on_homepage: true
   });
 
   // Upload states
@@ -242,6 +254,8 @@ export default function StoryManager() {
         title: "",
         slug: "",
         description: "",
+        homepage_description: "",
+        tagline: "",
         genres: [],
         primary_keywords: "",
         longtail_keywords: "",
@@ -251,7 +265,11 @@ export default function StoryManager() {
         enable_drop_cap: false,
         drop_cap_font: "serif",
         status: "draft",
-        external_links: []
+        external_links: [],
+        latest_chapter_number: null,
+        latest_chapter_title: "",
+        cta_text: "",
+        show_on_homepage: true
       });
       await loadStories();
     } catch (err: any) {
@@ -421,6 +439,8 @@ export default function StoryManager() {
       title: story.title,
       slug: story.slug,
       description: story.description || "",
+      homepage_description: story.homepage_description || "",
+      tagline: story.tagline || "",
       genres: story.genres || [],
       primary_keywords: story.primary_keywords || "",
       longtail_keywords: story.longtail_keywords || "",
@@ -430,7 +450,11 @@ export default function StoryManager() {
       enable_drop_cap: story.enable_drop_cap || false,
       drop_cap_font: story.drop_cap_font || "serif",
       status: story.status,
-      external_links: story.external_links || []
+      external_links: story.external_links || [],
+      latest_chapter_number: story.latest_chapter_number || null,
+      latest_chapter_title: story.latest_chapter_title || "",
+      cta_text: story.cta_text || "",
+      show_on_homepage: story.show_on_homepage !== false
     });
     setPageBreakMode('upload');
     loadAvailablePageBreaks();
@@ -516,6 +540,8 @@ export default function StoryManager() {
               title: "",
               slug: "",
               description: "",
+              homepage_description: "",
+              tagline: "",
               genres: [],
               primary_keywords: "",
               longtail_keywords: "",
@@ -525,7 +551,11 @@ export default function StoryManager() {
               enable_drop_cap: false,
               drop_cap_font: "serif",
               status: "draft",
-              external_links: []
+              external_links: [],
+              latest_chapter_number: null,
+              latest_chapter_title: "",
+              cta_text: "",
+              show_on_homepage: true
             });
             setPageBreakMode('upload');
             loadAvailablePageBreaks();
@@ -593,14 +623,131 @@ export default function StoryManager() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Description
+                  Description (Full - for story pages)
                 </label>
                 <textarea
                   value={storyForm.description}
                   onChange={(e) => setStoryForm(prev => ({ ...prev, description: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white font-mono text-sm"
+                  rows={4}
+                  placeholder="Full description with markdown and color tags..."
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Supports markdown with color tags. Used on story detail pages.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Homepage Description (Short - plain text)
+                </label>
+                <textarea
+                  value={storyForm.homepage_description}
+                  onChange={(e) => setStoryForm(prev => ({ ...prev, homepage_description: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                   rows={3}
+                  placeholder="A simplified, plain text description for the homepage..."
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Plain text only. This will appear on homepage cards and featured story section.
+                </p>
+              </div>
+
+              {/* Homepage Display Settings */}
+              <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
+                <h4 className="text-md font-medium text-gray-900 dark:text-white mb-3">Homepage Display</h4>
+
+                <div className="space-y-4">
+                  {/* Show on Homepage Toggle */}
+                  <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={storyForm.show_on_homepage}
+                        onChange={(e) => setStoryForm(prev => ({ ...prev, show_on_homepage: e.target.checked }))}
+                        className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                      />
+                      <div>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          Show on Homepage
+                        </span>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          When enabled, this story will appear in the "Explore the universes" grid on the homepage
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Tagline
+                    </label>
+                    <input
+                      type="text"
+                      value={storyForm.tagline}
+                      onChange={(e) => setStoryForm(prev => ({ ...prev, tagline: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                      placeholder="A short, catchy tagline for the story"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Short tagline shown below the title on the homepage
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Call-to-Action Text
+                    </label>
+                    <input
+                      type="text"
+                      value={storyForm.cta_text}
+                      onChange={(e) => setStoryForm(prev => ({ ...prev, cta_text: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                      placeholder="Start Reading"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Button text (default: "Start Reading")
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Latest Chapter Number
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={storyForm.latest_chapter_number ?? ""}
+                        onChange={(e) => setStoryForm(prev => ({
+                          ...prev,
+                          latest_chapter_number: e.target.value ? parseInt(e.target.value) : null
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                        placeholder="42"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Current chapter number on external platforms
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Latest Chapter Title
+                      </label>
+                      <input
+                        type="text"
+                        value={storyForm.latest_chapter_title}
+                        onChange={(e) => setStoryForm(prev => ({ ...prev, latest_chapter_title: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                        placeholder="The Final Battle"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Title of the latest chapter
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* SEO Fields */}
@@ -819,9 +966,9 @@ export default function StoryManager() {
               </div>
               {/* External Links (platforms) */}
               <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
-                <h4 className="text-md font-medium text-gray-900 dark:text-white mb-3">External Links</h4>
+                <h4 className="text-md font-medium text-gray-900 dark:text-white mb-3">External Links (RoyalRoad, Patreon, etc.)</h4>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                  Add links to external platforms where this story is also published (e.g., Amazon, RoyalRoad, ScribbleHub). These will render on the public Stories page as “Find on …” links.
+                  Add links to external platforms where this story is published (e.g., RoyalRoad, Patreon, Amazon, ScribbleHub). These will appear as clickable links on the homepage featured story section and the story pages.
                 </p>
                 <div className="space-y-2">
                   {(storyForm.external_links || []).map((link, idx) => (

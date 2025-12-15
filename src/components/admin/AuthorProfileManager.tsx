@@ -10,6 +10,7 @@ interface AuthorProfile {
   site_domain?: string
   gallery_rating_filter?: 'always' | 'auto' | 'never'
   show_litrpg_tools?: boolean
+  show_shoutouts?: boolean
 }
 
 export default function AuthorProfileManager() {
@@ -247,6 +248,26 @@ export default function AuthorProfileManager() {
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 When enabled, displays a "LitRPG Tools" button on the homepage linking to the interactive game tools.
                 Disable this if deploying to a site that doesn't use the LitRPG features.
+              </p>
+            </div>
+          </label>
+        </div>
+
+        <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={profile.show_shoutouts === true}
+              onChange={(e) => setProfile({ ...profile, show_shoutouts: e.target.checked })}
+              className="mt-1 h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+            />
+            <div>
+              <span className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Show Shoutouts on Homepage
+              </span>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                When enabled, displays a "Shoutouts" button on the homepage linking to the Royal Road shoutout exchange system.
+                Enable this to allow authors to book shoutout swaps with you.
               </p>
             </div>
           </label>

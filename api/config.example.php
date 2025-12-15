@@ -28,4 +28,14 @@ define('ANALYTICS_SALT', 'your-analytics-salt-change-this-' . hash('sha256', 'yo
 // CORS settings
 // For production, change '*' to your specific domain for better security
 define('CORS_ORIGINS', '*'); // Example: 'yourdomain.com'
+
+// Site base URL (required for social media crossposting)
+// Must be the full URL including protocol (https recommended)
+// Example: 'https://yourdomain.com' or 'https://www.yourdomain.com'
+// If not set, the system will try to auto-detect from server variables
+define('BASE_URL', ''); // Example: 'https://yourdomain.com'
+
+// Encryption key for social media API tokens
+// IMPORTANT: Change this to a long, random string for security
+define('ENCRYPTION_KEY', 'your-encryption-key-change-this-to-something-long-and-random');
 ?>

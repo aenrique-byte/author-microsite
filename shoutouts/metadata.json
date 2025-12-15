@@ -1,0 +1,5 @@
+{
+  "name": "Royal Road Shoutout Manager",
+  "description": "A self-contained SQL-style shoutout management app for Royal Road authors. Allows admins to schedule availability and guests to book shoutout slots.",
+  "requestFramePermissions": []
+}
