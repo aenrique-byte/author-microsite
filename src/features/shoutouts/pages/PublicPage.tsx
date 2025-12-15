@@ -6,6 +6,8 @@ import PreviewBox from '../components/PreviewBox';
 import { BookOpen, Check, Copy, X, ChevronLeft, ChevronRight, Mail, Lock } from 'lucide-react';
 import SocialIcons from '../../../components/SocialIcons';
 import PageNavbar from '../../../components/PageNavbar';
+import NewsletterCTA from '../../../components/NewsletterCTA';
+import PatreonCTA from '../../../components/PatreonCTA';
 import { useTheme } from '../../storytime/contexts/ThemeContext';
 import { getRandomBackground } from '../../../utils/backgroundUtils';
 
@@ -479,6 +481,19 @@ export default function PublicPage({ onAdminLogin }: PublicPageProps) {
             </div>
         </div>
       </main>
+
+      <div className="mx-auto max-w-4xl px-4 pb-6">
+        <div className="rounded-2xl border border-neutral-200 bg-white/80 p-6 text-center shadow-lg dark:border-neutral-800 dark:bg-neutral-900/70">
+          <h3 className="text-xl font-bold text-neutral-900 dark:text-white">Stay in the loop</h3>
+          <p className="mt-2 text-sm text-neutral-700 dark:text-neutral-300">
+            Get a heads-up when new shoutout slots open, or support future collabs on Patreon.
+          </p>
+          <div className="mt-4 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <NewsletterCTA variant="button" source="shoutouts" />
+            <PatreonCTA variant="button" />
+          </div>
+        </div>
+      </div>
 
       <footer className="relative z-10 bg-neutral-100 dark:bg-neutral-950 border-t border-neutral-200 dark:border-neutral-800 py-8">
           <SocialIcons variant="footer" />

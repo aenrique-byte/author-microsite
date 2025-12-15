@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { useTheme } from '../features/storytime/contexts/ThemeContext'
 import ThemeToggle from './ThemeToggle'
 import SocialIcons from './SocialIcons'
+import NewsletterCTA from './NewsletterCTA'
+import PatreonCTA from './PatreonCTA'
 import { getRandomBackground } from '../utils/backgroundUtils'
 
 // Types
@@ -261,9 +263,27 @@ export default function UniversePortalHomepage() {
           </div>
 
           {/* Right: featured story card */}
-          {settings.show_featured_story && featured_story && (
-            <FeaturedStoryCard story={featured_story} theme={theme} cardBg={cardBg} textSecondary={textSecondary} />
-          )}
+        {settings.show_featured_story && featured_story && (
+          <FeaturedStoryCard story={featured_story} theme={theme} cardBg={cardBg} textSecondary={textSecondary} />
+        )}
+      </section>
+
+        {/* Newsletter + Patreon CTA Section */}
+        <section className={`mt-14 md:mt-16 ${cardBg} border rounded-3xl p-8 md:p-10 text-center`}>
+          <h2 className={`text-3xl font-bold ${textPrimary} mb-3`}>
+            📬 Stay Updated
+          </h2>
+          <p className={`text-lg ${textSecondary} mb-6 max-w-2xl mx-auto`}>
+            Get notified when I publish new chapters, blog posts, and galleries. Or support my work on Patreon for early access and exclusive content.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <NewsletterCTA
+              variant="button"
+              source="homepage"
+              buttonText="Join Mailing List"
+            />
+            <PatreonCTA variant="button" />
+          </div>
         </section>
 
         {/* STORY GRID */}

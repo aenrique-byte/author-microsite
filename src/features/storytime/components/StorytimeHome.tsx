@@ -4,6 +4,8 @@ import { getAllStories, loadProgress } from '../utils/api-story';
 import { RenderedMarkdown } from './RenderedMarkdown';
 import SocialIcons from '../../../components/SocialIcons';
 import PageNavbar from '../../../components/PageNavbar';
+import NewsletterCTA from '../../../components/NewsletterCTA';
+import PatreonCTA from '../../../components/PatreonCTA';
 import { useTheme } from '../contexts/ThemeContext';
 import { getRandomBackground } from '../../../utils/backgroundUtils';
 
@@ -287,7 +289,19 @@ export function StorytimeHome() {
             </div>
           </div>
         )}
-        
+
+        {/* CTA before footer */}
+        <div className={`mt-14 ${cardClass} border rounded-2xl p-6 text-center`}>
+          <h3 className={`text-xl font-bold ${textClass}`}>Never miss a chapter</h3>
+          <p className={`mt-2 text-sm ${subtextClass}`}>
+            Get updates when new stories or chapters go live, or support the journey on Patreon.
+          </p>
+          <div className="mt-4 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
+            <NewsletterCTA variant="button" source="storytime_home" />
+            <PatreonCTA variant="button" />
+          </div>
+        </div>
+
         {/* Footer with Social Icons and Copyright */}
         <footer className={`relative z-10 mt-16 border-t ${cardClass} py-8 ${
           theme === 'light' ? 'border-gray-300' : 'border-white/20'

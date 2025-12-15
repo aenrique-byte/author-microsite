@@ -16,6 +16,11 @@ if (!defined('UPLOAD_WEB_BASE')) {
 }
 define('MAX_UPLOAD_SIZE', 10 * 1024 * 1024); // 10MB
 
+// Newsletter settings
+define('NEWSLETTER_ENABLED', true);
+define('EMAIL_SENDING_ENABLED', false); // Phase 5 toggle
+define('NEWSLETTER_RATE_LIMIT_SECONDS', 60);
+
 // Security settings
 // IMPORTANT: Change these values for security!
 define('JWT_SECRET', 'your-unique-secret-key-change-this-to-something-long-and-random');

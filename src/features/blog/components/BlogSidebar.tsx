@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { TagCloud } from './TagCloud'
 import { getBlogRssFeedUrl } from '../../../utils/api-blog'
+import NewsletterCTA from '../../../components/NewsletterCTA'
 import type { BlogCategory, BlogTag } from '../../../types/blog'
 
 interface AuthorProfile {
@@ -60,6 +61,9 @@ export function BlogSidebar({ categories, tags, profile, theme }: BlogSidebarPro
           </Link>
         </div>
       )}
+
+      {/* Newsletter CTA */}
+      <NewsletterCTA variant="card" source="blog_index" className={cardBg} />
 
       {/* Categories */}
       {categories.length > 0 && (

@@ -6,6 +6,7 @@ import { ImageCard } from "./components/ImageCard";
 import { API_BASE } from "../../lib/apiBase";
 import PageNavbar from "../../components/PageNavbar";
 import SocialIcons from "../../components/SocialIcons";
+import NewsletterCTA from "../../components/NewsletterCTA";
 import { ApiGalleryCards, type ApiGalleryCardItem } from "./components/ApiGalleryCards";
 import { analytics } from "../../lib/analytics";
 import { useAuth } from "../../contexts/AuthContext";
@@ -164,6 +165,13 @@ function CollectionsList() {
         </main>
 
         {socials && <SocialIcons socials={socials} variant="footer" />}
+
+        <div className="mt-8 text-center">
+          <p className="text-sm text-gray-600 dark:text-neutral-400 mb-3">
+            Get notified when new collections drop
+          </p>
+          <NewsletterCTA variant="button" source="gallery_collections" />
+        </div>
       </div>
     </div>
   );
@@ -338,6 +346,13 @@ function CollectionGalleries() {
         </main>
 
         {socials && <SocialIcons socials={socials} variant="footer" />}
+
+        <div className="mt-8 text-center">
+          <p className="text-sm text-gray-600 dark:text-neutral-400 mb-3">
+            Get notified when I publish new galleries
+          </p>
+          <NewsletterCTA variant="button" source="collection_galleries" />
+        </div>
       </div>
     </div>
   );
@@ -502,6 +517,13 @@ function GalleryList() {
         </main>
 
         {socials && <SocialIcons socials={socials} variant="footer" />}
+
+        <div className="mt-8 text-center">
+          <p className="text-sm text-gray-600 dark:text-neutral-400 mb-3">
+            Get notified when I publish new galleries
+          </p>
+          <NewsletterCTA variant="button" source="gallery_list" />
+        </div>
       </div>
     </div>
   );
@@ -801,6 +823,13 @@ function GalleryView() {
         </main>
 
         {socials && <SocialIcons socials={socials} variant="footer" />}
+
+        <div className="mt-8 text-center">
+          <p className="text-sm text-gray-600 dark:text-neutral-400 mb-3">
+            Get notified about new gallery uploads
+          </p>
+          <NewsletterCTA variant="button" source="gallery_detail" />
+        </div>
       </div>
     </div>
   );

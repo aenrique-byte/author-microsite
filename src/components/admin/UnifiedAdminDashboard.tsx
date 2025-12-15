@@ -16,6 +16,7 @@ import AnalyticsManager from './AnalyticsManager'
 import LitrpgManager from './LitrpgManager'
 import HomepageManager from './HomepageManager'
 import BlogManager from './BlogManager'
+import NewsletterManager from './NewsletterManager'
 import Breadcrumb from './Breadcrumb'
 
 interface User {
@@ -122,6 +123,7 @@ export default function UnifiedAdminDashboard() {
           <Route path="/moderation" element={<ModerationManager />} />
           <Route path="/password" element={<PasswordManager />} />
           <Route path="/analytics" element={<AnalyticsManager />} />
+          <Route path="/newsletter" element={<NewsletterManager />} />
           <Route path="/litrpg" element={<LitrpgManager />} />
           <Route path="/homepage" element={<HomepageManager />} />
           <Route path="/blog" element={<BlogManager />} />
@@ -363,16 +365,23 @@ function AdminHome() {
             icon="🔐"
           />
           
-          <AdminCard 
-            title="Analytics" 
-            href="/admin/analytics" 
+          <AdminCard
+            title="Analytics"
+            href="/admin/analytics"
             description="View site statistics and engagement metrics"
             icon="📊"
           />
-          
-          <AdminCard 
-            title="LitRPG Manager" 
-            href="/admin/litrpg" 
+
+          <AdminCard
+            title="Newsletter"
+            href="/admin/newsletter"
+            description="View signups, sources, and export subscribers"
+            icon="✉️"
+          />
+
+          <AdminCard
+            title="LitRPG Manager"
+            href="/admin/litrpg"
             description="Manage game data: characters, classes, abilities, monsters, items"
             icon="⚔️"
           />
