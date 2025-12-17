@@ -7,7 +7,7 @@ interface PatreonCTAProps {
   url?: string
 }
 
-const fallbackUrl = 'https://www.patreon.com/'
+const fallbackUrl = 'https://www.patreon.com/cw/oc_wanderer'
 
 export default function PatreonCTA({ variant, className = '', url }: PatreonCTAProps) {
   const { theme } = useTheme()

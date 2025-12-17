@@ -1,15 +1,33 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { BookOpen, ScrollText, Upload, Save, Zap, Shield, Package, Users, RefreshCw, ChevronLeft, Database, Swords, Plus, X } from 'lucide-react';
+import { Upload, Save, Users, RefreshCw, ChevronLeft, Database, Plus, X } from 'lucide-react';
 import { Character, ClassName, Attribute, Monster, Quest, SaveData } from './types';
 import { CharacterSheet } from './components/CharacterSheet';
 import { listCharacters, updateCharacter as apiUpdateCharacter, createCharacter as apiCreateCharacter, LitrpgCharacter, getCachedClasses, getCachedAbilities, getCachedProfessions, getCachedMonsters, LitrpgMonster } from './utils/api-litrpg';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../storytime/contexts/ThemeContext';
+import SocialIcons from '../../components/SocialIcons';
+import PageNavbar from '../../components/PageNavbar';
+import LitrpgNav from './components/LitrpgNav';
 
 const LitrpgApp: React.FC = () => {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
-  
+  const { theme } = useTheme();
+
+  // Theme-aware style variables
+  const bgPanel = theme === 'light' ? 'bg-white' : 'bg-slate-900';
+
+  const textPrimary = theme === 'light' ? 'text-gray-900' : 'text-white';
+  const textSecondary = theme === 'light' ? 'text-gray-700' : 'text-slate-200';
+  const textMuted = theme === 'light' ? 'text-gray-500' : 'text-slate-400';
+
+  const borderPrimary = theme === 'light' ? 'border-gray-200' : 'border-slate-700';
+  const borderSecondary = theme === 'light' ? 'border-gray-300' : 'border-slate-600';
+
+  const inputBg = theme === 'light' ? 'bg-white border-gray-300' : 'bg-slate-800 border-slate-600';
+  const hoverBg = theme === 'light' ? 'hover:bg-slate-100' : 'hover:bg-slate-800';
+  const hoverBgStrong = theme === 'light' ? 'hover:bg-slate-200' : 'hover:bg-slate-700';
+
   // --- State ---
   const [character, setCharacter] = useState<Character>({
     name: 'Operative-7',
@@ -449,16 +467,16 @@ const LitrpgApp: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col flex-1">
-      
+    <div className={`relative min-h-screen font-sans selection:bg-nexus-accent/30 selection:text-white flex flex-col ${textSecondary}`}>
+
       {/* Character Sidebar */}
-      <div className={`fixed top-0 left-0 h-full bg-slate-900 border-r border-slate-700 z-40 transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`} style={{ width: '280px' }}>
-        <div className="p-4 border-b border-slate-700 flex items-center justify-between">
+      <div className={`fixed top-0 left-0 h-full ${bgPanel} border-r ${borderPrimary} z-40 transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`} style={{ width: '280px' }}>
+        <div className={`p-4 border-b ${borderPrimary} flex items-center justify-between`}>
           <div className="flex items-center gap-2">
             <Database size={18} className="text-nexus-accent" />
-            <h3 className="font-bold text-white">Characters</h3>
+            <h3 className={`font-bold ${textPrimary}`}>Characters</h3>
           </div>
-          <button onClick={() => setSidebarOpen(false)} className="text-slate-500 hover:text-white">
+          <button onClick={() => setSidebarOpen(false)} className={`${textMuted} ${hoverBg} transition-colors`}>
             <ChevronLeft size={20} />
           </button>
         </div>
@@ -467,7 +485,7 @@ const LitrpgApp: React.FC = () => {
           <button
             onClick={loadDbCharacters}
             disabled={loadingCharacters}
-            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-sm transition-colors"
+            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 ${inputBg} ${hoverBgStrong} ${textSecondary} rounded text-sm transition-colors`}
           >
             <RefreshCw size={14} className={loadingCharacters ? 'animate-spin' : ''} />
             Refresh
@@ -485,12 +503,12 @@ const LitrpgApp: React.FC = () => {
         
         {/* Create Character Form */}
         {showCreateForm && (
-          <div className="p-2 border-b border-slate-700 bg-slate-800/50">
+          <div className={`p-2 border-b ${borderPrimary} ${theme === 'light' ? 'bg-slate-100/50' : 'bg-slate-800/50'}`}>
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-xs text-slate-400 font-medium">New Character</span>
+              <span className={`text-xs ${textMuted} font-medium`}>New Character</span>
               <button
                 onClick={() => { setShowCreateForm(false); setNewCharacterName(''); }}
-                className="ml-auto text-slate-500 hover:text-white"
+                className={`ml-auto ${textMuted} ${hoverBg} transition-colors`}
               >
                 <X size={14} />
               </button>
@@ -500,14 +518,14 @@ const LitrpgApp: React.FC = () => {
               value={newCharacterName}
               onChange={(e) => setNewCharacterName(e.target.value)}
               placeholder="Character name..."
-              className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-sm text-white placeholder-slate-500 focus:outline-none focus:border-nexus-accent mb-2"
+              className={`w-full px-3 py-2 ${inputBg} rounded text-sm ${textPrimary} ${theme === 'light' ? 'placeholder-gray-400' : 'placeholder-slate-500'} focus:outline-none focus:border-nexus-accent mb-2`}
               onKeyDown={(e) => e.key === 'Enter' && handleCreateCharacter()}
               autoFocus
             />
             <button
               onClick={handleCreateCharacter}
               disabled={!newCharacterName.trim() || isCreating}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-nexus-accent hover:bg-nexus-accent/80 text-slate-900 font-medium rounded text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`w-full flex items-center justify-center gap-2 px-3 py-2 bg-nexus-accent hover:bg-nexus-accent/80 ${theme === 'light' ? 'text-white' : 'text-slate-900'} font-medium rounded text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               {isCreating ? <RefreshCw size={14} className="animate-spin" /> : <Plus size={14} />}
               Create
@@ -517,7 +535,7 @@ const LitrpgApp: React.FC = () => {
         
         <div className="overflow-y-auto h-[calc(100%-120px)]">
           {dbCharacters.length === 0 && !loadingCharacters ? (
-            <div className="text-center text-slate-500 py-8 text-sm">
+            <div className={`text-center ${textMuted} py-8 text-sm`}>
               No characters in database.
               <br />
               <span className="text-xs">Run seed data to add some!</span>
@@ -527,10 +545,10 @@ const LitrpgApp: React.FC = () => {
               <button
                 key={char.id}
                 onClick={() => handleSelectDbCharacter(char)}
-                className={`w-full text-left px-4 py-3 border-b border-slate-800 hover:bg-slate-800 transition-colors ${selectedDbCharacterId === char.id ? 'bg-nexus-accent/10 border-l-2 border-l-nexus-accent' : ''}`}
+                className={`w-full text-left px-4 py-3 ${theme === 'light' ? 'border-b border-gray-200' : 'border-b border-slate-800'} ${hoverBg} transition-colors ${selectedDbCharacterId === char.id ? 'bg-nexus-accent/10 border-l-2 border-l-nexus-accent' : ''}`}
               >
-                <div className="font-medium text-white">{char.name}</div>
-                <div className="text-xs text-slate-500">Level {char.level} • {char.class_name || 'Recruit'}</div>
+                <div className={`font-medium ${textPrimary}`}>{char.name}</div>
+                <div className={`text-xs ${textMuted}`}>Level {char.level} • {char.class_name || 'Recruit'}</div>
               </button>
             ))
           )}
@@ -540,86 +558,22 @@ const LitrpgApp: React.FC = () => {
       {/* Sidebar Toggle Button */}
       <button
         onClick={() => setSidebarOpen(true)}
-        className={`fixed left-0 top-1/2 -translate-y-1/2 z-30 bg-slate-800 hover:bg-slate-700 border border-slate-700 border-l-0 rounded-r-lg p-2 transition-all ${sidebarOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+        className={`fixed left-0 top-1/2 -translate-y-1/2 z-30 ${inputBg} ${hoverBgStrong} border ${borderPrimary} border-l-0 rounded-r-lg p-2 transition-all ${sidebarOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
       >
-        <Users size={18} className="text-slate-400" />
+        <Users size={18} className={textMuted} />
       </button>
 
-      {/* Top Navigation Bar */}
-      <header className="h-16 bg-slate-900/80 backdrop-blur-md border-b border-slate-700 z-30 flex items-center justify-between px-6 sticky top-0">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="w-8 h-8 bg-slate-800 hover:bg-slate-700 rounded-lg flex items-center justify-center mr-2 transition-colors"
-            title="Character List"
-          >
-            <Users size={16} className="text-slate-400" />
-          </button>
-          <div className="w-8 h-8 bg-nexus-accent rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.5)]">
-            <span className="font-bold text-slate-900 text-lg">D</span>
-          </div>
-          <span className="font-mono font-bold tracking-widest text-lg hidden sm:block">DESTINY AMONG THE STARS</span>
-        </div>
+      {/* Breadcrumb */}
+      <PageNavbar breadcrumbs={[
+        { label: 'Tools', path: '/litrpg/home' },
+        { label: 'Character Sheet' }
+      ]} />
 
-        <div className="flex items-center gap-2 sm:gap-4">
-           
-           <Link 
-             to="/litrpg/attributes"
-             className="flex items-center gap-2 px-3 py-2 sm:px-4 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-nexus-accent transition-all border border-transparent hover:border-slate-700"
-             title="Attribute Encyclopedia"
-           >
-             <Shield size={20} />
-             <span className="hidden sm:inline font-medium">Attributes</span>
-           </Link>
-
-           <Link 
-             to="/litrpg/classes"
-             className="flex items-center gap-2 px-3 py-2 sm:px-4 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-orange-400 transition-all border border-transparent hover:border-slate-700"
-             title="Class System"
-           >
-             <Swords size={20} />
-             <span className="hidden sm:inline font-medium">Classes</span>
-           </Link>
-
-           <Link 
-             to="/litrpg/abilities"
-             className="flex items-center gap-2 px-3 py-2 sm:px-4 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-yellow-400 transition-all border border-transparent hover:border-slate-700"
-             title="Abilities Encyclopedia"
-           >
-             <Zap size={20} />
-             <span className="hidden sm:inline font-medium">Abilities</span>
-           </Link>
-
-           <Link 
-             to="/litrpg/bestiary"
-             className="flex items-center gap-2 px-3 py-2 sm:px-4 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-purple-400 transition-all border border-transparent hover:border-slate-700"
-             title="Monster Manual"
-           >
-             <BookOpen size={20} />
-             <span className="hidden sm:inline font-medium">Bestiary</span>
-           </Link>
-
-           <Link 
-             to="/litrpg/loot"
-             className="flex items-center gap-2 px-3 py-2 sm:px-4 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-green-400 transition-all border border-transparent hover:border-slate-700"
-             title="Loot Catalog"
-           >
-             <Package size={20} />
-             <span className="hidden sm:inline font-medium">Loot</span>
-           </Link>
-
-           <Link 
-             to="/litrpg/contracts"
-             className="flex items-center gap-2 px-3 py-2 sm:px-4 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-nexus-success transition-all border border-transparent hover:border-slate-700"
-           >
-             <ScrollText size={20} />
-             <span className="hidden sm:inline font-medium">Contracts</span>
-           </Link>
-        </div>
-      </header>
+      {/* Top Navigation Bar - Shared Component */}
+      <LitrpgNav />
 
       {/* Sub-Header / Command Bar */}
-      <div className="bg-slate-900 border-b border-slate-700 py-2 px-6 flex justify-between items-center">
+      <div className={`${bgPanel} border-b ${borderPrimary} py-2 px-6 flex justify-between items-center`}>
           {/* Left side - DB Status */}
           <div className="flex items-center gap-2">
             {selectedDbCharacterId ? (
@@ -628,10 +582,10 @@ const LitrpgApp: React.FC = () => {
                 Connected to Database (ID: {selectedDbCharacterId})
               </span>
             ) : (
-              <span className="text-xs text-slate-500">Local Mode (not connected to database)</span>
+              <span className={`text-xs ${textMuted}`}>Local Mode (not connected to database)</span>
             )}
           </div>
-          
+
           {/* Right side - Actions */}
           <div className="flex items-center gap-2">
               {/* Admin Save Button */}
@@ -652,21 +606,21 @@ const LitrpgApp: React.FC = () => {
                 </span>
               )}
               
-              <span className="text-xs text-slate-500 uppercase tracking-widest font-bold mr-2">System IO</span>
-              <input 
-                type="file" 
+              <span className={`text-xs ${textMuted} uppercase tracking-widest font-bold mr-2`}>System IO</span>
+              <input
+                type="file"
                 ref={fileInputRef}
                 onChange={handleImportData}
                 accept=".json"
                 className="hidden"
               />
-              <button 
+              <button
                 onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-2 px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded border border-slate-600 text-xs font-medium transition-colors"
+                className={`flex items-center gap-2 px-3 py-1 ${inputBg} ${hoverBgStrong} ${textSecondary} rounded border ${borderSecondary} text-xs font-medium transition-colors`}
               >
                 <Upload size={14} /> Import JSON
               </button>
-              <button 
+              <button
                 onClick={handleExportData}
                 className="flex items-center gap-2 px-3 py-1 bg-nexus-accent/10 hover:bg-nexus-accent/20 text-nexus-accent hover:text-white rounded border border-nexus-accent/30 hover:border-nexus-accent text-xs font-medium transition-colors"
               >
@@ -682,6 +636,7 @@ const LitrpgApp: React.FC = () => {
           updateCharacter={setCharacter}
           monsters={monsters}
           currentDbClassId={selectedDbClassId}
+          theme={theme}
           onDbClassChange={(classId) => {
             setSelectedDbClassId(classId);
             // Don't auto-save on class change - let user manually save
@@ -689,6 +644,18 @@ const LitrpgApp: React.FC = () => {
           }}
         />
       </main>
+
+      {/* Footer with Social Icons */}
+      <footer className={`${bgPanel}/80 backdrop-blur-xl border-t ${borderPrimary} py-8`}>
+        <div className="mx-auto max-w-5xl px-4">
+          <div className="flex flex-col items-center gap-4">
+            <SocialIcons variant="footer" showCopyright={false} />
+            <p className={`text-sm ${textMuted}`}>
+              © {new Date().getFullYear()} All rights reserved.
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

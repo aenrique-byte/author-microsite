@@ -5,9 +5,25 @@ import { Attribute } from '../types';
 import { ATTRIBUTE_DESCRIPTIONS } from '../attribute-metadata';
 import { MEM_CDR_DIMINISHING_FACTOR, INT_DURATION_SCALING_FACTOR } from '../xp-constants';
 import SocialIcons from '../../../components/SocialIcons';
+import PageNavbar from '../../../components/PageNavbar';
 import LitrpgNav from '../components/LitrpgNav';
+import { useTheme } from '../../storytime/contexts/ThemeContext';
 
 export default function AttributesPage() {
+  const { theme } = useTheme();
+
+  // Theme-aware style variables
+  const bgPanel = theme === 'light' ? 'bg-white' : 'bg-slate-900';
+  const bgCard = theme === 'light' ? 'bg-white border-gray-200' : 'bg-slate-900 border-slate-700';
+
+  const textPrimary = theme === 'light' ? 'text-gray-900' : 'text-white';
+  const textSecondary = theme === 'light' ? 'text-gray-700' : 'text-slate-200';
+  const textMuted = theme === 'light' ? 'text-gray-500' : 'text-slate-400';
+
+  const borderPrimary = theme === 'light' ? 'border-gray-200' : 'border-slate-700';
+  const borderSecondary = theme === 'light' ? 'border-gray-300' : 'border-slate-600';
+
+
   useEffect(() => {
     document.title = "Attributes - LitRPG Tools";
   }, []);
@@ -37,45 +53,37 @@ export default function AttributesPage() {
         <meta name="description" content="Attribute encyclopedia for Destiny Among the Stars LitRPG game system." />
       </Helmet>
       
-      <div className="min-h-screen bg-nexus-dark text-slate-200 font-sans selection:bg-nexus-accent/30 selection:text-white flex flex-col">
-        {/* Shared Navigation */}
-        <LitrpgNav />
-
-        {/* Header */}
-        <div className="bg-slate-900/50 border-b border-slate-700">
-          <div className="max-w-5xl mx-auto px-6 py-6">
-            <div className="flex items-center gap-3">
-              <Shield className="text-nexus-accent" size={28} />
-              <div>
-                <h1 className="text-2xl font-bold text-white font-mono tracking-wider">ATTRIBUTE ENCYCLOPEDIA</h1>
-                <p className="text-sm text-slate-400">Core stats and game mechanics</p>
-              </div>
-            </div>
-          </div>
-        </div>
+      <PageNavbar breadcrumbs={[
+        { label: 'Tools', path: '/litrpg/home' },
+        { label: 'Attributes' }
+      ]} />
+      
+      <div className={`relative min-h-screen font-sans selection:bg-nexus-accent/30 selection:text-white flex flex-col ${textSecondary}`}>
+          {/* Shared Navigation */}
+          <LitrpgNav />
 
         {/* Main Content */}
-        <main className="flex-1 py-8 px-6">
+        <main className={`flex-1 py-8 px-6 ${bgPanel}/80`}>
           <div className="max-w-5xl mx-auto space-y-12">
 
             {/* SECTION 1: CORE ATTRIBUTES */}
             <section>
-              <h2 className="text-xl font-bold text-slate-200 mb-6 flex items-center gap-3 border-b border-slate-800 pb-2">
-                <Shield size={24} className="text-nexus-accent" /> 
+              <h2 className={`text-xl font-bold ${textSecondary} mb-6 flex items-center gap-3 border-b ${borderSecondary} pb-2`}>
+                <Shield size={24} className="text-nexus-accent" />
                 Core Attributes
               </h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {(Object.keys(ATTRIBUTE_DESCRIPTIONS) as Attribute[]).map(attr => (
-                  <div key={attr} className="bg-slate-900 border border-slate-800 p-6 rounded-xl hover:border-slate-600 transition-colors flex flex-col h-full shadow-sm">
+                  <div key={attr} className={`${bgCard} border p-6 rounded-xl hover:${borderSecondary} transition-colors flex flex-col h-full shadow-sm`}>
                     <div className="flex items-center gap-3 mb-4">
                       {attrIcons[attr]}
-                      <h3 className="text-2xl font-bold text-slate-200">{attr}</h3>
+                      <h3 className={`text-2xl font-bold ${textSecondary}`}>{attr}</h3>
                     </div>
-                    <p className="text-sm text-slate-300 mb-3 font-semibold">
+                    <p className={`text-sm ${textSecondary} mb-3 font-semibold`}>
                       {ATTRIBUTE_DESCRIPTIONS[attr]}
                     </p>
-                    <p className="text-xs text-slate-500 leading-relaxed">
+                    <p className={`text-xs ${textMuted} leading-relaxed`}>
                       {extendedDescriptions[attr]}
                     </p>
                   </div>
@@ -85,15 +93,15 @@ export default function AttributesPage() {
 
             {/* SECTION 2: MECHANICS */}
             <section>
-              <h2 className="text-xl font-bold text-slate-200 mb-6 flex items-center gap-3 border-b border-slate-800 pb-2">
-                <Brain size={24} className="text-purple-400" /> 
+              <h2 className={`text-xl font-bold ${textSecondary} mb-6 flex items-center gap-3 border-b ${borderSecondary} pb-2`}>
+                <Brain size={24} className="text-purple-400" />
                 Game Mechanics
               </h2>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                
+
                 {/* Neural Heat */}
-                <div className="bg-orange-950/10 border border-orange-500/20 rounded-xl p-6 relative overflow-hidden">
+                <div className={`${theme === 'light' ? 'bg-orange-50/20 border-orange-300/40' : 'bg-orange-950/10 border-orange-500/20'} border rounded-xl p-6 relative overflow-hidden`}>
                   <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
                     <Flame size={150} />
                   </div>
@@ -101,143 +109,143 @@ export default function AttributesPage() {
                     <AlertTriangle size={20} />
                     Neural Heat Rules
                   </h3>
-                  <p className="text-sm text-slate-400 mb-6 leading-relaxed max-w-md">
+                  <p className={`text-sm ${textMuted} mb-6 leading-relaxed max-w-md`}>
                     Abilities have a <span className="text-nexus-accent">Safe Limit</span> duration. Pushing past this limit generates Neural Heat, causing progressive physiological failure.
                   </p>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-10">
-                    <div className="bg-black/40 p-3 rounded border border-orange-900/30">
+                    <div className={`${theme === 'light' ? 'bg-orange-100 border-orange-400' : 'bg-black/40 border-orange-900/30'} p-3 rounded border`}>
                       <span className="text-orange-300 font-bold text-sm block mb-1">10 Heat</span>
-                      <span className="text-slate-400 text-xs">Pressure behind eyes</span>
+                      <span className={`${textMuted} text-xs`}>Pressure behind eyes</span>
                     </div>
-                    <div className="bg-black/40 p-3 rounded border border-orange-900/30">
+                    <div className={`${theme === 'light' ? 'bg-orange-100 border-orange-400' : 'bg-black/40 border-orange-900/30'} p-3 rounded border`}>
                       <span className="text-orange-400 font-bold text-sm block mb-1">20 Heat</span>
-                      <span className="text-slate-400 text-xs">Blurring vision, ringing</span>
+                      <span className={`${textMuted} text-xs`}>Blurring vision, ringing</span>
                     </div>
-                    <div className="bg-black/40 p-3 rounded border border-red-900/30">
+                    <div className={`${theme === 'light' ? 'bg-red-100 border-red-400' : 'bg-black/40 border-red-900/30'} p-3 rounded border`}>
                       <span className="text-red-400 font-bold text-sm block mb-1">50 Heat</span>
-                      <span className="text-slate-400 text-xs">Nosebleed, forced shutdown</span>
+                      <span className={`${textMuted} text-xs`}>Nosebleed, forced shutdown</span>
                     </div>
-                    <div className="bg-black/40 p-3 rounded border border-red-900/30">
+                    <div className={`${theme === 'light' ? 'bg-red-100 border-red-400' : 'bg-black/40 border-red-900/30'} p-3 rounded border`}>
                       <span className="text-red-500 font-black text-sm block mb-1">100 Heat</span>
-                      <span className="text-slate-400 text-xs">Lockout (1-4 hours)</span>
+                      <span className={`${textMuted} text-xs`}>Lockout (1-4 hours)</span>
                     </div>
-                    <div className="bg-black/40 p-3 rounded border border-red-900/30">
+                    <div className={`${theme === 'light' ? 'bg-red-100 border-red-400' : 'bg-black/40 border-red-900/30'} p-3 rounded border`}>
                       <span className="text-red-600 font-black text-sm block mb-1">150 Heat</span>
-                      <span className="text-slate-400 text-xs">Migraines, blackouts</span>
+                      <span className={`${textMuted} text-xs`}>Migraines, blackouts</span>
                     </div>
-                    <div className="bg-black/40 p-3 rounded border border-red-900/30">
+                    <div className={`${theme === 'light' ? 'bg-red-100 border-red-400' : 'bg-black/40 border-red-900/30'} p-3 rounded border`}>
                       <span className="text-red-700 font-black text-sm block mb-1">200 Heat</span>
-                      <span className="text-slate-400 text-xs">Near-coma / Critical Failure</span>
+                      <span className={`${textMuted} text-xs`}>Near-coma / Critical Failure</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Memory Mechanics */}
-                <div className="bg-slate-900 border border-slate-700 rounded-xl p-6">
+                <div className={`${bgCard} border rounded-xl p-6`}>
                   <h3 className="text-purple-400 font-bold text-lg flex items-center gap-2 mb-4">
                     <Clock size={20} />
                     Memory (MEM) Scaling
                   </h3>
-                  <p className="text-sm text-slate-400 mb-4">
+                  <p className={`text-sm ${textMuted} mb-4`}>
                     Memory reduces Ability Cooldowns using a diminishing returns formula, ensuring you never reach 0 second cooldowns but making every point valuable.
                   </p>
-                  
-                  <div className="bg-slate-950 p-3 rounded text-xs font-mono text-slate-300 mb-4 border border-slate-800">
+
+                  <div className={`${theme === 'light' ? 'bg-gray-100 border-gray-300 text-gray-700' : 'bg-slate-950 border-slate-800 text-slate-300'} p-3 rounded text-xs font-mono mb-4 border`}>
                     Reduction % = MEM / (MEM + {MEM_CDR_DIMINISHING_FACTOR})
                   </div>
 
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs border-b border-slate-800 pb-2">
-                      <span className="text-slate-500">10 MEM</span>
+                    <div className={`flex items-center justify-between text-xs border-b ${borderSecondary} pb-2`}>
+                      <span className={textMuted}>10 MEM</span>
                       <span className="text-purple-300 font-bold">~4.8% Reduction</span>
                     </div>
-                    <div className="flex items-center justify-between text-xs border-b border-slate-800 pb-2">
-                      <span className="text-slate-500">50 MEM</span>
+                    <div className={`flex items-center justify-between text-xs border-b ${borderSecondary} pb-2`}>
+                      <span className={textMuted}>50 MEM</span>
                       <span className="text-purple-300 font-bold">20.0% Reduction</span>
                     </div>
-                    <div className="flex items-center justify-between text-xs border-b border-slate-800 pb-2">
-                      <span className="text-slate-500">200 MEM</span>
+                    <div className={`flex items-center justify-between text-xs border-b ${borderSecondary} pb-2`}>
+                      <span className={textMuted}>200 MEM</span>
                       <span className="text-purple-300 font-bold">50.0% Reduction</span>
                     </div>
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-500">2000 MEM</span>
+                      <span className={textMuted}>2000 MEM</span>
                       <span className="text-purple-300 font-bold">~90.9% Reduction</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Intelligence Mechanics */}
-                <div className="bg-slate-900 border border-slate-700 rounded-xl p-6">
+                <div className={`${bgCard} border rounded-xl p-6`}>
                   <h3 className="text-blue-400 font-bold text-lg flex items-center gap-2 mb-4">
                     <Timer size={20} />
                     Intelligence (INT) Scaling
                   </h3>
-                  <p className="text-sm text-slate-400 mb-4">
-                    Intelligence increases the <span className="text-white font-bold">Safe Limit</span> duration of abilities linearly. This directly combats Neural Heat generation by allowing longer active times.
+                  <p className={`text-sm ${textMuted} mb-4`}>
+                    Intelligence increases the <span className={`${textPrimary} font-bold`}>Safe Limit</span> duration of abilities linearly. This directly combats Neural Heat generation by allowing longer active times.
                   </p>
-                  
-                  <div className="bg-slate-950 p-3 rounded text-xs font-mono text-slate-300 mb-4 border border-slate-800">
+
+                  <div className={`${theme === 'light' ? 'bg-gray-100 border-gray-300 text-gray-700' : 'bg-slate-950 border-slate-800 text-slate-300'} p-3 rounded text-xs font-mono mb-4 border`}>
                     Duration Multiplier = 1 + (INT * {(INT_DURATION_SCALING_FACTOR).toFixed(3)})
                   </div>
 
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs border-b border-slate-800 pb-2">
-                      <span className="text-slate-500">25 INT</span>
+                    <div className={`flex items-center justify-between text-xs border-b ${borderSecondary} pb-2`}>
+                      <span className={textMuted}>25 INT</span>
                       <span className="text-blue-300 font-bold">+12.5% Duration</span>
                     </div>
-                    <div className="flex items-center justify-between text-xs border-b border-slate-800 pb-2">
-                      <span className="text-slate-500">50 INT</span>
+                    <div className={`flex items-center justify-between text-xs border-b ${borderSecondary} pb-2`}>
+                      <span className={textMuted}>50 INT</span>
                       <span className="text-blue-300 font-bold">+25.0% Duration</span>
                     </div>
-                    <div className="flex items-center justify-between text-xs border-b border-slate-800 pb-2">
-                      <span className="text-slate-500">100 INT</span>
+                    <div className={`flex items-center justify-between text-xs border-b ${borderSecondary} pb-2`}>
+                      <span className={textMuted}>100 INT</span>
                       <span className="text-blue-300 font-bold">+50.0% Duration</span>
                     </div>
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-500">200 INT</span>
+                      <span className={textMuted}>200 INT</span>
                       <span className="text-blue-300 font-bold">+100.0% Duration (Double)</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Charisma Mechanics */}
-                <div className="bg-pink-950/10 border border-pink-900/30 rounded-xl p-6">
+                <div className={`${theme === 'light' ? 'bg-pink-50/20 border-pink-300/40' : 'bg-pink-950/10 border-pink-900/30'} border rounded-xl p-6`}>
                   <h3 className="text-pink-400 font-bold text-lg flex items-center gap-2 mb-4">
                     <Globe size={20} />
                     Charisma (CHA) Proficiency
                   </h3>
-                  <p className="text-sm text-slate-400 mb-4">
+                  <p className={`text-sm ${textMuted} mb-4`}>
                     CHA provides continuous scaling to social cognition, linguistics, and cross-species communication.
                   </p>
                   <div className="space-y-4">
-                    <div className="text-xs bg-slate-900/50 p-3 rounded border border-pink-900/20">
+                    <div className={`text-xs ${theme === 'light' ? 'bg-gray-100 border-pink-300' : 'bg-slate-900/50 border-pink-900/20'} p-3 rounded border`}>
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-pink-300 font-bold">Skilled Human Tier</span>
-                        <span className="text-slate-500 font-mono">10-20 CHA</span>
+                        <span className={`${textMuted} font-mono`}>10-20 CHA</span>
                       </div>
-                      <p className="text-slate-500 leading-tight">Reads conversations easily. Learns languages at a practiced pace.</p>
+                      <p className={`${textMuted} leading-tight`}>Reads conversations easily. Learns languages at a practiced pace.</p>
                     </div>
-                    <div className="text-xs bg-slate-900/50 p-3 rounded border border-pink-900/20">
+                    <div className={`text-xs ${theme === 'light' ? 'bg-gray-100 border-pink-300' : 'bg-slate-900/50 border-pink-900/20'} p-3 rounded border`}>
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-pink-300 font-bold">Enhanced Specialist</span>
-                        <span className="text-slate-500 font-mono">50-100 CHA</span>
+                        <span className={`${textMuted} font-mono`}>50-100 CHA</span>
                       </div>
-                      <p className="text-slate-500 leading-tight">Detects subtle anomalies. Adapts to unfamiliar cultures rapidly.</p>
+                      <p className={`${textMuted} leading-tight`}>Detects subtle anomalies. Adapts to unfamiliar cultures rapidly.</p>
                     </div>
-                    <div className="text-xs bg-slate-900/50 p-3 rounded border border-pink-900/20">
+                    <div className={`text-xs ${theme === 'light' ? 'bg-gray-100 border-pink-300' : 'bg-slate-900/50 border-pink-900/20'} p-3 rounded border`}>
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-pink-300 font-bold">Cross-Species Competence</span>
-                        <span className="text-slate-500 font-mono">200-300 CHA</span>
+                        <span className={`${textMuted} font-mono`}>200-300 CHA</span>
                       </div>
-                      <p className="text-slate-500 leading-tight">Recognizes intent in non-human communication. Avoids catastrophic misunderstandings.</p>
+                      <p className={`${textMuted} leading-tight`}>Recognizes intent in non-human communication. Avoids catastrophic misunderstandings.</p>
                     </div>
-                    <div className="text-xs bg-slate-900/50 p-3 rounded border border-pink-900/20">
+                    <div className={`text-xs ${theme === 'light' ? 'bg-gray-100 border-pink-300' : 'bg-slate-900/50 border-pink-900/20'} p-3 rounded border`}>
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-pink-300 font-bold">Xenocognitive Expert</span>
-                        <span className="text-slate-500 font-mono">500+ CHA</span>
+                        <span className={`${textMuted} font-mono`}>500+ CHA</span>
                       </div>
-                      <p className="text-slate-500 leading-tight">Decodes unknown scripts. Maps patterns across radically different lifeforms. Neural clarity.</p>
+                      <p className={`${textMuted} leading-tight`}>Decodes unknown scripts. Maps patterns across radically different lifeforms. Neural clarity.</p>
                     </div>
                   </div>
                 </div>
@@ -249,11 +257,11 @@ export default function AttributesPage() {
         </main>
 
         {/* Footer with Social Icons */}
-        <footer className="bg-slate-900 border-t border-slate-700 py-8">
+        <footer className={`${bgPanel} border-t ${borderPrimary} py-8`}>
           <div className="mx-auto max-w-5xl px-4">
             <div className="flex flex-col items-center gap-4">
               <SocialIcons variant="footer" showCopyright={false} />
-              <p className="text-sm text-slate-500">
+              <p className={`text-sm ${textMuted}`}>
                 © {new Date().getFullYear()} All rights reserved.
               </p>
             </div>

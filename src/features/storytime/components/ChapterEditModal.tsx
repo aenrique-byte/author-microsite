@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE } from '../../../lib/apiBase';
 import { clearChapterCache } from '../utils/api-story';
+import { ImagePickerModal } from './ImagePickerModal';
 
 interface ChapterData {
   id: number;
@@ -21,6 +22,7 @@ interface ChapterEditModalProps {
 
 export function ChapterEditModal({ storySlug, chapterNumber, onClose, onSaved }: ChapterEditModalProps) {
   const navigate = useNavigate();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [form, setForm] = useState<ChapterData>({
     id: 0,
     title: '',
@@ -32,6 +34,7 @@ export function ChapterEditModal({ storySlug, chapterNumber, onClose, onSaved }:
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [showImagePicker, setShowImagePicker] = useState(false);
 
   useEffect(() => {
     const loadChapter = async () => {
@@ -222,13 +225,26 @@ export function ChapterEditModal({ storySlug, chapterNumber, onClose, onSaved }:
 
           {/* Content */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Content (Markdown)
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Content (Markdown)
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowImagePicker(true)}
+                className="flex items-center gap-1 px-3 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Insert Image
+              </button>
+            </div>
             <textarea
+              ref={textareaRef}
               value={form.content}
               onChange={(e) => handleInputChange('content', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white font-mono text-sm"
               rows={20}
               placeholder="Write your chapter content in Markdown..."
             />
@@ -236,6 +252,29 @@ export function ChapterEditModal({ storySlug, chapterNumber, onClose, onSaved }:
         </div>
 
       </div>
+
+      {/* Image Picker Modal */}
+      {showImagePicker && (
+        <ImagePickerModal
+          onSelect={(imageUrl, altText) => {
+            const textarea = textareaRef.current;
+            if (textarea) {
+              const start = textarea.selectionStart;
+              const end = textarea.selectionEnd;
+              const markdown = `![${altText}](${imageUrl})`;
+              const newContent = form.content.slice(0, start) + markdown + form.content.slice(end);
+              handleInputChange('content', newContent);
+              // Restore focus and set cursor after inserted text
+              setTimeout(() => {
+                textarea.focus();
+                textarea.setSelectionRange(start + markdown.length, start + markdown.length);
+              }, 0);
+            }
+            setShowImagePicker(false);
+          }}
+          onClose={() => setShowImagePicker(false)}
+        />
+      )}
     </div>
   );
 }

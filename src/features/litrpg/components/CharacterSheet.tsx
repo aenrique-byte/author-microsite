@@ -42,6 +42,7 @@ interface CharacterSheetProps {
   monsters: Monster[];
   currentDbClassId?: number | null;
   onDbClassChange?: (classId: number | null) => void;
+  theme: 'light' | 'dark';
 }
 
 interface LevelUpData {
@@ -67,14 +68,27 @@ interface DisplayAbility {
   }>;
 }
 
-export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updateCharacter, monsters, currentDbClassId, onDbClassChange }) => {
+export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updateCharacter, monsters, currentDbClassId, onDbClassChange, theme }) => {
+  // Theme-aware style variables
+  const bgCard = theme === 'light' ? 'bg-white border-gray-200' : 'bg-slate-900 border-slate-700';
+  const bgInput = theme === 'light' ? 'bg-white border-gray-300' : 'bg-slate-800 border-slate-600';
+
+  const textPrimary = theme === 'light' ? 'text-gray-900' : 'text-white';
+  const textSecondary = theme === 'light' ? 'text-gray-700' : 'text-slate-200';
+  const textMuted = theme === 'light' ? 'text-gray-500' : 'text-slate-400';
+
+  const borderPrimary = theme === 'light' ? 'border-gray-200' : 'border-slate-700';
+
+  const hoverBg = theme === 'light' ? 'hover:bg-slate-100' : 'hover:bg-slate-800';
+  const hoverBgStrong = theme === 'light' ? 'hover:bg-slate-200' : 'hover:bg-slate-700';
+
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(character.name);
   const [isEditingImage, setIsEditingImage] = useState(false);
   const [tempImageUrl, setTempImageUrl] = useState(character.headerImageUrl || '');
   const [imageError, setImageError] = useState(false);
   const [levelUpNotification, setLevelUpNotification] = useState<LevelUpData | null>(null);
-  
+
   // Database State
   const [dbClasses, setDbClasses] = useState<LitrpgClass[]>([]);
   const [dbAbilities, setDbAbilities] = useState<LitrpgAbility[]>([]);
@@ -1112,9 +1126,9 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
       )}
 
       {/* Header */}
-      <div className="bg-slate-800/50 rounded-xl border border-slate-700 backdrop-blur-sm relative overflow-hidden group mb-6">
+      <div className={`${bgCard} rounded-xl border backdrop-blur-sm relative overflow-hidden group mb-6`}>
         {character.headerImageUrl && !imageError && (
-          <div className="h-32 sm:h-48 w-full overflow-hidden relative border-b border-slate-700">
+          <div className={`h-32 sm:h-48 w-full overflow-hidden relative border-b ${borderPrimary}`}>
             <img src={character.headerImageUrl} alt="Character Banner" className="w-full h-full object-cover object-left-top" onError={() => setImageError(true)} />
           </div>
         )}
@@ -1123,54 +1137,54 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
             <div>
               {isEditingName ? (
                 <div className="flex items-center gap-2 mb-1">
-                  <input type="text" value={tempName} onChange={(e) => setTempName(e.target.value)} className="bg-slate-900 border border-nexus-accent text-3xl font-bold text-white font-mono tracking-tighter rounded px-2 py-1 w-full md:w-auto focus:outline-none" autoFocus />
+                  <input type="text" value={tempName} onChange={(e) => setTempName(e.target.value)} className={`${bgInput} border-nexus-accent text-3xl font-bold ${textPrimary} font-mono tracking-tighter rounded px-2 py-1 w-full md:w-auto focus:outline-none`} autoFocus />
                   <button onClick={handleNameSave} className="p-1 text-nexus-success hover:bg-nexus-success/20 rounded"><Check size={24}/></button>
                   <button onClick={handleNameCancel} className="p-1 text-red-400 hover:bg-red-400/20 rounded"><X size={24}/></button>
                 </div>
               ) : (
                 <div className="flex items-center gap-3">
-                  <h1 className="text-4xl font-bold text-white font-mono tracking-tighter drop-shadow-md">{character.name}</h1>
-                  <button onClick={() => { setIsEditingName(true); setTempName(character.name); }} className="text-slate-500 hover:text-nexus-accent transition-colors opacity-0 group-hover:opacity-100" title="Edit Name"><Pencil size={16} /></button>
+                  <h1 className={`text-4xl font-bold ${textPrimary} font-mono tracking-tighter drop-shadow-md`}>{character.name}</h1>
+                  <button onClick={() => { setIsEditingName(true); setTempName(character.name); }} className={`${textMuted} hover:text-nexus-accent transition-colors opacity-0 group-hover:opacity-100`} title="Edit Name"><Pencil size={16} /></button>
                 </div>
               )}
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-nexus-accent font-semibold">{character.className}</span>
-                <span className="text-slate-500">|</span>
-                <span className="text-slate-400">Level {character.level}</span>
-                <button onClick={() => { setIsEditingImage(!isEditingImage); setTempImageUrl(character.headerImageUrl || ''); }} className="text-slate-600 hover:text-slate-300 ml-2 transition-colors opacity-0 group-hover:opacity-100" title="Change Banner Image"><ImageIcon size={14} /></button>
+                <span className={textMuted}>|</span>
+                <span className={textSecondary}>Level {character.level}</span>
+                <button onClick={() => { setIsEditingImage(!isEditingImage); setTempImageUrl(character.headerImageUrl || ''); }} className={`${textMuted} ${hoverBg} ml-2 transition-colors opacity-0 group-hover:opacity-100`} title="Change Banner Image"><ImageIcon size={14} /></button>
               </div>
               {isEditingImage && (
                 <div className="mt-2 flex gap-2 animate-in fade-in slide-in-from-top-1">
-                  <input type="text" value={tempImageUrl} onChange={(e) => setTempImageUrl(e.target.value)} placeholder="Paste WebP image URL..." className="text-xs bg-slate-900 border border-slate-600 rounded px-2 py-1 w-64 text-slate-300 outline-none focus:border-nexus-accent" />
+                  <input type="text" value={tempImageUrl} onChange={(e) => setTempImageUrl(e.target.value)} placeholder="Paste WebP image URL..." className={`text-xs ${bgInput} rounded px-2 py-1 w-64 ${textSecondary} outline-none focus:border-nexus-accent`} />
                   <button onClick={handleImageSave} className="bg-nexus-success/20 text-nexus-success px-2 py-1 rounded text-xs hover:bg-nexus-success/30">Set</button>
-                  <button onClick={() => setIsEditingImage(false)} className="bg-slate-700 text-slate-400 px-2 py-1 rounded text-xs hover:bg-slate-600">Cancel</button>
+                  <button onClick={() => setIsEditingImage(false)} className={`${theme === 'light' ? 'bg-slate-200' : 'bg-slate-700'} ${textSecondary} px-2 py-1 rounded text-xs ${hoverBgStrong}`}>Cancel</button>
                 </div>
               )}
             </div>
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 bg-slate-900/50 p-2 px-3 rounded-lg border border-slate-700 h-[50px] backdrop-blur-md">
+              <div className={`flex items-center gap-2 ${theme === 'light' ? 'bg-yellow-50/50' : 'bg-slate-900/50'} p-2 px-3 rounded-lg border ${borderPrimary} h-[50px] backdrop-blur-md`}>
                 <Coins className="text-yellow-400" size={20} />
                 <div>
-                  <div className="text-[10px] text-slate-400 uppercase tracking-widest leading-none">Credits</div>
+                  <div className={`text-[10px] ${textMuted} uppercase tracking-widest leading-none`}>Credits</div>
                   <div className="text-lg font-bold text-yellow-400 font-mono leading-none mt-1">{character.credits.toLocaleString()}</div>
                 </div>
               </div>
-              <div className="flex items-center gap-2 bg-slate-900/50 p-2 rounded-lg border border-slate-700 backdrop-blur-md">
-                <button onClick={() => handleLevelChange(-1)} className="w-8 h-8 flex items-center justify-center bg-slate-700 hover:bg-slate-600 rounded text-white font-bold transition-colors">-</button>
+              <div className={`flex items-center gap-2 ${theme === 'light' ? 'bg-slate-100/50' : 'bg-slate-900/50'} p-2 rounded-lg border ${borderPrimary} backdrop-blur-md`}>
+                <button onClick={() => handleLevelChange(-1)} className={`w-8 h-8 flex items-center justify-center ${theme === 'light' ? 'bg-slate-200 hover:bg-slate-300' : 'bg-slate-700 hover:bg-slate-600'} rounded ${textPrimary} font-bold transition-colors`}>-</button>
                 <div className="text-center min-w-[60px]">
-                  <div className="text-[10px] text-slate-400 uppercase tracking-widest leading-none mb-1">Level</div>
-                  <div className="text-xl font-bold text-white font-mono leading-none">{character.level}</div>
+                  <div className={`text-[10px] ${textMuted} uppercase tracking-widest leading-none mb-1`}>Level</div>
+                  <div className={`text-xl font-bold ${textPrimary} font-mono leading-none`}>{character.level}</div>
                 </div>
-                <button onClick={() => handleLevelChange(1)} className="w-8 h-8 flex items-center justify-center bg-nexus-accent hover:bg-cyan-600 rounded text-black font-bold transition-colors">+</button>
+                <button onClick={() => handleLevelChange(1)} className={`w-8 h-8 flex items-center justify-center bg-nexus-accent hover:bg-cyan-600 rounded ${theme === 'light' ? 'text-white' : 'text-black'} font-bold transition-colors`}>+</button>
               </div>
             </div>
           </div>
           <div className="mt-6">
-            <div className="flex justify-between text-xs mb-1 text-slate-400">
+            <div className={`flex justify-between text-xs mb-1 ${textMuted}`}>
               <span>XP: {character.xp.toLocaleString()}</span>
               <span>Next: {nextLevelTotalXp.toLocaleString()}</span>
             </div>
-            <div className="h-3 bg-slate-900/80 rounded-full overflow-hidden border border-slate-700 relative backdrop-blur-sm">
+            <div className={`h-3 ${theme === 'light' ? 'bg-slate-100' : 'bg-slate-900/80'} rounded-full overflow-hidden border ${borderPrimary} relative backdrop-blur-sm`}>
               <div className="h-full bg-nexus-accent transition-all duration-500 shadow-[0_0_10px_rgba(6,182,212,0.5)]" style={{ width: `${xpPercent}%` }} />
             </div>
           </div>
@@ -1178,46 +1192,46 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
             <div>
               <div className="flex justify-between text-xs mb-1">
                 <span className="text-red-400 font-bold">Health</span>
-                <span className="text-slate-200">{getEffectiveAttribute(Attribute.STR) * 2 + character.level * 5} HP</span>
+                <span className={textSecondary}>{getEffectiveAttribute(Attribute.STR) * 2 + character.level * 5} HP</span>
               </div>
-              <div className="h-2 bg-slate-900/80 rounded-full overflow-hidden"><div className="h-full bg-red-500 w-full" /></div>
+              <div className={`h-2 ${theme === 'light' ? 'bg-slate-100' : 'bg-slate-900/80'} rounded-full overflow-hidden`}><div className="h-full bg-red-500 w-full" /></div>
             </div>
             <div>
               <div className="flex justify-between text-xs mb-1">
                 <span className="text-blue-400 font-bold">Energy</span>
-                <span className="text-slate-200">{getEffectiveAttribute(Attribute.INT) + getEffectiveAttribute(Attribute.MEM)} EP</span>
+                <span className={textSecondary}>{getEffectiveAttribute(Attribute.INT) + getEffectiveAttribute(Attribute.MEM)} EP</span>
               </div>
-              <div className="h-2 bg-slate-900/80 rounded-full overflow-hidden"><div className="h-full bg-blue-500 w-full" /></div>
+              <div className={`h-2 ${theme === 'light' ? 'bg-slate-100' : 'bg-slate-900/80'} rounded-full overflow-hidden`}><div className="h-full bg-blue-500 w-full" /></div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Attributes */}
-      <div className="bg-nexus-panel p-4 rounded-xl border border-slate-700">
-        <div className="flex justify-between items-center mb-4 border-b border-slate-700 pb-2">
-          <h2 className="text-lg font-bold text-slate-200 flex items-center gap-2"><Shield size={18} className="text-nexus-accent" />Attributes</h2>
-          <div className={`text-xs px-2 py-0.5 rounded-full border ${availableAttributePoints > 0 ? 'bg-nexus-accent/20 border-nexus-accent text-nexus-accent' : 'bg-slate-800 border-slate-600 text-slate-500'}`}>Points: {availableAttributePoints}</div>
+      <div className={`${bgCard} p-4 rounded-xl border`}>
+        <div className={`flex justify-between items-center mb-4 border-b ${borderPrimary} pb-2`}>
+          <h2 className={`text-lg font-bold ${textSecondary} flex items-center gap-2`}><Shield size={18} className="text-nexus-accent" />Attributes</h2>
+          <div className={`text-xs px-2 py-0.5 rounded-full border ${availableAttributePoints > 0 ? 'bg-nexus-accent/20 border-nexus-accent text-nexus-accent' : `${theme === 'light' ? 'bg-slate-100 border-slate-300' : 'bg-slate-800 border-slate-600'} ${textMuted}`}`}>Points: {availableAttributePoints}</div>
         </div>
         <p className="text-xs text-pink-300 mb-3">Pink + values are unbanked level-up points—apply them now and press Save to lock them in.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
           {(Object.keys(character.attributes) as Attribute[]).map((attr) => {
             const pendingInvestment = getPendingAttributeInvestment(attr);
             return (
-              <div key={attr} className="flex items-center justify-between p-2 rounded bg-slate-800/50 border border-slate-700">
+              <div key={attr} className={`flex items-center justify-between p-2 rounded ${theme === 'light' ? 'bg-slate-100/50 border-slate-200' : 'bg-slate-800/50 border-slate-700'} border`}>
                 <div className="flex flex-col">
                   <div className="flex items-center gap-1.5">
                     <AttrIcon attr={attr} />
-                    <span className="font-bold text-sm text-slate-300">{attr}</span>
+                    <span className={`font-bold text-sm ${textSecondary}`}>{attr}</span>
                     {attr === Attribute.MEM && <span className="text-[9px] uppercase bg-purple-900/50 text-purple-300 px-1 rounded">-{cdrPercent}% CD</span>}
                     {attr === Attribute.INT && <span className="text-[9px] uppercase bg-blue-900/50 text-blue-300 px-1 rounded">+{durationExtPercent}% Dur</span>}
                   </div>
-                  <span className="text-[10px] text-slate-500 truncate w-24">{ATTRIBUTE_DESCRIPTIONS[attr]?.split(',')[0]}</span>
+                  <span className={`text-[10px] ${textMuted} truncate w-24`}>{ATTRIBUTE_DESCRIPTIONS[attr]?.split(',')[0]}</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button onClick={() => handleAttributeChange(attr, -1)} className="w-5 h-5 flex items-center justify-center rounded bg-slate-700 hover:bg-slate-600 text-slate-300 disabled:opacity-30 text-xs" disabled={character.attributes[attr] <= getMinAttributeValue(attr)}>-</button>
+                  <button onClick={() => handleAttributeChange(attr, -1)} className={`w-5 h-5 flex items-center justify-center rounded ${theme === 'light' ? 'bg-slate-200 hover:bg-slate-300' : 'bg-slate-700 hover:bg-slate-600'} ${textSecondary} disabled:opacity-30 text-xs`} disabled={character.attributes[attr] <= getMinAttributeValue(attr)}>-</button>
                   <div className="flex items-center gap-0.5 min-w-[60px] justify-center">
-                    <span className="font-mono font-bold text-sm">{character.attributes[attr]}</span>
+                    <span className={`font-mono font-bold text-sm ${textPrimary}`}>{character.attributes[attr]}</span>
                     {pendingInvestment > 0 && (
                       <span className="text-[10px] font-bold text-pink-300" title="Unbanked level-up points">
                         +{pendingInvestment}
@@ -1236,7 +1250,7 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
                       </span>
                     )}
                   </div>
-                  <button onClick={() => handleAttributeChange(attr, 1)} className="w-5 h-5 flex items-center justify-center rounded bg-nexus-accent/20 hover:bg-nexus-accent/40 text-nexus-accent disabled:opacity-30 disabled:bg-slate-800 disabled:text-slate-600 text-xs" disabled={availableAttributePoints <= 0}>+</button>
+                  <button onClick={() => handleAttributeChange(attr, 1)} className={`w-5 h-5 flex items-center justify-center rounded bg-nexus-accent/20 hover:bg-nexus-accent/40 text-nexus-accent disabled:opacity-30 ${theme === 'light' ? 'disabled:bg-slate-200' : 'disabled:bg-slate-800'} disabled:text-slate-600 text-xs`} disabled={availableAttributePoints <= 0}>+</button>
                 </div>
               </div>
             );

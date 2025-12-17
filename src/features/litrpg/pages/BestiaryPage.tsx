@@ -1,11 +1,13 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Ghost, Skull, Coins, Search, BookOpen, AlertTriangle, Settings } from 'lucide-react';
+import { BookOpen, Search, AlertTriangle, Settings, Ghost, Skull, Coins } from 'lucide-react';
 import { getCachedMonsters, createMonster, LitrpgMonster } from '../utils/api-litrpg';
 import SocialIcons from '../../../components/SocialIcons';
+import PageNavbar from '../../../components/PageNavbar';
 import LitrpgNav from '../components/LitrpgNav';
 import { MonsterEditorModal } from '../components/MonsterEditorModal';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useTheme } from '../../storytime/contexts/ThemeContext';
 
 type MonsterRank = 'Trash' | 'Regular' | 'Champion' | 'Boss';
 
@@ -24,14 +26,28 @@ const RANK_BORDER_COLORS: Record<MonsterRank, string> = {
 };
 
 export default function BestiaryPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  const { theme } = useTheme();
+
+  // Theme-aware style variables
+  const bgPanel = theme === 'light' ? 'bg-white' : 'bg-slate-900';
+  const bgCard = theme === 'light' ? 'bg-white border-gray-200' : 'bg-slate-900 border-slate-700';
+
+  const textPrimary = theme === 'light' ? 'text-gray-900' : 'text-white';
+  const textSecondary = theme === 'light' ? 'text-gray-700' : 'text-slate-200';
+  const textMuted = theme === 'light' ? 'text-gray-500' : 'text-slate-400';
+
+  const borderPrimary = theme === 'light' ? 'border-gray-200' : 'border-slate-700';
+  const borderSecondary = theme === 'light' ? 'border-gray-300' : 'border-slate-600';
+
+
   const [search, setSearch] = useState('');
   const [filterRank, setFilterRank] = useState<MonsterRank | 'All'>('All');
   const [monsters, setMonsters] = useState<LitrpgMonster[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
-  const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
 
   const [showEditorModal, setShowEditorModal] = useState(false);
   const [newMonster, setNewMonster] = useState({
@@ -100,21 +116,26 @@ export default function BestiaryPage() {
         <title>Bestiary - LitRPG Tools</title>
         <meta name="description" content="Monster manual and creature compendium for Destiny Among the Stars LitRPG." />
       </Helmet>
-      
-      <div className="min-h-screen bg-nexus-dark text-slate-200 font-sans selection:bg-nexus-accent/30 selection:text-white flex flex-col">
-        {/* Shared Navigation */}
-        <LitrpgNav />
+
+      <PageNavbar breadcrumbs={[
+        { label: 'Tools', path: '/litrpg/home' },
+        { label: 'Bestiary' }
+      ]} />
+
+      <div className={`relative min-h-screen font-sans selection:bg-nexus-accent/30 selection:text-white flex flex-col ${textSecondary}`}>
+          {/* Shared Navigation */}
+          <LitrpgNav />
 
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col md:flex-row">
-            
+
             {/* Sidebar - Sticky */}
-            <div className="w-full md:w-80 bg-slate-900/50 border-r border-slate-700 flex flex-col shrink-0 p-4 md:sticky md:top-0 md:h-screen md:overflow-y-auto">
+            <div className={`w-full md:w-80 ${bgPanel}/50 border-r ${borderPrimary} flex flex-col shrink-0 p-4 md:sticky md:top-0 md:h-screen md:overflow-y-auto`}>
                 {/* Header */}
                 <div className="flex items-center justify-between gap-3 mb-6">
                   <div className="flex items-center gap-3">
                     <BookOpen className="text-purple-400" size={24} />
-                    <h1 className="text-xl font-bold text-white font-mono tracking-wider">BESTIARY</h1>
+                    <h1 className={`text-xl font-bold ${textPrimary} font-mono tracking-wider`}>BESTIARY</h1>
                   </div>
                   {isAdmin && (
                     <button
@@ -136,22 +157,22 @@ export default function BestiaryPage() {
                               placeholder="Search creatures..."
                               value={search}
                               onChange={(e) => setSearch(e.target.value)}
-                              className="w-full bg-slate-800 border border-slate-600 rounded-lg py-2 pl-9 pr-4 text-sm text-white focus:border-purple-500 outline-none"
+                              className={`w-full ${theme === 'light' ? 'bg-white border-gray-300 text-gray-900' : 'bg-slate-800 border-slate-600 text-white'} border rounded-lg py-2 pl-9 pr-4 text-sm focus:border-purple-500 outline-none`}
                           />
-                          <Search className="absolute left-3 top-2.5 text-slate-500" size={16} />
+                          <Search className={`absolute left-3 top-2.5 ${textMuted}`} size={16} />
                      </div>
 
                      <div>
-                         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Rank Filter</label>
+                         <label className={`text-xs font-bold ${textMuted} uppercase tracking-wider mb-2 block`}>Rank Filter</label>
                          <div className="grid grid-cols-2 gap-2">
                              {(['All', 'Trash', 'Regular', 'Champion', 'Boss'] as const).map((r) => (
                                  <button
                                     key={r}
                                     onClick={() => setFilterRank(r)}
                                     className={`px-2 py-1.5 rounded text-xs font-medium transition-colors border ${
-                                        filterRank === r 
-                                        ? 'bg-purple-500/20 border-purple-500 text-white' 
-                                        : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'
+                                        filterRank === r
+                                        ? 'bg-purple-500/20 border-purple-500 text-white'
+                                        : `${theme === 'light' ? 'bg-gray-100 border-gray-300' : 'bg-slate-800 border-slate-700'} ${textMuted} hover:${borderSecondary}`
                                     }`}
                                  >
                                      {r}
@@ -160,10 +181,10 @@ export default function BestiaryPage() {
                          </div>
                      </div>
 
-                     <div className="bg-slate-800/50 p-3 rounded border border-slate-700 mt-auto">
-                         <div className="text-xs text-slate-400 mb-1">Entries Found</div>
-                         <div className="text-2xl font-mono font-bold text-white">{filteredMonsters.length}</div>
-                         <div className="text-xs text-slate-500 mt-1">of {monsters.length} total</div>
+                     <div className={`${theme === 'light' ? 'bg-gray-100 border-gray-300' : 'bg-slate-800/50 border-slate-700'} p-3 rounded border mt-auto`}>
+                         <div className={`text-xs ${textMuted} mb-1`}>Entries Found</div>
+                         <div className={`text-2xl font-mono font-bold ${textPrimary}`}>{filteredMonsters.length}</div>
+                         <div className={`text-xs ${textMuted} mt-1`}>of {monsters.length} total</div>
                      </div>
 
                      {isAdmin && (
@@ -239,9 +260,9 @@ export default function BestiaryPage() {
             </div>
 
             {/* Grid Content */}
-            <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-slate-950">
+            <div className={`flex-1 overflow-y-auto p-4 md:p-8 ${bgPanel}/80`}>
                  {loading ? (
-                   <div className="h-full flex flex-col items-center justify-center text-slate-600">
+                   <div className={`h-full flex flex-col items-center justify-center ${textMuted}`}>
                      <Ghost size={64} className="mb-4 animate-pulse" />
                      <p className="text-lg">Loading bestiary...</p>
                    </div>
@@ -251,28 +272,28 @@ export default function BestiaryPage() {
                      <p className="text-lg mb-4">{error}</p>
                    </div>
                  ) : filteredMonsters.length === 0 ? (
-                     <div className="h-full flex flex-col items-center justify-center text-slate-600 opacity-50">
+                     <div className={`h-full flex flex-col items-center justify-center ${textMuted} opacity-50`}>
                          <Ghost size={64} className="mb-4" />
                          <p className="text-lg">No threats matching parameters.</p>
                      </div>
                  ) : (
                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                          {filteredMonsters.map(monster => (
-                             <div key={monster.id} className={`bg-slate-900 border rounded-xl p-5 transition-all hover:scale-[1.01] hover:shadow-xl ${RANK_BORDER_COLORS[monster.rank as MonsterRank]}`}>
+                             <div key={monster.id} className={`${bgCard} border rounded-xl p-5 transition-all hover:scale-[1.01] hover:shadow-xl ${RANK_BORDER_COLORS[monster.rank as MonsterRank]}`}>
                                   <div className="flex justify-between items-start mb-3">
                                       <div className="flex items-center gap-2">
-                                          <h3 className="font-bold text-lg text-slate-200">{monster.name}</h3>
+                                          <h3 className={`font-bold text-lg ${textSecondary}`}>{monster.name}</h3>
                                           {monster.rank === 'Boss' && <Skull size={16} className="text-red-500" />}
                                       </div>
                                       <div className="flex flex-col items-end gap-1">
-                                          <span className="text-xs bg-black/40 px-2 py-0.5 rounded text-slate-400 font-mono border border-slate-800">Lvl {monster.level}</span>
+                                          <span className={`text-xs ${theme === 'light' ? 'bg-gray-200 border-gray-400 text-gray-600' : 'bg-black/40 border-slate-800 text-slate-400'} px-2 py-0.5 rounded font-mono border`}>Lvl {monster.level}</span>
                                           <span className={`text-[10px] px-2 py-0.5 rounded border uppercase font-bold tracking-wider ${RANK_COLORS[monster.rank as MonsterRank]}`}>
                                               {monster.rank}
                                           </span>
                                       </div>
                                   </div>
 
-                                  <p className="text-sm text-slate-400 mb-4 h-10 line-clamp-2 italic border-l-2 border-slate-800 pl-3">
+                                  <p className={`text-sm ${textMuted} mb-4 h-10 line-clamp-2 italic border-l-2 ${borderSecondary} pl-3`}>
                                       "{monster.description || 'No description available.'}"
                                   </p>
 
@@ -331,11 +352,11 @@ export default function BestiaryPage() {
         </div>
 
         {/* Footer with Social Icons */}
-        <footer className="bg-slate-900 border-t border-slate-700 py-8">
+        <footer className={`${bgPanel} border-t ${borderPrimary} py-8`}>
           <div className="mx-auto max-w-5xl px-4">
             <div className="flex flex-col items-center gap-4">
               <SocialIcons variant="footer" showCopyright={false} />
-              <p className="text-sm text-slate-500">
+              <p className={`text-sm ${textMuted}`}>
                 © {new Date().getFullYear()} All rights reserved.
               </p>
             </div>

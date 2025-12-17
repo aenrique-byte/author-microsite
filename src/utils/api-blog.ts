@@ -1,6 +1,6 @@
 /**
  * Blog API Utilities
- * 
+ *
  * Frontend functions to interact with the Blog backend API
  */
 
@@ -20,6 +20,8 @@ import type {
   CreateBlogPostInput,
   UpdateBlogPostInput,
 } from '../types/blog';
+// MOCK DATA - Import mock data for offline development
+import mockData from '../data/mock-data.json';
 
 // =====================================================
 // CACHE
@@ -99,14 +101,16 @@ export async function listBlogPosts(
       `${API_BASE}/blog/list.php${queryString}`
     );
   } catch (error) {
+    // MOCK DATA - Fallback to mock data when database is offline
+    console.log('Database offline, using mock blog data');
+    const mockPosts = mockData.blog.posts as any[];
     return {
-      success: false,
-      posts: [],
-      total: 0,
-      page: 1,
-      limit: 10,
-      pages: 0,
-      error: String(error),
+      success: true,
+      posts: mockPosts,
+      total: mockPosts.length,
+      page: params?.page || 1,
+      limit: params?.limit || 10,
+      pages: Math.ceil(mockPosts.length / (params?.limit || 10)),
     };
   }
 }
@@ -128,9 +132,23 @@ export async function getBlogPost(
       `${API_BASE}/blog/get.php${queryString}`
     );
   } catch (error) {
+    // MOCK DATA - Fallback to mock data when database is offline
+    console.log('Database offline, using mock blog data');
+    const mockPosts = mockData.blog.posts as any[];
+    const post = params.slug
+      ? mockPosts.find(p => p.slug === params.slug)
+      : mockPosts.find(p => p.id === params.id);
+
+    if (post) {
+      return {
+        success: true,
+        post: post,
+      };
+    }
+
     return {
       success: false,
-      error: String(error),
+      error: 'Post not found',
     };
   }
 }
@@ -231,17 +249,19 @@ export async function listBlogCategories(
     const response = await fetchJson<BlogCategoriesResponse>(
       `${API_BASE}/blog/categories/list.php${queryString}`
     );
-    
+
     if (response.success) {
       categoriesCache = response.categories;
     }
-    
+
     return response;
   } catch (error) {
+    // MOCK DATA - Fallback to mock data when database is offline
+    console.log('Database offline, using mock blog categories');
+    const mockCategories = mockData.blog.categories as any[];
     return {
-      success: false,
-      categories: [],
-      error: String(error),
+      success: true,
+      categories: mockCategories,
     };
   }
 }
@@ -309,18 +329,20 @@ export async function listBlogTags(): Promise<BlogTagsResponse> {
     const response = await fetchJson<BlogTagsResponse>(
       `${API_BASE}/blog/tags/list.php`
     );
-    
+
     if (response.success) {
       tagsCache = response.tags;
     }
-    
+
     return response;
   } catch (error) {
+    // MOCK DATA - Fallback to mock data when database is offline
+    console.log('Database offline, using mock blog tags');
+    const mockTags = mockData.blog.tags as any[];
     return {
-      success: false,
-      tags: [],
-      total: 0,
-      error: String(error),
+      success: true,
+      tags: mockTags,
+      total: mockTags.length,
     };
   }
 }
@@ -667,18 +689,23 @@ export async function trackBlogView(
  */
 export async function trackBlogLike(
   postId: number,
-  postSlug?: string
-): Promise<BlogTrackResponse> {
+  _postSlug?: string
+): Promise<BlogTrackResponse & { like_count?: number; user_liked?: boolean; already_tracked?: boolean }> {
   try {
-    return await postJson<BlogTrackResponse>(
-      `${API_BASE}/blog/analytics/track.php`,
+    const response = await postJson<any>(
+      `${API_BASE}/blog/like.php`,
       {
-        event_type: 'blog_like',
-        post_id: postId,
-        post_slug: postSlug,
-        session_id: getAnalyticsSessionId()
+        post_id: postId
       }
     );
+
+    // Return format compatible with existing code
+    return {
+      success: response.success || false,
+      like_count: response.like_count,
+      user_liked: response.user_liked,
+      already_tracked: response.user_liked // If user_liked is true, they already liked it
+    };
   } catch (error) {
     console.error('Failed to track blog like:', error);
     return { success: false, error: String(error) };
@@ -711,7 +738,24 @@ export async function trackBlogShare(
 }
 
 /**
- * Check if user has liked a post (based on localStorage)
+ * Get blog post like status (server-side check)
+ */
+export async function getBlogLikeStatus(postId: number): Promise<{ success: boolean; like_count?: number; user_liked?: boolean }> {
+  try {
+    const response = await fetch(`${API_BASE}/blog/like.php?post_id=${postId}`);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to get blog like status:', error);
+    return { success: false, like_count: 0, user_liked: false };
+  }
+}
+
+/**
+ * Check if user has liked a post (based on localStorage - deprecated, use getBlogLikeStatus)
+ * @deprecated Use getBlogLikeStatus for server-side check
  */
 export function hasLikedPost(postId: number): boolean {
   const likedPosts = JSON.parse(localStorage.getItem('blog_likes') || '[]');
@@ -719,7 +763,8 @@ export function hasLikedPost(postId: number): boolean {
 }
 
 /**
- * Mark post as liked in localStorage
+ * Mark post as liked in localStorage (kept for backwards compatibility)
+ * @deprecated Server now tracks this, no need for localStorage
  */
 export function markPostLiked(postId: number): void {
   const likedPosts = JSON.parse(localStorage.getItem('blog_likes') || '[]');

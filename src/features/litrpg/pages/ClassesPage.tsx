@@ -1,14 +1,16 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Swords, Search, Loader2, RefreshCw, Star, ArrowRight, Shield, Brain, Zap, Eye, MessageSquare, Briefcase } from 'lucide-react';
+import { Swords, Search, Loader2, Star, ArrowRight, Shield, Brain, Zap, Eye, MessageSquare, Briefcase } from 'lucide-react';
 import { getCachedClasses, getCachedProfessions, createClass, createProfession, LitrpgClass, LitrpgProfession } from '../utils/api-litrpg';
 import SocialIcons from '../../../components/SocialIcons';
+import PageNavbar from '../../../components/PageNavbar';
 import LitrpgNav from '../components/LitrpgNav';
 import { AbilityManagerModal } from '../components/AbilityManagerModal';
 import { ClassEditorModal } from '../components/ClassEditorModal';
 import { ProfessionEditorModal } from '../components/ProfessionEditorModal';
 import { useAuth } from '../../../contexts/AuthContext';
 import { TIER_ORDER, TIER_COLORS, TIER_TEXT_COLORS, TIER_BORDER_COLORS, ClassTier, getTierString } from '../tier-constants';
+import { useTheme } from '../../storytime/contexts/ThemeContext';
 
 const STAT_ICONS: Record<string, React.ReactNode> = {
   STR: <Swords size={12} className="text-red-500" />,
@@ -22,7 +24,19 @@ const STAT_ICONS: Record<string, React.ReactNode> = {
 export default function ClassesPage() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
-  
+  const { theme } = useTheme();
+
+  // Theme-aware style variables
+  const bgPanel = theme === 'light' ? 'bg-white' : 'bg-slate-900';
+  const bgCard = theme === 'light' ? 'bg-white border-gray-200' : 'bg-slate-900 border-slate-700';
+
+  const textPrimary = theme === 'light' ? 'text-gray-900' : 'text-white';
+  const textSecondary = theme === 'light' ? 'text-gray-700' : 'text-slate-200';
+  const textMuted = theme === 'light' ? 'text-gray-500' : 'text-slate-400';
+
+  const borderPrimary = theme === 'light' ? 'border-gray-200' : 'border-slate-700';
+  const borderSecondary = theme === 'light' ? 'border-gray-300' : 'border-slate-600';
+
   const [classes, setClasses] = useState<LitrpgClass[]>([]);
   const [professions, setProfessions] = useState<LitrpgProfession[]>([]);
   const [loading, setLoading] = useState(true);
@@ -165,94 +179,41 @@ export default function ClassesPage() {
         <title>Classes - LitRPG Tools</title>
         <meta name="description" content="Class progression system for Destiny Among the Stars LitRPG." />
       </Helmet>
-      
-      <div className="min-h-screen bg-nexus-dark text-slate-200 font-sans selection:bg-nexus-accent/30 selection:text-white flex flex-col">
-        {/* Shared Navigation */}
-        <LitrpgNav />
 
-        {/* Header */}
-        <div className="bg-slate-900 border-b border-slate-700">
-          <div className="max-w-5xl mx-auto px-6 py-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {filterCategory === 'combat' ? (
-                  <Swords className="text-orange-400" size={28} />
-                ) : (
-                  <Briefcase className="text-blue-400" size={28} />
-                )}
-                <div>
-                  <h1 className="text-2xl font-bold text-white font-mono tracking-wider">
-                    {filterCategory === 'combat' ? 'CLASS SYSTEM' : 'PROFESSION SYSTEM'}
-                  </h1>
-                  <p className="text-sm text-slate-400">
-                    {filterCategory === 'combat' ? 'Combat progression paths' : 'Professional specializations'}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {isAdmin && (
-                  <>
-                    <button
-                      onClick={() => setShowEditorModal(true)}
-                      className="flex items-center gap-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 border border-purple-600/30 hover:border-purple-500 px-4 py-2 rounded-lg transition-all text-sm font-medium"
-                    >
-                      <Zap size={18} />
-                      <span>Manage Abilities</span>
-                    </button>
-                    <button
-                      onClick={() => setShowClassEditor(true)}
-                      className="flex items-center gap-2 bg-orange-600/20 hover:bg-orange-600/30 text-orange-400 border border-orange-600/30 hover:border-orange-500 px-4 py-2 rounded-lg transition-all text-sm font-medium"
-                    >
-                      <Swords size={18} />
-                      <span>Edit Classes</span>
-                    </button>
-                    <button
-                      onClick={() => setShowProfessionEditor(true)}
-                      className="flex items-center gap-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-600/30 hover:border-blue-500 px-4 py-2 rounded-lg transition-all text-sm font-medium"
-                    >
-                      <Briefcase size={18} />
-                      <span>Edit Professions</span>
-                    </button>
-                  </>
-                )}
-                <button
-                  onClick={loadClasses}
-                  disabled={loading}
-                  className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 px-4 py-2 rounded-lg transition-all text-sm font-medium"
-                >
-                  <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
-                  <span>Refresh</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+      <PageNavbar breadcrumbs={[
+        { label: 'Tools', path: '/litrpg/home' },
+        { label: 'Classes' }
+      ]} />
 
-        {/* Filters */}
-        <div className="bg-slate-900/50 border-b border-slate-700 px-6 py-4">
+      <div className={`relative min-h-screen font-sans selection:bg-nexus-accent/30 selection:text-white flex flex-col ${textSecondary}`}>
+          {/* Shared Navigation */}
+          <LitrpgNav />
+
+        {/* Filters & Admin Tools */}
+        <div className={`${bgPanel}/80 border-b ${borderPrimary} px-6 py-4`}>
           <div className="max-w-5xl mx-auto flex flex-wrap gap-4 items-center">
             {/* Search */}
             <div className="relative flex-1 min-w-[200px]">
               <input
-                type="text" 
-                placeholder="Search classes..." 
+                type="text"
+                placeholder="Search classes..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-600 rounded-lg py-2 pl-10 pr-4 text-sm text-white focus:border-nexus-accent outline-none"
+                className={`w-full ${theme === 'light' ? 'bg-white border-gray-300 text-gray-900' : 'bg-slate-800 border-slate-600 text-white'} border rounded-lg py-2 pl-10 pr-4 text-sm focus:border-nexus-accent outline-none`}
               />
-              <Search className="absolute left-3 top-2.5 text-slate-500" size={18} />
+              <Search className={`absolute left-3 top-2.5 ${textMuted}`} size={18} />
             </div>
 
             {/* Category Filter */}
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500 uppercase">Category:</span>
+              <span className={`text-xs ${textMuted} uppercase`}>Category:</span>
               <div className="flex gap-1">
                 <button
                   onClick={() => setFilterCategory('combat')}
                   className={`flex items-center gap-1 px-3 py-1 text-xs rounded border transition-colors ${
                     filterCategory === 'combat'
                       ? 'bg-orange-600/20 border-orange-500 text-orange-400'
-                      : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'
+                      : `${theme === 'light' ? 'bg-gray-100 border-gray-300' : 'bg-slate-800 border-slate-700'} ${textMuted} hover:${borderSecondary}`
                   }`}
                 >
                   <Swords size={12} />
@@ -263,7 +224,7 @@ export default function ClassesPage() {
                   className={`flex items-center gap-1 px-3 py-1 text-xs rounded border transition-colors ${
                     filterCategory === 'professional'
                       ? 'bg-blue-600/20 border-blue-500 text-blue-400'
-                      : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'
+                      : `${theme === 'light' ? 'bg-gray-100 border-gray-300' : 'bg-slate-800 border-slate-700'} ${textMuted} hover:${borderSecondary}`
                   }`}
                 >
                   <Briefcase size={12} />
@@ -274,16 +235,16 @@ export default function ClassesPage() {
 
             {/* Tier Filter */}
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500 uppercase">Tier:</span>
+              <span className={`text-xs ${textMuted} uppercase`}>Tier:</span>
               <div className="flex gap-1">
                 {['All', ...TIER_ORDER].map(t => (
                   <button
                     key={t}
                     onClick={() => setFilterTier(t)}
                     className={`px-2 py-1 text-xs rounded border transition-colors capitalize ${
-                      filterTier === t 
-                        ? t === 'All' ? 'bg-nexus-accent/20 border-nexus-accent text-white' : (TIER_COLORS[t as ClassTier] || 'bg-slate-800 border-slate-700 text-white')
-                        : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'
+                      filterTier === t
+                        ? t === 'All' ? `bg-nexus-accent/20 border-nexus-accent ${textPrimary}` : (TIER_COLORS[t as ClassTier] || `${theme === 'light' ? 'bg-gray-100 border-gray-300' : 'bg-slate-800 border-slate-700'} ${textPrimary}`)
+                        : `${theme === 'light' ? 'bg-gray-100 border-gray-300' : 'bg-slate-800 border-slate-700'} ${textMuted} hover:${borderSecondary}`
                     }`}
                   >
                     {t}
@@ -292,7 +253,7 @@ export default function ClassesPage() {
               </div>
             </div>
 
-            <span className="text-sm text-slate-500">
+            <span className={`text-sm ${textMuted}`}>
               {displayItems.length} {filterCategory === 'combat' ? 'classes' : 'professions'} total
             </span>
           </div>
@@ -300,28 +261,28 @@ export default function ClassesPage() {
 
         {isAdmin && (
           <div className="max-w-5xl mx-auto px-6 py-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-slate-900 border border-slate-700 rounded-lg p-4 space-y-2">
+            <div className={`${bgCard} border rounded-lg p-4 space-y-2`}>
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-white">Add New Class</h3>
+                <h3 className={`text-sm font-bold ${textPrimary}`}>Add New Class</h3>
                 {status && <span className="text-[10px] text-green-300">{status}</span>}
               </div>
               <input
-                className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm"
+                className={`w-full ${theme === 'light' ? 'bg-gray-100 border-gray-300 text-gray-900' : 'bg-slate-800 border-slate-700 text-white'} border rounded px-2 py-1 text-sm`}
                 placeholder="Name (slug auto-generated)"
                 value={newClass.name}
                 onChange={(e) => setNewClass({ ...newClass, name: e.target.value })}
               />
               <textarea
-                className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-sm"
+                className={`w-full ${theme === 'light' ? 'bg-gray-100 border-gray-300 text-gray-900' : 'bg-slate-800 border-slate-700 text-white'} border rounded px-2 py-1 text-sm`}
                 placeholder="Description"
                 value={newClass.description}
                 onChange={(e) => setNewClass({ ...newClass, description: e.target.value })}
               />
               <div className="grid grid-cols-2 gap-2 text-sm">
-                <label className="flex flex-col gap-1 text-slate-400">
-                  <span className="text-[10px] uppercase text-slate-500">Tier #</span>
+                <label className={`flex flex-col gap-1 ${textMuted}`}>
+                  <span className={`text-[10px] uppercase ${textMuted}`}>Tier #</span>
                   <input
-                    className="bg-slate-800 border border-slate-700 rounded px-2 py-1"
+                    className={`${theme === 'light' ? 'bg-gray-100 border-gray-300 text-gray-900' : 'bg-slate-800 border-slate-700 text-white'} border rounded px-2 py-1`}
                     type="number"
                     min={1}
                     max={4}
@@ -329,10 +290,10 @@ export default function ClassesPage() {
                     onChange={(e) => setNewClass({ ...newClass, tier: Number(e.target.value) })}
                   />
                 </label>
-                <label className="flex flex-col gap-1 text-slate-400">
-                  <span className="text-[10px] uppercase text-slate-500">Unlock Level</span>
+                <label className={`flex flex-col gap-1 ${textMuted}`}>
+                  <span className={`text-[10px] uppercase ${textMuted}`}>Unlock Level</span>
                   <input
-                    className="bg-slate-800 border border-slate-700 rounded px-2 py-1"
+                    className={`${theme === 'light' ? 'bg-gray-100 border-gray-300 text-gray-900' : 'bg-slate-800 border-slate-700 text-white'} border rounded px-2 py-1`}
                     type="number"
                     min={1}
                     value={newClass.unlock_level}
@@ -341,18 +302,18 @@ export default function ClassesPage() {
                 </label>
                 {filterCategory === 'combat' && (
                   <>
-                    <label className="flex flex-col gap-1 text-slate-400">
-                      <span className="text-[10px] uppercase text-slate-500">Primary Attribute</span>
+                    <label className={`flex flex-col gap-1 ${textMuted}`}>
+                      <span className={`text-[10px] uppercase ${textMuted}`}>Primary Attribute</span>
                       <input
-                        className="bg-slate-800 border border-slate-700 rounded px-2 py-1"
+                        className={`${theme === 'light' ? 'bg-gray-100 border-gray-300 text-gray-900' : 'bg-slate-800 border-slate-700 text-white'} border rounded px-2 py-1`}
                         value={newClass.primary_attribute}
                         onChange={(e) => setNewClass({ ...newClass, primary_attribute: e.target.value })}
                       />
                     </label>
-                    <label className="flex flex-col gap-1 text-slate-400">
-                      <span className="text-[10px] uppercase text-slate-500">Secondary Attribute</span>
+                    <label className={`flex flex-col gap-1 ${textMuted}`}>
+                      <span className={`text-[10px] uppercase ${textMuted}`}>Secondary Attribute</span>
                       <input
-                        className="bg-slate-800 border border-slate-700 rounded px-2 py-1"
+                        className={`${theme === 'light' ? 'bg-gray-100 border-gray-300 text-gray-900' : 'bg-slate-800 border-slate-700 text-white'} border rounded px-2 py-1`}
                         value={newClass.secondary_attribute}
                         onChange={(e) => setNewClass({ ...newClass, secondary_attribute: e.target.value })}
                       />
@@ -362,13 +323,13 @@ export default function ClassesPage() {
               </div>
               <button
                 onClick={handleCreate}
-                className="w-full bg-nexus-accent/80 hover:bg-nexus-accent text-white rounded py-2 text-sm font-semibold"
+                className={`w-full bg-nexus-accent/80 hover:bg-nexus-accent ${theme === 'light' ? 'text-white' : 'text-slate-900'} rounded py-2 text-sm font-semibold`}
               >
                 {filterCategory === 'combat' ? 'Create Class' : 'Create Profession'}
               </button>
             </div>
-            <div className="bg-slate-900 border border-slate-700 rounded-lg p-4 text-sm text-slate-400">
-              <div className="font-semibold text-white mb-2">Tip</div>
+            <div className={`${bgCard} border rounded-lg p-4 text-sm ${textMuted}`}>
+              <div className={`font-semibold ${textPrimary} mb-2`}>Tip</div>
               Use "Manage Abilities" to attach abilities to your new class after saving. Data is stored in MySQL and refreshed for
               all LitRPG pages.
             </div>
@@ -420,46 +381,46 @@ export default function ClassesPage() {
 
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {tierClasses.map(cls => (
-                          <div 
-                            key={cls.id} 
-                            className={`bg-slate-900 border rounded-xl p-5 hover:border-slate-500 transition-colors ${
-                              TIER_BORDER_COLORS[tier as ClassTier] || 'border-slate-700'
+                          <div
+                            key={cls.id}
+                            className={`${bgCard} border rounded-xl p-5 hover:${borderSecondary} transition-colors ${
+                              TIER_BORDER_COLORS[tier as ClassTier] || borderPrimary
                             }`}
                           >
                             <div className="flex justify-between items-start mb-2">
-                              <h3 className="font-bold text-lg text-white">{cls.name}</h3>
-                              <span className={`text-xs px-2 py-0.5 rounded border uppercase ${TIER_COLORS[typeof cls.tier === 'number' ? getTierString(cls.tier) : cls.tier as ClassTier] || 'text-slate-400 bg-slate-500/10 border-slate-500/30'}`}>
+                              <h3 className={`font-bold text-lg ${textPrimary}`}>{cls.name}</h3>
+                              <span className={`text-xs px-2 py-0.5 rounded border uppercase ${TIER_COLORS[typeof cls.tier === 'number' ? getTierString(cls.tier) : cls.tier as ClassTier] || `${textMuted} ${theme === 'light' ? 'bg-gray-100 border-gray-300' : 'bg-slate-500/10 border-slate-500/30'}`}`}>
                                 {typeof cls.tier === 'number' ? `Tier ${cls.tier}` : cls.tier}
                               </span>
                             </div>
-                            
-                            <p className="text-sm text-slate-400 mb-4 line-clamp-2">{cls.description || 'No description.'}</p>
-                            
+
+                            <p className={`text-sm ${textMuted} mb-4 line-clamp-2`}>{cls.description || 'No description.'}</p>
+
                             {/* Unlock Level */}
-                            <div className="text-xs text-slate-500 mb-2">
-                              Unlock Level: <span className="text-white font-bold">{cls.unlock_level}</span>
+                            <div className={`text-xs ${textMuted} mb-2`}>
+                              Unlock Level: <span className={`${textPrimary} font-bold`}>{cls.unlock_level}</span>
                             </div>
 
                             {/* Prerequisite */}
                             {cls.prerequisite_class_id && (
-                              <div className="text-xs text-slate-500 mb-2 flex items-center gap-1">
-                                Requires: 
+                              <div className={`text-xs ${textMuted} mb-2 flex items-center gap-1`}>
+                                Requires:
                                 <span className="text-nexus-accent">
                                   {getPrerequisiteClassName(cls.prerequisite_class_id)}
                                 </span>
-                                <ArrowRight size={10} className="text-slate-600" />
+                                <ArrowRight size={10} className={textMuted} />
                               </div>
                             )}
-                            
+
                             {/* Stat Bonuses */}
                             {cls.stat_bonuses && Object.keys(cls.stat_bonuses).length > 0 && (
-                              <div className="bg-slate-950 rounded-lg p-3 mt-3">
-                                <div className="text-xs text-slate-500 uppercase tracking-wide mb-2">Stat Bonuses</div>
+                              <div className={`${theme === 'light' ? 'bg-gray-100' : 'bg-slate-950'} rounded-lg p-3 mt-3`}>
+                                <div className={`text-xs ${textMuted} uppercase tracking-wide mb-2`}>Stat Bonuses</div>
                                 <div className="flex flex-wrap gap-2">
                                   {Object.entries(cls.stat_bonuses).map(([stat, bonus]) => (
-                                    <div key={stat} className="flex items-center gap-1 text-xs bg-slate-800 px-2 py-1 rounded">
+                                    <div key={stat} className={`flex items-center gap-1 text-xs ${theme === 'light' ? 'bg-gray-200' : 'bg-slate-800'} px-2 py-1 rounded`}>
                                       {STAT_ICONS[stat] || null}
-                                      <span className="text-slate-300">{stat}</span>
+                                      <span className={textSecondary}>{stat}</span>
                                       <span className={bonus > 0 ? 'text-green-400' : 'text-red-400'}>
                                         {bonus > 0 ? '+' : ''}{bonus}
                                       </span>
@@ -498,11 +459,11 @@ export default function ClassesPage() {
         />
 
         {/* Footer with Social Icons */}
-        <footer className="bg-slate-900 border-t border-slate-700 py-8">
+        <footer className={`${bgPanel} border-t ${borderPrimary} py-8`}>
           <div className="mx-auto max-w-5xl px-4">
             <div className="flex flex-col items-center gap-4">
               <SocialIcons variant="footer" showCopyright={false} />
-              <p className="text-sm text-slate-500">
+              <p className={`text-sm ${textMuted}`}>
                 © {new Date().getFullYear()} All rights reserved.
               </p>
             </div>

@@ -85,15 +85,19 @@ export function BlogIndex() {
           setTags(tagsResult.tags)
         }
 
-        // Fetch author profile
-        const profileRes = await fetch('/api/author/get.php')
-        const profileData = await profileRes.json()
-        if (profileData.success) {
-          setProfile(profileData.profile)
+        // Fetch author profile - don't fail entire page if this fails
+        try {
+          const profileRes = await fetch('/api/author/get.php')
+          const profileData = await profileRes.json()
+          if (profileData.success) {
+            setProfile(profileData.profile)
+          }
+        } catch (profileErr) {
+          console.log('Author profile not available, continuing without it')
         }
       } catch (err) {
-        setError('Failed to load blog data')
-        console.error(err)
+        console.error('Error loading blog data:', err)
+        // Don't set error here - let the individual success checks handle it
       } finally {
         setLoading(false)
       }

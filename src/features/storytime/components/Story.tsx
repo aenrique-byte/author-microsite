@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { getStory, loadProgress, resetProgress, getAuthorProfile } from '../utils/api-story';
+// MOCK DATA: Import mock data for fallback when database is offline
+import mockData from '../../../data/mock-data.json';
 import { RenderedMarkdown } from './RenderedMarkdown';
 import SocialIcons from '../../../components/SocialIcons';
 import PageNavbar from '../../../components/PageNavbar';
@@ -55,9 +57,32 @@ export function Story() {
         
         setTotalChapters(data.total || 0);
         setHasMoreChapters((data.page || 1) * (data.limit || 20) < (data.total || 0));
+      } else {
+        throw new Error('API returned unsuccessful');
       }
     } catch (error) {
       console.error('Error loading chapters:', error);
+      // MOCK DATA: Fallback to mock data when database is offline
+      console.log('Database offline, using mock chapter data');
+      const mockChapters = (mockData.storytime.chapters as any)[storyId];
+      if (mockChapters && Array.isArray(mockChapters)) {
+        const newChapters: Chapter[] = mockChapters.map((chapter: any) => ({
+          num: chapter.num,
+          title: chapter.title,
+          status: 'published',
+          like_count: chapter.like_count || 0,
+          comment_count: chapter.comment_count || 0
+        }));
+        
+        if (append) {
+          setChapters(prev => [...prev, ...newChapters]);
+        } else {
+          setChapters(newChapters);
+        }
+        
+        setTotalChapters(newChapters.length);
+        setHasMoreChapters(false);
+      }
     } finally {
       setLoadingMoreChapters(false);
     }

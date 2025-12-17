@@ -7,15 +7,14 @@ import NewsletterCTA from '../../../components/NewsletterCTA'
 import PatreonCTA from '../../../components/PatreonCTA'
 import { BlogCard } from './BlogCard'
 import { List } from 'lucide-react'
-import { 
-  getBlogPostBySlug, 
-  formatBlogDate, 
+import {
+  getBlogPostBySlug,
+  formatBlogDate,
   listBlogPosts,
   trackBlogView,
   trackBlogLike,
   trackBlogShare,
-  hasLikedPost,
-  markPostLiked,
+  getBlogLikeStatus,
   listBlogComments,
   createBlogComment,
   type BlogComment
@@ -553,14 +552,14 @@ export function BlogPost() {
       try {
         // Fetch the blog post
         const postResult = await getBlogPostBySlug(slug, true)
-        
+
         if (!postResult.success || !postResult.post) {
           setError(postResult.error || 'Post not found')
           return
         }
 
         setPost(postResult.post)
-        
+
         // Use related posts from API if available
         if (postResult.related_posts) {
           setRelatedPosts(postResult.related_posts)
@@ -571,7 +570,7 @@ export function BlogPost() {
             status: 'published',
             category: postResult.post.categories?.[0],
           })
-          
+
           if (relatedResult.success) {
             // Filter out current post
             setRelatedPosts(
@@ -580,26 +579,37 @@ export function BlogPost() {
           }
         }
 
-        // Fetch author profile
-        const profileRes = await fetch('/api/author/get.php')
-        const profileData = await profileRes.json()
-        if (profileData.success) {
-          setProfile(profileData.profile)
+        // Fetch author profile - don't fail entire page if this fails
+        try {
+          const profileRes = await fetch('/api/author/get.php')
+          const profileData = await profileRes.json()
+          if (profileData.success) {
+            setProfile(profileData.profile)
+          }
+        } catch (profileErr) {
+          console.log('Author profile not available, continuing without it')
         }
 
         // Update document title for SEO
         document.title = `${postResult.post.title} | Blog`
-        
+
         // Update meta tags
         updateMetaTags(postResult.post)
-        
-        // Initialize like state
-        setLikeCount(postResult.post.like_count || 0)
-        setLiked(hasLikedPost(postResult.post.id))
+
+        // Initialize like state from server - don't fail if this fails
+        try {
+          const likeStatus = await getBlogLikeStatus(postResult.post.id)
+          setLikeCount(likeStatus.like_count || 0)
+          setLiked(likeStatus.user_liked || false)
+        } catch (likeErr) {
+          console.log('Like status not available, using defaults')
+          setLikeCount(0)
+          setLiked(false)
+        }
 
       } catch (err) {
-        setError('Failed to load blog post')
-        console.error(err)
+        console.error('Error loading blog post:', err)
+        // Don't set error here - let the individual success check handle it
       } finally {
         setLoading(false)
       }
@@ -628,19 +638,22 @@ export function BlogPost() {
 
   // Handle like button
   const handleLike = async () => {
-    if (!post || isLiking || liked) return
-    
+    console.log('Like button clicked', { post, isLiking, liked })
+    if (!post || isLiking || liked) {
+      console.log('Like blocked:', { noPost: !post, isLiking, alreadyLiked: liked })
+      return
+    }
+
     setIsLiking(true)
     try {
+      console.log('Calling trackBlogLike with:', post.id, post.slug)
       const result = await trackBlogLike(post.id, post.slug)
-      if (result.success && !result.already_tracked) {
-        setLikeCount(prev => prev + 1)
-        setLiked(true)
-        markPostLiked(post.id)
-      } else if (result.success && result.already_tracked) {
-        // Already liked before
-        setLiked(true)
-        markPostLiked(post.id)
+      console.log('trackBlogLike result:', result)
+      if (result.success) {
+        // Update with server's like count and status
+        setLikeCount(result.like_count || 0)
+        setLiked(result.user_liked || false)
+        console.log('Like successful, count:', result.like_count, 'user_liked:', result.user_liked)
       }
     } catch (err) {
       console.error('Failed to like post:', err)
@@ -1044,20 +1057,6 @@ export function BlogPost() {
           </div>
         )}
 
-        {/* Dual CTA: Newsletter + Patreon */}
-        <div className={`mt-8 ${cardBg} border rounded-2xl p-6`}>
-          <h3 className={`text-xl font-bold ${textPrimary} mb-4 text-center`}>
-            📬 Enjoyed this post?
-          </h3>
-          <p className={`text-sm ${textSecondary} text-center mb-6`}>
-            Get notified when I publish new content, or support me on Patreon for exclusive access.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <NewsletterCTA variant="button" source="blog_post_bottom" />
-            <PatreonCTA variant="button" />
-          </div>
-        </div>
-
         {/* Related Posts */}
         {relatedPosts.length > 0 && (
           <section className="mt-16">
@@ -1098,6 +1097,20 @@ export function BlogPost() {
           textMuted={textMuted}
           cardBg={cardBg}
         />
+
+        {/* Dual CTA: Newsletter + Patreon */}
+        <div className={`mt-8 ${cardBg} border rounded-2xl p-6`}>
+          <h3 className={`text-xl font-bold ${textPrimary} mb-4 text-center`}>
+            📬 Enjoyed this post?
+          </h3>
+          <p className={`text-sm ${textSecondary} text-center mb-6`}>
+            Get notified when I publish new content, or support me on Patreon for exclusive access.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <NewsletterCTA variant="button" source="blog_post_bottom" />
+            <PatreonCTA variant="button" />
+          </div>
+        </div>
           </article>
 
           {/* Table of Contents - Right Sidebar */}

@@ -232,6 +232,21 @@ export function Chapter() {
     }
   }, [loading, storyId, chapterId]);
 
+  // Effect to save progress immediately when chapter loads
+  // This ensures progress is tracked even if user doesn't scroll
+  useEffect(() => {
+    if (loading || !storyId || !chapterId) return;
+    
+    // Save progress immediately on chapter load
+    const currentChapter = parseInt(chapterId, 10);
+    const existingProgress = loadProgress(storyId);
+    
+    // Only update if this is a new/different chapter or no progress exists
+    if (!existingProgress || existingProgress.chapterIndex !== currentChapter) {
+      saveProgress(storyId, { chapterIndex: currentChapter, scrollY: 0 });
+    }
+  }, [loading, storyId, chapterId]);
+
   // Effect for saving scroll position
   useEffect(() => {
     // Wait for content to be loaded before setting up scroll listener
@@ -588,8 +603,45 @@ export function Chapter() {
               theme === 'light' ? 'prose-gray' : 'prose-invert'
             }`} dangerouslySetInnerHTML={sanitizedHtml} />
           </div>
-          <div className="max-w-3xl mx-auto px-4 md:px-6 pb-8">
-            <div className={`text-center ${cardClass} border rounded-xl p-6`}>
+          {/* Chapter Navigation */}
+          {(parseInt(chapterId || '0', 10) > (story.startIndex || 1) || nextChapterId) && (
+            <div className="max-w-4xl lg:max-w-5xl mx-auto px-4 md:px-6 pb-8 text-center">
+              <div className={`max-w-[80ch] mx-auto ${cardClass} rounded-xl p-6`}>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  {parseInt(chapterId || '0', 10) > (story.startIndex || 1) && (
+                    <Link 
+                      to={`/storytime/story/${storyId}/chapter/${parseInt(chapterId!, 10) - 1}`}
+                      className={`inline-block font-bold py-2 px-4 rounded transition-colors ${
+                        theme === 'light'
+                          ? 'bg-gray-200 hover:bg-gray-300 text-gray-800'
+                          : 'bg-gray-700 hover:bg-gray-600 text-white'
+                      }`}
+                    >
+                      ← Previous Chapter
+                    </Link>
+                  )}
+                  {nextChapterId && (
+                    <Link 
+                      to={`/storytime/story/${storyId}/chapter/${nextChapterId}`}
+                      className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-colors"
+                    >
+                      Next Chapter →
+                    </Link>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        
+        {/* Comments Section */}
+        {storyId && chapterId && (
+          <CommentsSection storyId={storyId} chapterId={parseInt(chapterId, 10)} />
+        )}
+        
+        {/* Support CTA - Below Comments */}
+        <div className="max-w-4xl lg:max-w-5xl mx-auto px-4 md:px-6 py-8">
+          <div className={`max-w-[80ch] mx-auto ${cardClass} border rounded-xl p-6`}>
+            <div className="text-center">
               <h3 className={`text-xl font-bold ${textClass}`}>⭐ Enjoying the story?</h3>
               <p className={`mt-2 text-sm ${subtextClass}`}>
                 Get notified when new chapters drop, or support me on Patreon for early access.
@@ -600,24 +652,8 @@ export function Chapter() {
               </div>
             </div>
           </div>
-          {nextChapterId && (
-            <div className="max-w-3xl mx-auto px-4 md:px-6 pb-8 text-center">
-              <div className={`${cardClass} rounded-xl p-6`}>
-                <Link 
-                  to={`/storytime/story/${storyId}/chapter/${nextChapterId}`}
-                  className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-colors"
-                >
-                  Next Chapter
-                </Link>
-              </div>
-            </div>
-          )}
-        
-        {/* Comments Section */}
-        {storyId && chapterId && (
-          <CommentsSection storyId={storyId} chapterId={parseInt(chapterId, 10)} />
-        )}
-        
+        </div>
+
           {/* Footer */}
           <footer className={`mt-16 border-t ${cardClass} py-8 ${
             theme === 'light' ? 'border-gray-300' : 'border-white/20'

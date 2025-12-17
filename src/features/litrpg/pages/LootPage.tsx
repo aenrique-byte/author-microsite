@@ -3,8 +3,10 @@ import { Helmet } from 'react-helmet-async';
 import { Package, Search, Wrench, Swords, Cpu, Layers, Pill, Shield, Heart } from 'lucide-react';
 import { LitrpgItem, listItems, createItem } from '../utils/api-litrpg';
 import SocialIcons from '../../../components/SocialIcons';
+import PageNavbar from '../../../components/PageNavbar';
 import LitrpgNav from '../components/LitrpgNav';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useTheme } from '../../storytime/contexts/ThemeContext';
 
 type TechLevel = string;
 type ItemCategory = string;
@@ -41,6 +43,18 @@ const DEFAULT_CATEGORIES: ItemCategory[] = ['Material', 'Component', 'Tool', 'We
 export default function LootPage() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
+  const { theme } = useTheme();
+
+  // Theme-aware style variables
+  const bgPanel = theme === 'light' ? 'bg-white' : 'bg-slate-900';
+  const bgCard = theme === 'light' ? 'bg-white border-gray-200' : 'bg-slate-900 border-slate-700';
+
+  const textPrimary = theme === 'light' ? 'text-gray-900' : 'text-white';
+  const textSecondary = theme === 'light' ? 'text-gray-700' : 'text-slate-200';
+  const textMuted = theme === 'light' ? 'text-gray-500' : 'text-slate-400';
+
+  const borderPrimary = theme === 'light' ? 'border-gray-200' : 'border-slate-700';
+
 
   const [search, setSearch] = useState('');
   const [selectedTL, setSelectedTL] = useState<TechLevel | 'All'>('All');
@@ -150,18 +164,23 @@ export default function LootPage() {
         <meta name="description" content="Item database organized by Tech Level and category for Destiny Among the Stars LitRPG." />
       </Helmet>
 
-      <div className="min-h-screen bg-nexus-dark text-slate-200 font-sans selection:bg-nexus-accent/30 selection:text-white flex flex-col">
-        {/* Shared Navigation */}
-        <LitrpgNav />
+      <PageNavbar breadcrumbs={[
+        { label: 'Tools', path: '/litrpg/home' },
+        { label: 'Loot' }
+      ]} />
+
+      <div className={`relative min-h-screen font-sans selection:bg-nexus-accent/30 selection:text-white flex flex-col ${textSecondary}`}>
+          {/* Shared Navigation */}
+          <LitrpgNav />
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col md:flex-row">
-          <div className="w-full md:w-80 bg-slate-900/50 border-r border-slate-800 p-4 md:sticky md:top-0 md:h-screen md:overflow-y-auto space-y-4">
+          <div className={`w-full md:w-80 ${bgPanel}/50 border-r ${borderPrimary} p-4 md:sticky md:top-0 md:h-screen md:overflow-y-auto space-y-4`}>
             <div className="flex items-center gap-3">
               <Package className="text-green-400" size={24} />
               <div>
-                <h1 className="text-xl font-bold text-white font-mono tracking-wider">LOOT CATALOG</h1>
-                <div className="text-xs text-slate-500">{loading ? 'Loading...' : `${items.length} items`}</div>
+                <h1 className={`text-xl font-bold ${textPrimary} font-mono tracking-wider`}>LOOT CATALOG</h1>
+                <div className={`text-xs ${textMuted}`}>{loading ? 'Loading...' : `${items.length} items`}</div>
               </div>
             </div>
 
@@ -171,37 +190,37 @@ export default function LootPage() {
                 placeholder="Search items..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-600 rounded-lg py-2 pl-10 pr-4 text-sm text-white focus:border-green-500 outline-none"
+                className={`w-full ${theme === 'light' ? 'bg-white border-gray-300 text-gray-900' : 'bg-slate-800 border-slate-600 text-white'} border rounded-lg py-2 pl-10 pr-4 text-sm focus:border-green-500 outline-none`}
               />
-              <Search className="absolute left-3 top-2.5 text-slate-500" size={16} />
+              <Search className={`absolute left-3 top-2.5 ${textMuted}`} size={16} />
             </div>
 
-            <div className="p-3 bg-slate-800/50 rounded-lg">
-              <div className="text-xs text-slate-500 uppercase tracking-wide mb-1">Total Items</div>
+            <div className={`p-3 ${theme === 'light' ? 'bg-gray-100' : 'bg-slate-800/50'} rounded-lg`}>
+              <div className={`text-xs ${textMuted} uppercase tracking-wide mb-1`}>Total Items</div>
               <div className="text-2xl font-bold text-green-400">{items.length}</div>
             </div>
 
             {isAdmin && (
-              <div className="bg-slate-800/60 p-3 rounded border border-slate-700 space-y-2">
+              <div className={`${theme === 'light' ? 'bg-gray-100 border-gray-300' : 'bg-slate-800/60 border-slate-700'} p-3 rounded border space-y-2`}>
                 <div className="flex items-center justify-between">
-                  <div className="text-xs font-bold text-slate-400 uppercase">Quick Add Item</div>
-                  {status && <div className="text-[10px] text-green-300">{status}</div>}
+                  <div className={`text-xs font-bold ${textMuted} uppercase`}>Quick Add Item</div>
+                  {status && <div className="text-[10px] text-green-500">{status}</div>}
                 </div>
                 <div className="space-y-2">
                   <input
-                    className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
+                    className={`w-full ${theme === 'light' ? 'bg-white border-gray-300 text-gray-900' : 'bg-slate-900 border-slate-700 text-white'} border rounded px-2 py-1 text-sm`}
                     placeholder="Name (slug auto-generated)"
                     value={newItem.name}
                     onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
                   />
                   <input
-                    className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
+                    className={`w-full ${theme === 'light' ? 'bg-white border-gray-300 text-gray-900' : 'bg-slate-900 border-slate-700 text-white'} border rounded px-2 py-1 text-sm`}
                     placeholder="Description"
                     value={newItem.description}
                     onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
                   />
                   <select
-                    className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
+                    className={`w-full ${theme === 'light' ? 'bg-white border-gray-300 text-gray-900' : 'bg-slate-900 border-slate-700 text-white'} border rounded px-2 py-1 text-sm`}
                     value={newItem.tech_level}
                     onChange={(e) => setNewItem({ ...newItem, tech_level: e.target.value })}
                   >
@@ -210,7 +229,7 @@ export default function LootPage() {
                     <option value="TL10">TL10 - Elite Tech</option>
                   </select>
                   <select
-                    className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
+                    className={`w-full ${theme === 'light' ? 'bg-white border-gray-300 text-gray-900' : 'bg-slate-900 border-slate-700 text-white'} border rounded px-2 py-1 text-sm`}
                     value={newItem.category}
                     onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
                   >
@@ -219,7 +238,7 @@ export default function LootPage() {
                     ))}
                   </select>
                   <select
-                    className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
+                    className={`w-full ${theme === 'light' ? 'bg-white border-gray-300 text-gray-900' : 'bg-slate-900 border-slate-700 text-white'} border rounded px-2 py-1 text-sm`}
                     value={newItem.rarity}
                     onChange={(e) => setNewItem({ ...newItem, rarity: e.target.value })}
                   >
@@ -230,7 +249,7 @@ export default function LootPage() {
                   </select>
                   <input
                     type="number"
-                    className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
+                    className={`w-full ${theme === 'light' ? 'bg-white border-gray-300 text-gray-900' : 'bg-slate-900 border-slate-700 text-white'} border rounded px-2 py-1 text-sm`}
                     placeholder="Base Value (credits)"
                     value={newItem.base_value}
                     onChange={(e) => setNewItem({ ...newItem, base_value: Number(e.target.value) })}
@@ -239,7 +258,7 @@ export default function LootPage() {
                 <button
                   onClick={handleCreate}
                   disabled={!newItem.name}
-                  className="w-full bg-green-600 hover:bg-green-700 disabled:bg-slate-700 disabled:text-slate-500 text-white px-3 py-1.5 rounded text-sm font-medium transition-colors"
+                  className={`w-full bg-green-600 hover:bg-green-700 ${theme === 'light' ? 'disabled:bg-gray-300 disabled:text-gray-500' : 'disabled:bg-slate-700 disabled:text-slate-500'} text-white px-3 py-1.5 rounded text-sm font-medium transition-colors`}
                 >
                   Add Item
                 </button>
@@ -247,14 +266,14 @@ export default function LootPage() {
             )}
 
             <div className="space-y-2">
-              <div className="text-[11px] uppercase text-slate-500">Tech Level</div>
+              <div className={`text-[11px] uppercase ${textMuted}`}>Tech Level</div>
               <div className="flex gap-2 flex-wrap">
                 <button
                   onClick={() => setSelectedTL('All')}
                   className={`px-2 py-1 text-xs rounded border transition-colors ${
                     selectedTL === 'All'
-                      ? 'bg-nexus-accent/20 border-nexus-accent text-white'
-                      : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'
+                      ? `bg-nexus-accent/20 border-nexus-accent ${theme === 'light' ? 'text-gray-900' : 'text-white'}`
+                      : `${theme === 'light' ? 'bg-gray-100 border-gray-300 text-gray-600 hover:border-gray-400' : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'}`
                   }`}
                 >
                   All
@@ -265,8 +284,8 @@ export default function LootPage() {
                     onClick={() => setSelectedTL(tl)}
                     className={`px-2 py-1 text-xs rounded border transition-colors ${
                       selectedTL === tl
-                        ? `${TECH_LEVEL_COLORS[tl] || 'bg-slate-800 text-white border-slate-500'} border-current`
-                        : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'
+                        ? `${TECH_LEVEL_COLORS[tl] || `${theme === 'light' ? 'bg-gray-100 text-gray-900 border-gray-400' : 'bg-slate-800 text-white border-slate-500'}`} border-current`
+                        : `${theme === 'light' ? 'bg-gray-100 border-gray-300 text-gray-600 hover:border-gray-400' : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'}`
                     }`}
                   >
                     {tl}
@@ -276,14 +295,14 @@ export default function LootPage() {
             </div>
 
             <div className="space-y-2">
-              <div className="text-[11px] uppercase text-slate-500">Category</div>
+              <div className={`text-[11px] uppercase ${textMuted}`}>Category</div>
               <div className="flex gap-2 flex-wrap">
                 <button
                   onClick={() => setSelectedCategory('All')}
                   className={`px-2 py-1 text-xs rounded border transition-colors ${
                     selectedCategory === 'All'
-                      ? 'bg-nexus-accent/20 border-nexus-accent text-white'
-                      : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'
+                      ? `bg-nexus-accent/20 border-nexus-accent ${theme === 'light' ? 'text-gray-900' : 'text-white'}`
+                      : `${theme === 'light' ? 'bg-gray-100 border-gray-300 text-gray-600 hover:border-gray-400' : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'}`
                   }`}
                 >
                   All
@@ -295,7 +314,7 @@ export default function LootPage() {
                     className={`px-2 py-1 text-xs rounded border transition-colors flex items-center gap-1 ${
                       selectedCategory === cat && CATEGORY_COLORS[cat]
                         ? CATEGORY_COLORS[cat]
-                        : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'
+                        : `${theme === 'light' ? 'bg-gray-100 border-gray-300 text-gray-600 hover:border-gray-400' : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500'}`
                     }`}
                   >
                     {CATEGORY_ICONS[cat]}
@@ -309,7 +328,7 @@ export default function LootPage() {
           </div>
 
           {/* Grid Content */}
-          <div className="flex-1 overflow-y-auto p-6 md:p-8 bg-slate-950">
+          <div className={`flex-1 overflow-y-auto p-6 md:p-8 ${bgPanel}/80`}>
             <div className="max-w-7xl mx-auto space-y-8">
               {techLevels.filter(tl => selectedTL === 'All' || selectedTL === tl).map(tl => {
                 const tlItems = Object.entries(groupedLoot[tl] || {}).filter(([, items]) => items.length > 0);
@@ -336,12 +355,12 @@ export default function LootPage() {
                         if (categoryItems.length === 0) return null;
 
                         return (
-                          <div key={`${tl}-${category}`} className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+                          <div key={`${tl}-${category}`} className={`${bgCard} border rounded-xl overflow-hidden`}>
                             {/* Category Header */}
-                            <div className={`p-3 border-b border-slate-700 flex items-center gap-2 ${(CATEGORY_COLORS[category] || 'text-slate-200').split(' ').slice(0, 1).join(' ')}`}>
+                            <div className={`p-3 border-b ${borderPrimary} flex items-center gap-2 ${(CATEGORY_COLORS[category] || textSecondary).split(' ').slice(0, 1).join(' ')}`}>
                               {CATEGORY_ICONS[category]}
                               <h3 className="font-bold text-sm">{category}</h3>
-                              <span className="text-xs text-slate-500 ml-auto">{categoryItems.length}</span>
+                              <span className={`text-xs ${textMuted} ml-auto`}>{categoryItems.length}</span>
                             </div>
 
                             {/* Items List */}
@@ -415,11 +434,11 @@ export default function LootPage() {
         </div>
 
         {/* Footer with Social Icons */}
-        <footer className="bg-slate-900 border-t border-slate-700 py-8">
+        <footer className={`${bgPanel} border-t ${borderPrimary} py-8`}>
           <div className="mx-auto max-w-5xl px-4">
             <div className="flex flex-col items-center gap-4">
               <SocialIcons variant="footer" showCopyright={false} />
-              <p className="text-sm text-slate-500">
+              <p className={`text-sm ${textMuted}`}>
                 © {new Date().getFullYear()} All rights reserved.
               </p>
             </div>

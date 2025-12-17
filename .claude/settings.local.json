@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(npm run build)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(curl -s https://ocwanderer.com/api/shoutouts/config.php)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []

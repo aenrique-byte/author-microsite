@@ -3,18 +3,34 @@ import { Helmet } from 'react-helmet-async';
 import { Search, Zap, Loader2, RefreshCw, Wand2, Edit } from 'lucide-react';
 import { getCachedAbilities, createAbility, updateAbility, LitrpgAbility } from '../utils/api-litrpg';
 import SocialIcons from '../../../components/SocialIcons';
+import PageNavbar from '../../../components/PageNavbar';
 import LitrpgNav from '../components/LitrpgNav';
 import { useAuth } from '../../../contexts/AuthContext';
 import { generateAbilityTiers } from '../utils/ability-tier-generator';
+import { useTheme } from '../../storytime/contexts/ThemeContext';
 
 export default function AbilitiesPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  const { theme } = useTheme();
+
+  // Theme-aware style variables
+  const bgPanel = theme === 'light' ? 'bg-white' : 'bg-slate-900';
+  const bgCard = theme === 'light' ? 'bg-white border-gray-200' : 'bg-slate-900 border-slate-700';
+
+  const textPrimary = theme === 'light' ? 'text-gray-900' : 'text-white';
+  const textSecondary = theme === 'light' ? 'text-gray-700' : 'text-slate-200';
+  const textMuted = theme === 'light' ? 'text-gray-500' : 'text-slate-400';
+
+  const borderPrimary = theme === 'light' ? 'border-gray-200' : 'border-slate-700';
+  const borderSecondary = theme === 'light' ? 'border-gray-300' : 'border-slate-600';
+
+
   const [search, setSearch] = useState('');
   const [abilities, setAbilities] = useState<LitrpgAbility[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
-  const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
 
   const defaultTier = (level: number) => ({
     level,
@@ -222,26 +238,31 @@ export default function AbilitiesPage() {
         <title>Abilities - LitRPG Tools</title>
         <meta name="description" content="Ability library for Destiny Among the Stars LitRPG game system." />
       </Helmet>
-      
-      <div className="min-h-screen bg-nexus-dark text-slate-200 font-sans selection:bg-nexus-accent/30 selection:text-white flex flex-col">
-        {/* Shared Navigation */}
-        <LitrpgNav />
+
+      <PageNavbar breadcrumbs={[
+        { label: 'Tools', path: '/litrpg/home' },
+        { label: 'Abilities' }
+      ]} />
+
+      <div className={`relative min-h-screen font-sans selection:bg-nexus-accent/30 selection:text-white flex flex-col ${textSecondary}`}>
+          {/* Shared Navigation */}
+          <LitrpgNav />
 
         {/* Main Content Area with Sidebar */}
         <div className="flex-1 flex flex-col md:flex-row">
-            
+
             {/* Sidebar (Left) - Sticky */}
-            <div className="w-full md:w-80 bg-slate-900/50 border-r border-slate-700 flex flex-col shrink-0 p-4 md:sticky md:top-0 md:h-screen md:overflow-y-auto">
+            <div className={`w-full md:w-80 ${bgPanel}/50 border-r ${borderPrimary} flex flex-col shrink-0 p-4 md:sticky md:top-0 md:h-screen md:overflow-y-auto`}>
                 {/* Header */}
                 <div className="flex items-center justify-between gap-3 mb-6">
                   <div className="flex items-center gap-3">
                     <Zap className="text-yellow-400" size={24} />
-                    <h1 className="text-xl font-bold text-white font-mono tracking-wider">ABILITIES</h1>
+                    <h1 className={`text-xl font-bold ${textPrimary} font-mono tracking-wider`}>ABILITIES</h1>
                   </div>
                   <button
                     onClick={loadAbilities}
                     disabled={loading}
-                    className="p-2 text-slate-500 hover:text-nexus-accent transition-colors"
+                    className={`p-2 ${textMuted} hover:text-nexus-accent transition-colors`}
                     title="Refresh"
                   >
                     <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
@@ -250,86 +271,86 @@ export default function AbilitiesPage() {
 
                 {/* Search */}
                 <div className="relative mb-6">
-                    <input 
-                        type="text" 
-                        placeholder="Filter abilities..." 
+                    <input
+                        type="text"
+                        placeholder="Filter abilities..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full bg-slate-800 border border-slate-600 rounded-lg py-3 pl-10 pr-4 text-sm text-white focus:border-nexus-accent outline-none"
+                        className={`w-full ${theme === 'light' ? 'bg-white border-gray-300 text-gray-900' : 'bg-slate-800 border-slate-600 text-white'} border rounded-lg py-3 pl-10 pr-4 text-sm focus:border-nexus-accent outline-none`}
                     />
-                    <Search className="absolute left-3 top-3.5 text-slate-500" size={18} />
+                    <Search className={`absolute left-3 top-3.5 ${textMuted}`} size={18} />
                 </div>
 
                 {/* Stats */}
-                <div className="mb-6 p-3 bg-slate-800/50 rounded-lg">
-                  <div className="text-xs text-slate-500 uppercase tracking-wide mb-1">Total Abilities</div>
+                <div className={`mb-6 p-3 ${theme === 'light' ? 'bg-gray-100' : 'bg-slate-800/50'} rounded-lg`}>
+                  <div className={`text-xs ${textMuted} uppercase tracking-wide mb-1`}>Total Abilities</div>
                   <div className="text-2xl font-bold text-nexus-accent">{abilities.length}</div>
                 </div>
 
                 {isAdmin && (
-                  <div className="mb-6 p-3 bg-slate-800/60 rounded-lg border border-slate-700 space-y-2">
+                  <div className={`mb-6 p-3 ${theme === 'light' ? 'bg-gray-100 border-gray-300' : 'bg-slate-800/60 border-slate-700'} rounded-lg border space-y-2`}>
                     <div className="flex items-center justify-between">
-                      <div className="text-xs font-bold text-slate-400 uppercase">
+                      <div className={`text-xs font-bold ${textMuted} uppercase`}>
                         {editingAbility ? `Edit: ${editingAbility.name}` : 'Quick Add Ability'}
                       </div>
                       {status && <div className="text-[10px] text-green-300">{status}</div>}
                     </div>
                     <input
-                      className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
+                      className={`w-full ${theme === 'light' ? 'bg-white border-gray-300 text-gray-900' : 'bg-slate-900 border-slate-700 text-white'} border rounded px-2 py-1 text-sm`}
                       placeholder="Name (slug auto-generated)"
                       value={newAbility.name}
                       onChange={(e) => setNewAbility({ ...newAbility, name: e.target.value })}
                     />
                     <input
-                      className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
+                      className={`w-full ${theme === 'light' ? 'bg-white border-gray-300 text-gray-900' : 'bg-slate-900 border-slate-700 text-white'} border rounded px-2 py-1 text-sm`}
                       placeholder="Category (optional)"
                       value={newAbility.category}
                       onChange={(e) => setNewAbility({ ...newAbility, category: e.target.value })}
                     />
                     <textarea
-                      className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
+                      className={`w-full ${theme === 'light' ? 'bg-white border-gray-300 text-gray-900' : 'bg-slate-900 border-slate-700 text-white'} border rounded px-2 py-1 text-sm`}
                       placeholder="Description"
                       value={newAbility.description}
                       onChange={(e) => setNewAbility({ ...newAbility, description: e.target.value })}
                     />
                     <div className="grid grid-cols-2 gap-2 text-sm">
-                      <label className="flex flex-col gap-1 text-slate-400">
-                        <span className="text-[10px] uppercase text-slate-500">Max Level</span>
+                      <label className={`flex flex-col gap-1 ${textMuted}`}>
+                        <span className={`text-[10px] uppercase ${textMuted}`}>Max Level</span>
                         <input
                           type="number"
                           min={1}
-                          className="bg-slate-900 border border-slate-700 rounded px-2 py-1"
+                          className={`${theme === 'light' ? 'bg-white border-gray-300 text-gray-900' : 'bg-slate-900 border-slate-700 text-white'} border rounded px-2 py-1`}
                           value={newAbility.maxLevel}
                           onChange={(e) => setNewAbility({ ...newAbility, maxLevel: Number(e.target.value) })}
                         />
                       </label>
-                      <label className="flex flex-col gap-1 text-slate-400">
-                        <span className="text-[10px] uppercase text-slate-500">Energy (L1)</span>
+                      <label className={`flex flex-col gap-1 ${textMuted}`}>
+                        <span className={`text-[10px] uppercase ${textMuted}`}>Energy (L1)</span>
                         <input
-                          className="bg-slate-900 border border-slate-700 rounded px-2 py-1"
+                          className={`${theme === 'light' ? 'bg-white border-gray-300 text-gray-900' : 'bg-slate-900 border-slate-700 text-white'} border rounded px-2 py-1`}
                           value={newAbility.tiers[0].energyCost}
                           onChange={(e) => updateTierField(0, 'energyCost', e.target.value)}
                         />
                       </label>
-                      <label className="flex flex-col gap-1 text-slate-400">
-                        <span className="text-[10px] uppercase text-slate-500">Duration (L1)</span>
+                      <label className={`flex flex-col gap-1 ${textMuted}`}>
+                        <span className={`text-[10px] uppercase ${textMuted}`}>Duration (L1)</span>
                         <input
-                          className="bg-slate-900 border border-slate-700 rounded px-2 py-1"
+                          className={`${theme === 'light' ? 'bg-white border-gray-300 text-gray-900' : 'bg-slate-900 border-slate-700 text-white'} border rounded px-2 py-1`}
                           value={newAbility.tiers[0].duration}
                           onChange={(e) => updateTierField(0, 'duration', e.target.value)}
                         />
                       </label>
-                      <label className="flex flex-col gap-1 text-slate-400">
-                        <span className="text-[10px] uppercase text-slate-500">Cooldown (L1)</span>
+                      <label className={`flex flex-col gap-1 ${textMuted}`}>
+                        <span className={`text-[10px] uppercase ${textMuted}`}>Cooldown (L1)</span>
                         <input
-                          className="bg-slate-900 border border-slate-700 rounded px-2 py-1"
+                          className={`${theme === 'light' ? 'bg-white border-gray-300 text-gray-900' : 'bg-slate-900 border-slate-700 text-white'} border rounded px-2 py-1`}
                           value={newAbility.tiers[0].cooldown}
                           onChange={(e) => updateTierField(0, 'cooldown', e.target.value)}
                         />
                       </label>
                     </div>
                     <textarea
-                      className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
+                      className={`w-full ${theme === 'light' ? 'bg-white border-gray-300 text-gray-900' : 'bg-slate-900 border-slate-700 text-white'} border rounded px-2 py-1 text-sm`}
                       placeholder="Effect description (L1)"
                       value={newAbility.tiers[0].effectDescription}
                       onChange={(e) => updateTierField(0, 'effectDescription', e.target.value)}
@@ -501,11 +522,11 @@ export default function AbilitiesPage() {
 
                 {/* Ability Index */}
                 <div className="flex-1 overflow-y-auto">
-                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 sticky top-0 bg-slate-900/90 py-1">
+                    <h4 className={`text-xs font-bold ${textMuted} uppercase tracking-widest mb-2 sticky top-0 ${bgPanel}/90 py-1`}>
                       All Abilities ({filteredSections.reduce((sum, s) => sum + s.abilities.length, 0)})
                     </h4>
                     <ul className="space-y-0.5 text-sm">
-                        {filteredSections.flatMap((section) => 
+                        {filteredSections.flatMap((section) =>
                           section.abilities.map((ability) => (
                             <li key={ability.id}>
                                 <button
@@ -513,7 +534,7 @@ export default function AbilitiesPage() {
                                       const el = document.getElementById(`ability-${ability.id}`);
                                       el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                                     }}
-                                    className="w-full text-left px-2 py-1 rounded truncate transition-colors text-slate-400 hover:text-nexus-accent hover:bg-slate-800/50 text-xs"
+                                    className={`w-full text-left px-2 py-1 rounded truncate transition-colors ${textMuted} hover:text-nexus-accent ${theme === 'light' ? 'hover:bg-gray-100' : 'hover:bg-slate-800/50'} text-xs`}
                                     title={ability.name}
                                 >
                                     {ability.name}
@@ -526,7 +547,7 @@ export default function AbilitiesPage() {
             </div>
 
             {/* Results Grid (Right) */}
-            <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-slate-950">
+            <div className={`flex-1 overflow-y-auto p-4 md:p-8 ${bgPanel}/80`}>
                 {loading ? (
                     <div className="h-full flex flex-col items-center justify-center text-slate-600">
                         <Loader2 size={48} className="mb-4 animate-spin text-nexus-accent" />
@@ -563,15 +584,15 @@ export default function AbilitiesPage() {
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {section.abilities.map(ability => (
-                                        <div key={ability.id} id={`ability-${ability.id}`} className="bg-slate-900 border border-slate-800 rounded-xl p-5 hover:border-slate-600 transition-colors group scroll-mt-20">
+                                        <div key={ability.id} id={`ability-${ability.id}`} className={`${bgCard} border rounded-xl p-5 hover:${borderSecondary} transition-colors group scroll-mt-20`}>
                                             <div className="flex justify-between items-start mb-2">
-                                                <h3 className="font-bold text-lg text-slate-200 group-hover:text-white transition-colors">{ability.name}</h3>
+                                                <h3 className={`font-bold text-lg ${textSecondary} group-hover:${textPrimary} transition-colors`}>{ability.name}</h3>
                                                 <div className="flex items-center gap-2">
-                                                  <span className="text-xs bg-slate-800 text-slate-500 px-2 py-1 rounded font-mono">Max Lvl {ability.maxLevel}</span>
+                                                  <span className={`text-xs ${theme === 'light' ? 'bg-gray-100 text-gray-600' : 'bg-slate-800 text-slate-500'} px-2 py-1 rounded font-mono`}>Max Lvl {ability.maxLevel}</span>
                                                   {isAdmin && (
                                                     <button
                                                       onClick={() => handleEdit(ability)}
-                                                      className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-nexus-accent transition-colors"
+                                                      className={`p-1.5 rounded ${theme === 'light' ? 'bg-gray-100 hover:bg-gray-200 text-gray-600' : 'bg-slate-800 hover:bg-slate-700 text-slate-400'} hover:text-nexus-accent transition-colors`}
                                                       title="Edit ability"
                                                     >
                                                       <Edit size={14} />
@@ -579,11 +600,11 @@ export default function AbilitiesPage() {
                                                   )}
                                                 </div>
                                             </div>
-                                            
-                                            <p className="text-sm text-slate-400 mb-4 h-10 line-clamp-2">{ability.description || 'No description available.'}</p>
-                                            
+
+                                            <p className={`text-sm ${textMuted} mb-4 h-10 line-clamp-2`}>{ability.description || 'No description available.'}</p>
+
                                             {/* Stats Preview */}
-                                            <div className="bg-slate-950 rounded-lg p-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                                            <div className={`${theme === 'light' ? 'bg-gray-100' : 'bg-slate-950'} rounded-lg p-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs`}>
                                                 {/* Level 1 Stats */}
                                                 {ability.tiers && ability.tiers[0] && (
                                                   <>
@@ -633,11 +654,11 @@ export default function AbilitiesPage() {
         </div>
 
         {/* Footer with Social Icons */}
-        <footer className="bg-slate-900 border-t border-slate-700 py-8">
+        <footer className={`${bgPanel} border-t ${borderPrimary} py-8`}>
           <div className="mx-auto max-w-5xl px-4">
             <div className="flex flex-col items-center gap-4">
               <SocialIcons variant="footer" showCopyright={false} />
-              <p className="text-sm text-slate-500">
+              <p className={`text-sm ${textMuted}`}>
                 © {new Date().getFullYear()} All rights reserved.
               </p>
             </div>

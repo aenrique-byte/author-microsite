@@ -10,6 +10,8 @@ import NewsletterCTA from "../../components/NewsletterCTA";
 import { ApiGalleryCards, type ApiGalleryCardItem } from "./components/ApiGalleryCards";
 import { analytics } from "../../lib/analytics";
 import { useAuth } from "../../contexts/AuthContext";
+// MOCK DATA: Import mock data for fallback when database is offline
+import mockData from "../../data/mock-data.json";
 
 const PAGE_SIZE = 20;
 
@@ -62,7 +64,24 @@ function CollectionsList() {
         }
       } catch (e: any) {
         console.error(e);
-        setError("Unable to load collections. Ensure the new PHP API is uploaded and database configured.");
+        // MOCK DATA: Fallback to mock data when database is offline
+        console.log('Database offline, using mock gallery collections data');
+        const mock = mockData.galleries;
+        setAuthorProfile(mock.author_profile);
+        setSocials(mock.socials as Socials);
+        const items: CollectionCardItem[] = mock.collections.map((c: any) => ({
+          id: Number(c.id),
+          slug: String(c.slug),
+          title: String(c.title || 'Untitled'),
+          description: c.description || undefined,
+          themes: Array.isArray(c.themes) ? c.themes : [],
+          status: (c.status === 'draft' || c.status === 'archived') ? c.status : 'published',
+          cover_hero: c.cover_hero || null,
+          sort_order: typeof c.sort_order === 'number' ? c.sort_order : 0,
+          gallery_count: Number(c.gallery_count || 0)
+        }));
+        setCollections(items);
+        setError(null);
       }
     }
     loadBoot();
@@ -234,9 +253,57 @@ function CollectionGalleries() {
             });
           }
         }
+        // Check if galleries request succeeded
+        let galleriesSucceeded = false;
         if (galRes.status === 'fulfilled' && galRes.value.ok) {
           const gj = await galRes.value.json();
-          const items: ApiGalleryCardItem[] = (gj.galleries || []).map((g: any) => ({
+          if (gj.galleries && gj.galleries.length > 0) {
+            const items: ApiGalleryCardItem[] = (gj.galleries || []).map((g: any) => ({
+              id: Number(g.id) || 0,
+              slug: String(g.slug || ''),
+              title: String(g.title || 'Untitled'),
+              description: g.description ? String(g.description) : undefined,
+              rating: (g.rating === "X" ? "X" : "PG") as "PG" | "X",
+              image_count: Number(g.image_count) || 0,
+              like_count: Number(g.like_count) || 0,
+              comment_count: Number(g.comment_count) || 0,
+              hero_thumb: g.hero_thumb ? String(g.hero_thumb) : null,
+              hero_width: g.hero_width ? Number(g.hero_width) : null,
+              hero_height: g.hero_height ? Number(g.hero_height) : null,
+            }));
+            setGalleries(items);
+            galleriesSucceeded = true;
+          }
+        }
+        
+        // MOCK DATA: If API failed or returned empty, use mock data
+        if (!galleriesSucceeded) {
+          console.log('Database offline or empty, using mock collection galleries data');
+          const mock = mockData.galleries;
+          if (!authorProfile) setAuthorProfile(mock.author_profile);
+          if (!socials) setSocials(mock.socials as Socials);
+          
+          // Find collection by slug if not already set
+          if (!collection) {
+            const mockCollection = mock.collections.find((c: any) => c.slug === cslug);
+            if (mockCollection) {
+              setCollection({
+                id: Number(mockCollection.id),
+                slug: String(mockCollection.slug),
+                title: String(mockCollection.title || 'Untitled'),
+                description: mockCollection.description || undefined,
+                themes: Array.isArray(mockCollection.themes) ? mockCollection.themes : [],
+                status: (mockCollection.status === 'draft' || mockCollection.status === 'archived') ? mockCollection.status : 'published',
+                cover_hero: mockCollection.cover_hero || null,
+                sort_order: typeof mockCollection.sort_order === 'number' ? mockCollection.sort_order : 0,
+                gallery_count: Number(mockCollection.gallery_count || 0)
+              });
+            }
+          }
+          
+          // Find galleries in this collection
+          const collectionGalleries = mock.galleries.filter((g: any) => g.collection_slug === cslug);
+          const items: ApiGalleryCardItem[] = collectionGalleries.map((g: any) => ({
             id: Number(g.id) || 0,
             slug: String(g.slug || ''),
             title: String(g.title || 'Untitled'),
@@ -250,13 +317,49 @@ function CollectionGalleries() {
             hero_height: g.hero_height ? Number(g.hero_height) : null,
           }));
           setGalleries(items);
-        } else {
-          setGalleries([]);
         }
         setError(null);
       } catch (e: any) {
         console.error(e);
-        setError("Unable to load collection.");
+        // MOCK DATA: Fallback to mock data when database is offline
+        console.log('Database offline (error), using mock collection galleries data');
+        const mock = mockData.galleries;
+        setAuthorProfile(mock.author_profile);
+        setSocials(mock.socials as Socials);
+        
+        // Find collection by slug
+        const mockCollection = mock.collections.find((c: any) => c.slug === cslug);
+        if (mockCollection) {
+          setCollection({
+            id: Number(mockCollection.id),
+            slug: String(mockCollection.slug),
+            title: String(mockCollection.title || 'Untitled'),
+            description: mockCollection.description || undefined,
+            themes: Array.isArray(mockCollection.themes) ? mockCollection.themes : [],
+            status: (mockCollection.status === 'draft' || mockCollection.status === 'archived') ? mockCollection.status : 'published',
+            cover_hero: mockCollection.cover_hero || null,
+            sort_order: typeof mockCollection.sort_order === 'number' ? mockCollection.sort_order : 0,
+            gallery_count: Number(mockCollection.gallery_count || 0)
+          });
+        }
+        
+        // Find galleries in this collection
+        const collectionGalleries = mock.galleries.filter((g: any) => g.collection_slug === cslug);
+        const items: ApiGalleryCardItem[] = collectionGalleries.map((g: any) => ({
+          id: Number(g.id) || 0,
+          slug: String(g.slug || ''),
+          title: String(g.title || 'Untitled'),
+          description: g.description ? String(g.description) : undefined,
+          rating: (g.rating === "X" ? "X" : "PG") as "PG" | "X",
+          image_count: Number(g.image_count) || 0,
+          like_count: Number(g.like_count) || 0,
+          comment_count: Number(g.comment_count) || 0,
+          hero_thumb: g.hero_thumb ? String(g.hero_thumb) : null,
+          hero_width: g.hero_width ? Number(g.hero_width) : null,
+          hero_height: g.hero_height ? Number(g.hero_height) : null,
+        }));
+        setGalleries(items);
+        setError(null);
       }
     }
     if (cslug) loadBoot();
@@ -425,7 +528,26 @@ function GalleryList() {
         }
       } catch (e: any) {
         console.error(e);
-        setError("Unable to load galleries. Ensure the new PHP API is uploaded and database configured.");
+        // MOCK DATA: Fallback to mock data when database is offline
+        console.log('Database offline, using mock all galleries data');
+        const mock = mockData.galleries;
+        setAuthorProfile(mock.author_profile);
+        setSocials(mock.socials as Socials);
+        const items = mock.galleries.map((g: any) => ({
+          id: Number(g.id) || 0,
+          slug: String(g.slug || ''),
+          title: String(g.title || 'Untitled'),
+          description: g.description ? String(g.description) : undefined,
+          rating: (g.rating === "X" ? "X" : "PG") as "PG" | "X",
+          image_count: Number(g.image_count) || 0,
+          like_count: Number(g.like_count) || 0,
+          comment_count: Number(g.comment_count) || 0,
+          hero_thumb: g.hero_thumb ? String(g.hero_thumb) : null,
+          hero_width: g.hero_width ? Number(g.hero_width) : null,
+          hero_height: g.hero_height ? Number(g.hero_height) : null,
+        })) as ApiGalleryCardItem[];
+        setGalleries(items);
+        setError(null);
       }
     }
     loadBoot();
@@ -619,7 +741,26 @@ function GalleryView() {
         }
       } catch (e: any) {
         console.error(e);
-        setError("Unable to load galleries. Ensure the new PHP API is uploaded and database configured.");
+        // MOCK DATA: Fallback to mock data when database is offline
+        console.log('Database offline, using mock gallery view data');
+        const mock = mockData.galleries;
+        setAuthorProfile(mock.author_profile);
+        setSocials(mock.socials as Socials);
+        const items = mock.galleries.map((g: any) => ({
+          id: Number(g.id) || 0,
+          slug: String(g.slug || ''),
+          title: String(g.title || 'Untitled'),
+          description: g.description ? String(g.description) : undefined,
+          rating: (g.rating === "X" ? "X" : "PG") as "PG" | "X",
+          image_count: Number(g.image_count) || 0,
+          like_count: Number(g.like_count) || 0,
+          comment_count: Number(g.comment_count) || 0,
+          hero_thumb: g.hero_thumb ? String(g.hero_thumb) : null,
+          hero_width: g.hero_width ? Number(g.hero_width) : null,
+          hero_height: g.hero_height ? Number(g.hero_height) : null,
+        })) as ApiGalleryCardItem[];
+        setGalleries(items);
+        setError(null);
       }
     }
     loadBoot();
@@ -684,7 +825,29 @@ function GalleryView() {
         setError(null);
       } catch (e: any) {
         console.error(e);
-        setError("Failed to load images for this gallery.");
+        // MOCK DATA: Fallback to mock images when database is offline
+        console.log('Database offline, using mock gallery images data');
+        const mock = mockData.galleries;
+        const mockImages = (mock.images as Record<string, any[]>)[slug || ''] || [];
+        const mapped: ImageMeta[] = mockImages.map((im: any) => ({
+          id: typeof im.id === "number" ? im.id : undefined,
+          src: im.src,
+          thumb: im.thumb,
+          title: im.title ?? undefined,
+          prompt: im.prompt ?? undefined,
+          parameters: im.parameters ?? undefined,
+          checkpoint: im.checkpoint ?? null,
+          loras: Array.isArray(im.loras) ? im.loras : [],
+          width: typeof im.width === "number" ? im.width : undefined,
+          height: typeof im.height === "number" ? im.height : undefined,
+          media_type: im.media_type ?? "image",
+          mime_type: im.mime_type ?? null,
+          poster: im.poster ?? null,
+        }));
+        setImages(mapped);
+        setImgTotal(mapped.length);
+        setImgHasMore(false);
+        setError(null);
       } finally {
         setImgLoading(false);
         fetchingRef.current = false;

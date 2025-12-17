@@ -1,8 +1,9 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Shield, Swords, Zap, BookOpen, Package, ScrollText, User } from 'lucide-react';
+import { useTheme } from '../../storytime/contexts/ThemeContext';
 
 const NAV_ITEMS = [
-  { to: '/litrpg', label: 'Status', icon: User, color: 'hover:text-nexus-accent' },
+  { to: '/litrpg', label: 'Character', icon: User, color: 'hover:text-nexus-accent', exact: true },
   { to: '/litrpg/attributes', label: 'Attributes', icon: Shield, color: 'hover:text-nexus-accent' },
   { to: '/litrpg/classes', label: 'Classes', icon: Swords, color: 'hover:text-orange-400' },
   { to: '/litrpg/abilities', label: 'Abilities', icon: Zap, color: 'hover:text-yellow-400' },
@@ -13,50 +14,48 @@ const NAV_ITEMS = [
 
 export default function LitrpgNav() {
   const location = useLocation();
+  const { theme } = useTheme();
   
-  const isActive = (path: string) => {
-    if (path === '/litrpg') {
-      return location.pathname === '/litrpg';
+  const isActive = (path: string, exact?: boolean) => {
+    if (exact) {
+      return location.pathname === path;
     }
     return location.pathname.startsWith(path);
   };
 
-  return (
-    <header className="bg-slate-900/80 backdrop-blur-md border-b border-slate-700 sticky top-0 z-30">
-      <div className="max-w-5xl mx-auto px-4">
-        <div className="h-14 flex items-center justify-between">
-          {/* Logo / Title */}
-          <Link to="/litrpg" className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-nexus-accent rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.5)]">
-              <span className="font-bold text-slate-900 text-lg">D</span>
-            </div>
-            <span className="font-mono font-bold tracking-widest text-sm hidden md:block">DESTINY AMONG THE STARS</span>
-          </Link>
+  // Theme-aware styles
+  const bgHeader = theme === 'light' ? 'bg-white/80' : 'bg-slate-900/80';
+  const borderColor = theme === 'light' ? 'border-gray-200' : 'border-slate-700';
+  const textInactive = theme === 'light' ? 'text-gray-500' : 'text-slate-400';
+  const bgActive = theme === 'light' ? 'bg-gray-100 border-gray-300' : 'bg-slate-800 border-slate-600';
+  const bgHover = theme === 'light' ? 'hover:bg-gray-100' : 'hover:bg-slate-800/50';
 
-          {/* Navigation Links */}
-          <nav className="flex items-center gap-1 sm:gap-2">
-            {NAV_ITEMS.map(item => {
-              const Icon = item.icon;
-              const active = isActive(item.to);
-              
-              return (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  className={`flex items-center gap-1.5 px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg transition-all text-sm font-medium border ${
-                    active 
-                      ? 'bg-slate-800 border-slate-600 text-nexus-accent' 
-                      : `text-slate-400 ${item.color} border-transparent hover:bg-slate-800/50 hover:border-slate-700`
-                  }`}
-                >
-                  <Icon size={16} />
-                  <span className="hidden lg:inline">{item.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
+  return (
+    <nav className={`${bgHeader} backdrop-blur-md border-b ${borderColor} sticky top-0 z-30`}>
+      <div className="max-w-5xl mx-auto px-4">
+        <div className="h-10 flex items-center justify-center gap-1">
+          {NAV_ITEMS.map(item => {
+            const Icon = item.icon;
+            const active = isActive(item.to, item.exact);
+            
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                title={item.label}
+                className={`flex items-center gap-1 px-2 py-1 rounded transition-all text-xs font-medium border ${
+                  active 
+                    ? `${bgActive} text-nexus-accent` 
+                    : `${textInactive} ${item.color} border-transparent ${bgHover}`
+                }`}
+              >
+                <Icon size={14} />
+                <span className="hidden sm:inline">{item.label}</span>
+              </Link>
+            );
+          })}
         </div>
       </div>
-    </header>
+    </nav>
   );
 }

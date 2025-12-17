@@ -2,6 +2,8 @@
 // This replaces the file-based story.js with database-driven functionality
 
 import { API_BASE } from '../../../lib/apiBase';
+// MOCK DATA - Import mock data for offline development
+import mockData from '../../../data/mock-data.json';
 
 const API_BASE_URL = API_BASE;
 
@@ -111,7 +113,7 @@ export async function getAllStories(): Promise<Story[]> {
   try {
     const response = await fetch(`${API_BASE_URL}/stories/list.php?status=published`);
     const data = await response.json();
-    
+
     if (data.success) {
       // Transform stories to match expected format
       const transformedStories: Story[] = (data.stories || []).map((story: any) => ({
@@ -140,8 +142,21 @@ export async function getAllStories(): Promise<Story[]> {
       return [];
     }
   } catch (error) {
-    console.error('Error fetching stories:', error);
-    return [];
+    // MOCK DATA - Fallback to mock data when database is offline
+    console.log('Database offline, using mock storytime data');
+    const mockStories = mockData.storytime.stories as any[];
+    return mockStories.map((story: any) => ({
+      id: story.slug,
+      title: story.title,
+      blurb: story.blurb,
+      cover: story.cover,
+      startIndex: 1,
+      status: story.status || 'published',
+      genres: story.genres || [],
+      chapter_count: story.chapter_count || 0,
+      total_likes: story.total_likes || 0,
+      total_words: 0
+    }));
   }
 }
 
@@ -157,7 +172,7 @@ export async function getStory(storySlug: string): Promise<Story | null> {
   try {
     const response = await fetch(`${API_BASE_URL}/stories/list.php?slug=${encodeURIComponent(storySlug)}`);
     const data = await response.json();
-    
+
     if (data.success && data.stories && data.stories.length > 0) {
       const story = data.stories[0];
       // Transform to match expected format
@@ -183,14 +198,36 @@ export async function getStory(storySlug: string): Promise<Story | null> {
         total_likes: story.total_likes || 0,
         total_words: story.total_words || 0
       };
-      
+
       storiesCache.set(storySlug, transformedStory);
       return transformedStory;
     } else {
       return null;
     }
   } catch (error) {
-    console.error('Error fetching story:', error);
+    // MOCK DATA - Fallback to mock data when database is offline
+    console.log('Database offline, using mock storytime data');
+    const mockStories = mockData.storytime.stories as any[];
+    const mockStory = mockStories.find((s: any) => s.slug === storySlug);
+
+    if (mockStory) {
+      const transformedStory: Story = {
+        id: mockStory.slug,
+        title: mockStory.title,
+        blurb: mockStory.blurb,
+        cover: mockStory.cover,
+        startIndex: 1,
+        status: mockStory.status || 'published',
+        genres: mockStory.genres || [],
+        chapter_count: mockStory.chapter_count || 0,
+        total_likes: mockStory.total_likes || 0,
+        total_words: 0
+      };
+
+      storiesCache.set(storySlug, transformedStory);
+      return transformedStory;
+    }
+
     return null;
   }
 }
@@ -200,7 +237,7 @@ export async function getStory(storySlug: string): Promise<Story | null> {
  */
 export async function loadChapterList(story: Story, _onUpdate: ((chapters: Chapter[]) => void) | null = null): Promise<Chapter[]> {
   const cacheKey = story.id;
-  
+
   // Check cache first
   if (chaptersCache.has(cacheKey)) {
     return chaptersCache.get(cacheKey)!;
@@ -209,7 +246,7 @@ export async function loadChapterList(story: Story, _onUpdate: ((chapters: Chapt
   try {
     const response = await fetch(`${API_BASE_URL}/chapters/list.php?story_slug=${encodeURIComponent(story.id)}`);
     const data = await response.json();
-    
+
     if (data.success) {
       const chapters: Chapter[] = (data.chapters || []).map((chapter: any) => ({
         num: chapter.chapter_number,
@@ -219,7 +256,7 @@ export async function loadChapterList(story: Story, _onUpdate: ((chapters: Chapt
         like_count: chapter.like_count || 0,
         comment_count: chapter.comment_count || 0
       }));
-      
+
       chaptersCache.set(cacheKey, chapters);
       return chapters;
     } else {
@@ -227,7 +264,23 @@ export async function loadChapterList(story: Story, _onUpdate: ((chapters: Chapt
       return [];
     }
   } catch (error) {
-    console.error('Error fetching chapters:', error);
+    // MOCK DATA - Fallback to mock data when database is offline
+    console.log('Database offline, using mock storytime data');
+    const mockChapters = (mockData.storytime.chapters as any)[story.id];
+
+    if (mockChapters && Array.isArray(mockChapters)) {
+      const chapters: Chapter[] = mockChapters.map((chapter: any) => ({
+        num: chapter.num,
+        title: chapter.title,
+        status: 'published',
+        like_count: chapter.like_count || 0,
+        comment_count: chapter.comment_count || 0
+      }));
+
+      chaptersCache.set(cacheKey, chapters);
+      return chapters;
+    }
+
     return [];
   }
 }
@@ -256,7 +309,7 @@ export function clearChapterCache(storyId: string): void {
  */
 export async function getChapterContent(story: Story, chapterId: string): Promise<string> {
   const cacheKey = `${story.id}-${chapterId}`;
-  
+
   // Check cache first
   if (chapterContentCache.has(cacheKey)) {
     return chapterContentCache.get(cacheKey)!;
@@ -265,19 +318,32 @@ export async function getChapterContent(story: Story, chapterId: string): Promis
   try {
     const response = await fetch(`${API_BASE_URL}/chapters/list.php?story_slug=${encodeURIComponent(story.id)}&chapter_number=${chapterId}`);
     const data = await response.json();
-    
+
     if (data.success && data.chapters && data.chapters.length > 0) {
       const chapter = data.chapters[0];
       const content = chapter.content || '';
-      
+
       chapterContentCache.set(cacheKey, content);
       return content;
     } else {
       throw new Error('Chapter not found');
     }
   } catch (error) {
-    console.error('Error fetching chapter content:', error);
-    throw error;
+    // MOCK DATA - Fallback to mock data when database is offline
+    console.log('Database offline, using mock storytime data');
+    const mockChapters = (mockData.storytime.chapters as any)[story.id];
+
+    if (mockChapters && Array.isArray(mockChapters)) {
+      const chapterNum = parseInt(chapterId, 10);
+      const mockChapter = mockChapters.find((ch: any) => ch.num === chapterNum);
+
+      if (mockChapter && mockChapter.content) {
+        chapterContentCache.set(cacheKey, mockChapter.content);
+        return mockChapter.content;
+      }
+    }
+
+    throw new Error('Chapter not found');
   }
 }
 

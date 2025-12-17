@@ -1,11 +1,13 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useTheme } from '../features/storytime/contexts/ThemeContext'
 import ThemeToggle from './ThemeToggle'
 import SocialIcons from './SocialIcons'
 import NewsletterCTA from './NewsletterCTA'
-import PatreonCTA from './PatreonCTA'
 import { getRandomBackground } from '../utils/backgroundUtils'
+import { X, ZoomIn } from 'lucide-react'
+// MOCK DATA - Import mock data for offline development
+import mockData from '../data/mock-data.json'
 
 // Types
 interface HomepageData {
@@ -89,19 +91,38 @@ export default function UniversePortalHomepage() {
   const { theme } = useTheme()
   const [data, setData] = useState<HomepageData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
+  const [lightboxStory, setLightboxStory] = useState<Story | null>(null)
+
+  // Lightbox handlers
+  const openLightbox = useCallback((story: Story) => {
+    setLightboxStory(story)
+    document.body.style.overflow = 'hidden'
+  }, [])
+
+  const closeLightbox = useCallback(() => {
+    setLightboxStory(null)
+    document.body.style.overflow = ''
+  }, [])
 
   useEffect(() => {
+    // MOCK DATA - Fallback to mock data when database is offline
     fetch('/api/homepage/get.php')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('API unavailable')
+        return res.json()
+      })
       .then(result => {
         if (result.success) {
           setData(result)
         } else {
-          setError(true)
+          console.log('Database offline, using mock data')
+          setData(mockData.homepage as HomepageData)
         }
       })
-      .catch(() => setError(true))
+      .catch(() => {
+        console.log('Database offline, using mock data')
+        setData(mockData.homepage as HomepageData)
+      })
       .finally(() => setLoading(false))
   }, [])
 
@@ -121,7 +142,7 @@ export default function UniversePortalHomepage() {
     )
   }
 
-  if (error || !data) {
+  if (!data) {
     return (
       <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
         <div className="text-white text-lg">Failed to load homepage data</div>
@@ -165,6 +186,15 @@ export default function UniversePortalHomepage() {
       {/* Dark overlay on top of background - z-[1] */}
       <div className={`fixed inset-0 z-[1] ${overlayClass} pointer-events-none`} />
 
+      {/* Cover Art Lightbox Modal */}
+      {lightboxStory && (
+        <CoverLightbox 
+          story={lightboxStory} 
+          theme={theme} 
+          onClose={closeLightbox} 
+        />
+      )}
+
       {/* Page shell - z-10 */}
       <div className="relative z-10 max-w-6xl mx-auto px-4 pb-24">
         {/* NAVBAR */}
@@ -204,7 +234,7 @@ export default function UniversePortalHomepage() {
                 rel="noopener noreferrer"
                 className="rounded-full brand-bg px-4 py-1.5 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
               >
-                {settings.newsletter_cta_text || 'Newsletter'}
+                Subscribe
               </a>
             )}
           </nav>
@@ -264,31 +294,19 @@ export default function UniversePortalHomepage() {
 
           {/* Right: featured story card */}
         {settings.show_featured_story && featured_story && (
-          <FeaturedStoryCard story={featured_story} theme={theme} cardBg={cardBg} textSecondary={textSecondary} />
+          <FeaturedStoryCard 
+            story={featured_story} 
+            theme={theme} 
+            cardBg={cardBg} 
+            textSecondary={textSecondary} 
+            onImageClick={() => openLightbox(featured_story)}
+          />
         )}
       </section>
 
-        {/* Newsletter + Patreon CTA Section */}
-        <section className={`mt-14 md:mt-16 ${cardBg} border rounded-3xl p-8 md:p-10 text-center`}>
-          <h2 className={`text-3xl font-bold ${textPrimary} mb-3`}>
-            📬 Stay Updated
-          </h2>
-          <p className={`text-lg ${textSecondary} mb-6 max-w-2xl mx-auto`}>
-            Get notified when I publish new chapters, blog posts, and galleries. Or support my work on Patreon for early access and exclusive content.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <NewsletterCTA
-              variant="button"
-              source="homepage"
-              buttonText="Join Mailing List"
-            />
-            <PatreonCTA variant="button" />
-          </div>
-        </section>
-
         {/* STORY GRID */}
         {stories.length > 0 && (
-          <section className="mt-16 md:mt-20">
+          <section className="mt-12 md:mt-14">
             <div className="flex items-center justify-between mb-6">
               <h2 className={`text-2xl md:text-3xl font-bold ${textPrimary}`}>
                 Explore the universes
@@ -300,18 +318,31 @@ export default function UniversePortalHomepage() {
 
             <div className="grid gap-6 md:grid-cols-2">
               {stories.slice(0, 4).map((story) => (
-                <StoryCard key={story.id} story={story} theme={theme} cardBg={cardBg} textSecondary={textSecondary} />
+                <StoryCard 
+                  key={story.id} 
+                  story={story} 
+                  theme={theme} 
+                  cardBg={cardBg} 
+                  textSecondary={textSecondary} 
+                  onImageClick={() => openLightbox(story)}
+                />
               ))}
             </div>
           </section>
         )}
 
-        {/* ACTIVITY FEED + TOOLS */}
+        {/* ACTIVITY FEED + TOOLS + CTA (merged) */}
         {(settings.show_activity_feed || settings.show_tools_section) && (
-          <section className="mt-16 md:mt-20 grid gap-10 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-            {/* Activity feed */}
+          <section className="mt-10 md:mt-12 grid gap-8 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+            {/* Activity feed with integrated CTA */}
             {settings.show_activity_feed && activity.length > 0 && (
-              <ActivityFeed activity={activity} theme={theme} cardBg={cardBg} textSecondary={textSecondary} textMuted={textMuted} />
+              <ActivityFeedWithCTA 
+                activity={activity} 
+                theme={theme} 
+                cardBg={cardBg} 
+                textSecondary={textSecondary} 
+                textMuted={textMuted} 
+              />
             )}
 
             {/* Tools */}
@@ -322,7 +353,7 @@ export default function UniversePortalHomepage() {
         )}
 
         {/* FOOTER - Using shared SocialIcons component */}
-        <footer className={`mt-16 border-t ${theme === 'light' ? 'border-gray-200' : 'border-white/10'} pt-6`}>
+        <footer className={`mt-12 border-t ${theme === 'light' ? 'border-gray-200' : 'border-white/10'} pt-6`}>
           <SocialIcons variant="footer" showCopyright={false} />
           <div className={`text-center text-xs pb-4 ${textMuted}`}>
             © {new Date().getFullYear()} {profile.name}. All rights reserved.
@@ -344,7 +375,7 @@ export default function UniversePortalHomepage() {
 }
 
 // Sub-components
-function FeaturedStoryCard({ story, theme, cardBg, textSecondary }: { story: Story; theme: string; cardBg: string; textSecondary: string }) {
+function FeaturedStoryCard({ story, theme, cardBg, textSecondary, onImageClick }: { story: Story; theme: string; cardBg: string; textSecondary: string; onImageClick?: () => void }) {
   const textPrimary = theme === 'light' ? 'text-gray-900' : 'text-white'
 
   return (
@@ -354,7 +385,21 @@ function FeaturedStoryCard({ story, theme, cardBg, textSecondary }: { story: Sto
       </div>
       <div className="flex flex-col gap-4 sm:flex-row">
         {story.cover_image ? (
-          <img src={story.cover_image} alt={story.title} className="h-40 w-28 flex-shrink-0 rounded-xl object-cover shadow-lg" />
+          <button 
+            onClick={onImageClick}
+            className="relative h-40 w-28 flex-shrink-0 rounded-xl overflow-hidden cursor-zoom-in group/img focus:outline-none focus:ring-2 focus:ring-offset-2 brand-border shadow-lg"
+            aria-label={`View ${story.title} cover art`}
+          >
+            <img 
+              src={story.cover_image} 
+              alt={story.title} 
+              className="h-full w-full object-cover group-hover/img:scale-[1.03] transition-transform duration-200" 
+            />
+            {/* Hover overlay with zoom icon */}
+            <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/30 transition-colors flex items-center justify-center">
+              <ZoomIn className="h-5 w-5 text-white opacity-0 group-hover/img:opacity-100 transition-opacity" />
+            </div>
+          </button>
         ) : (
           <div className="h-40 w-28 flex-shrink-0 rounded-xl bg-gradient-to-b from-emerald-400 to-sky-700 shadow-lg" />
         )}
@@ -395,14 +440,28 @@ function FeaturedStoryCard({ story, theme, cardBg, textSecondary }: { story: Sto
   )
 }
 
-function StoryCard({ story, theme, cardBg, textSecondary }: { story: Story; theme: string; cardBg: string; textSecondary: string }) {
+function StoryCard({ story, theme, cardBg, textSecondary, onImageClick }: { story: Story; theme: string; cardBg: string; textSecondary: string; onImageClick?: () => void }) {
   const textPrimary = theme === 'light' ? 'text-gray-900' : 'text-white'
 
   return (
     <article className={`group rounded-3xl ${cardBg} border p-5 sm:p-6 md:p-7 backdrop-blur-xl shadow-xl flex flex-col`}>
       <div className="flex flex-col gap-4 sm:flex-row">
         {story.cover_image ? (
-          <img src={story.cover_image} alt={story.title} className="h-32 w-24 flex-shrink-0 rounded-xl object-cover group-hover:scale-[1.02] transition-transform" />
+          <button 
+            onClick={onImageClick}
+            className="relative h-32 w-24 flex-shrink-0 rounded-xl overflow-hidden cursor-zoom-in group/img focus:outline-none focus:ring-2 focus:ring-offset-2 brand-border"
+            aria-label={`View ${story.title} cover art`}
+          >
+            <img 
+              src={story.cover_image} 
+              alt={story.title} 
+              className="h-full w-full object-cover group-hover/img:scale-[1.03] transition-transform duration-200" 
+            />
+            {/* Hover overlay with zoom icon */}
+            <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/30 transition-colors flex items-center justify-center">
+              <ZoomIn className="h-5 w-5 text-white opacity-0 group-hover/img:opacity-100 transition-opacity" />
+            </div>
+          </button>
         ) : (
           <div className="h-32 w-24 flex-shrink-0 rounded-xl bg-gradient-to-b from-slate-200/70 to-slate-800/80 group-hover:scale-[1.02] transition-transform" />
         )}
@@ -431,22 +490,23 @@ function StoryCard({ story, theme, cardBg, textSecondary }: { story: Story; them
   )
 }
 
-function ActivityFeed({ activity, theme, cardBg, textSecondary, textMuted }: { activity: ActivityItem[]; theme: string; cardBg: string; textSecondary: string; textMuted: string }) {
+// Merged Activity Feed with contextual CTA - "updates justify subscriptions"
+function ActivityFeedWithCTA({ activity, theme, cardBg, textSecondary, textMuted }: { activity: ActivityItem[]; theme: string; cardBg: string; textSecondary: string; textMuted: string }) {
   const textPrimary = theme === 'light' ? 'text-gray-900' : 'text-white'
   
   return (
     <div>
-      <h2 className={`text-2xl font-bold ${textPrimary} mb-4`}>Latest updates</h2>
-      <div className="space-y-3">
-        {activity.slice(0, 5).map((item) => (
+      <h2 className={`text-2xl font-bold ${textPrimary} mb-4`}>Latest from the worlds</h2>
+      <div className="space-y-2.5">
+        {activity.slice(0, 4).map((item) => (
           <a
             key={item.id}
             href={item.url || '#'}
             target={item.url ? '_blank' : undefined}
             rel="noopener noreferrer"
-            className={`flex items-start gap-4 rounded-2xl ${cardBg} border px-4 py-3 backdrop-blur-xl hover:opacity-90 transition-opacity`}
+            className={`flex items-start gap-3 rounded-xl ${cardBg} border px-3.5 py-2.5 backdrop-blur-xl hover:opacity-90 transition-opacity`}
           >
-            <div className={`mt-1 flex h-8 w-8 items-center justify-center rounded-full ${theme === 'light' ? 'bg-gray-200' : 'bg-white/10'} text-[0.65rem] font-semibold uppercase`}>
+            <div className={`mt-0.5 flex h-7 w-7 items-center justify-center rounded-full ${theme === 'light' ? 'bg-gray-200' : 'bg-white/10'} text-[0.6rem] font-semibold uppercase`}>
               {item.source.slice(0, 2)}
             </div>
             <div className="flex-1 text-sm">
@@ -459,11 +519,36 @@ function ActivityFeed({ activity, theme, cardBg, textSecondary, textMuted }: { a
                   </>
                 )}
               </div>
-              <div className={`${textPrimary} font-medium`}>{item.title}</div>
+              <div className={`${textPrimary} font-medium text-sm`}>{item.title}</div>
               <div className={`mt-0.5 text-xs ${textMuted}`}>{item.time_ago || timeAgo(item.published_at)}</div>
             </div>
           </a>
         ))}
+      </div>
+
+      {/* Subtle divider */}
+      <div className={`my-5 border-t ${theme === 'light' ? 'border-gray-200/60' : 'border-white/10'}`} />
+
+      {/* Contextual CTA - invitation tone */}
+      <div className={`rounded-xl ${cardBg} border p-4`}>
+        <p className={`text-sm ${textPrimary} font-medium mb-3`}>
+          Want updates when new worlds unlock?
+        </p>
+        <div className="flex flex-col sm:flex-row gap-2.5 items-start sm:items-center">
+          <NewsletterCTA
+            variant="button"
+            source="homepage-activity"
+            buttonText="Get chapter & art updates"
+          />
+          <a 
+            href="https://www.patreon.com/cw/oc_wanderer" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className={`text-sm ${textSecondary} hover:text-orange-500 transition-colors`}
+          >
+            Support on Patreon →
+          </a>
+        </div>
       </div>
     </div>
   )
@@ -499,6 +584,98 @@ function ToolsSidebar({ tools, theme, cardBg, textSecondary }: { tools: Tool[]; 
       >
         Open tools hub
       </Link>
+    </div>
+  )
+}
+
+// Cover Art Lightbox Modal
+function CoverLightbox({ story, theme, onClose }: { story: Story; theme: string; onClose: () => void }) {
+  const textPrimary = theme === 'light' ? 'text-gray-900' : 'text-white'
+  const textSecondary = theme === 'light' ? 'text-gray-700' : 'text-neutral-200'
+
+  // Close on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
+
+  return (
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="lightbox-title"
+    >
+      {/* Dark backdrop */}
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
+      
+      {/* Modal content */}
+      <div 
+        className={`relative max-w-2xl w-full ${theme === 'light' ? 'bg-white' : 'bg-neutral-900'} rounded-2xl shadow-2xl overflow-hidden`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className={`absolute top-4 right-4 z-10 p-2 rounded-full ${theme === 'light' ? 'bg-gray-100 hover:bg-gray-200' : 'bg-white/10 hover:bg-white/20'} transition-colors`}
+          aria-label="Close lightbox"
+        >
+          <X className="h-5 w-5" />
+        </button>
+
+        <div className="flex flex-col md:flex-row">
+          {/* Large cover image */}
+          <div className="md:w-1/2 flex-shrink-0">
+            {story.cover_image && (
+              <img 
+                src={story.cover_image} 
+                alt={`${story.title} cover art`}
+                className="w-full h-64 md:h-full object-cover"
+              />
+            )}
+          </div>
+
+          {/* Story info */}
+          <div className="p-6 md:w-1/2 flex flex-col">
+            <h2 id="lightbox-title" className={`text-2xl font-bold ${textPrimary} mb-2`}>
+              {story.title}
+            </h2>
+            
+            {story.tagline && (
+              <p className="text-sm font-medium brand-text mb-3">{story.tagline}</p>
+            )}
+
+            {story.genres && story.genres.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                {story.genres.map((tag, i) => (
+                  <span 
+                    key={i} 
+                    className={`text-xs rounded-full px-3 py-1 ${theme === 'light' ? 'bg-gray-100' : 'bg-white/10'} ${textSecondary}`}
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <p className={`text-sm ${textSecondary} flex-1 mb-4`}>
+              {story.homepage_description || story.description}
+            </p>
+
+            <Link
+              to={`/storytime/story/${story.slug || story.id}`}
+              onClick={onClose}
+              className="rounded-lg brand-bg px-5 py-2.5 text-sm font-semibold text-white text-center hover:opacity-90 transition-opacity"
+            >
+              {story.cta_text || 'Start Reading'}
+            </Link>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

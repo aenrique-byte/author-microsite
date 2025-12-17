@@ -1,0 +1,641 @@
+{
+  "homepage": {
+    "success": true,
+    "profile": {
+      "name": "Ocean Wanderer",
+      "bio": "Fantasy and sci-fi author exploring worlds through words and art",
+      "tagline": "Author & Worldbuilder",
+      "profile_image": "/images/mock/mock-author-profile.webp"
+    },
+    "settings": {
+      "hero_title": "Welcome to the worlds of ",
+      "hero_tagline": "Author & Worldbuilder",
+      "hero_description": "Dive into immersive stories filled with adventure, mystery, and unforgettable characters. From epic fantasy quests to mind-bending sci-fi mysteries, each universe is crafted with care.",
+      "show_featured_story": true,
+      "show_activity_feed": true,
+      "show_tools_section": true,
+      "newsletter_cta_text": "Newsletter",
+      "newsletter_url": "https://ocwanderer.com/newsletter",
+      "brand_color": "#10b981",
+      "brand_color_dark": "#10b981",
+      "featured_story_id": 1
+    },
+    "featured_story": {
+      "id": 1,
+      "title": "The Shattered Realms",
+      "tagline": "Where magic meets destiny",
+      "description": "An epic fantasy adventure following a young mage who discovers she's the key to preventing the collapse of multiple realities.",
+      "homepage_description": "When Aria discovers an ancient artifact, she's thrust into a quest across shattered dimensions. With time running out and dark forces closing in, she must master powers she never knew existed.",
+      "cover_image": "/images/mock/mock-story-cover-1.webp",
+      "genres": ["Epic Fantasy", "Adventure", "Magic"],
+      "cta_text": "Start the Journey",
+      "slug": "shattered-realms",
+      "external_links": [
+        {
+          "label": "Read on Royal Road",
+          "url": "https://www.royalroad.com/fiction/120420/destiny-among-the-stars-scifi-litrpg-adventure"
+        }
+      ],
+      "latest_chapter_number": 24,
+      "latest_chapter_title": "The Crystal Gate"
+    },
+    "stories": [
+      {
+        "id": 1,
+        "title": "The Shattered Realms",
+        "tagline": "Where magic meets destiny",
+        "description": "An epic fantasy adventure following a young mage who discovers she's the key to preventing the collapse of multiple realities.",
+        "homepage_description": "When Aria discovers an ancient artifact, she's thrust into a quest across shattered dimensions.",
+        "cover_image": "/images/mock/mock-story-cover-1.webp",
+        "genres": ["Epic Fantasy", "Adventure", "Magic", "Portal"],
+        "cta_text": "Start Reading",
+        "slug": "shattered-realms"
+      },
+      {
+        "id": 2,
+        "title": "Echoes in the Void",
+        "tagline": "Truth is buried in silence",
+        "description": "A psychological mystery where a detective investigates impossible crimes in a city where memories can be stolen.",
+        "homepage_description": "Detective Marcus Chen faces his strangest case yet: murders that never happened, but the victims remember dying.",
+        "cover_image": "/images/mock/mock-story-cover-2.webp",
+        "genres": ["Mystery", "Thriller", "Sci-Fi", "Noir"],
+        "cta_text": "Uncover the Mystery",
+        "slug": "echoes-void"
+      },
+      {
+        "id": 3,
+        "title": "Starborn Protocol",
+        "tagline": "Evolution is just the beginning",
+        "description": "Humanity's first contact with aliens reveals we're part of a galactic experiment gone wrong.",
+        "homepage_description": "When signals from deep space arrive, they bring a warning: humanity was never meant to exist.",
+        "cover_image": "/images/mock/mock-story-cover-3.webp",
+        "genres": ["Sci-Fi", "Space Opera", "First Contact", "Adventure"],
+        "cta_text": "Launch Mission",
+        "slug": "starborn-protocol"
+      },
+      {
+        "id": 4,
+        "title": "The Wanderer's Chronicles",
+        "tagline": "Every road leads somewhere",
+        "description": "A traveling bard discovers ancient songs that can reshape reality itself.",
+        "homepage_description": "Armed with only a lute and mysterious melodies, Finn walks roads between worlds seeking lost harmonies.",
+        "cover_image": "/images/mock/mock-story-cover-4.webp",
+        "genres": ["Fantasy", "Music", "Journey", "Slice of Life"],
+        "cta_text": "Begin the Journey",
+        "slug": "wanderers-chronicles"
+      }
+    ],
+    "activity": [
+      {
+        "id": 1,
+        "type": "chapter",
+        "source": "Royal Road",
+        "label": "New Chapter",
+        "title": "Chapter 24: The Crystal Gate",
+        "series_title": "The Shattered Realms",
+        "url": "https://www.royalroad.com/fiction/120420/destiny-among-the-stars-scifi-litrpg-adventure",
+        "published_at": "2025-12-15T14:30:00Z",
+        "time_ago": "1 day ago"
+      },
+      {
+        "id": 2,
+        "type": "blog",
+        "source": "Blog",
+        "label": "New Post",
+        "title": "Worldbuilding: Creating Believable Magic Systems",
+        "series_title": null,
+        "url": "/blog/worldbuilding-magic-systems",
+        "published_at": "2025-12-13T10:00:00Z",
+        "time_ago": "3 days ago"
+      },
+      {
+        "id": 3,
+        "type": "chapter",
+        "source": "Royal Road",
+        "label": "New Chapter",
+        "title": "Chapter 12: Memory Theft",
+        "series_title": "Echoes in the Void",
+        "url": "https://www.royalroad.com/fiction/120420/destiny-among-the-stars-scifi-litrpg-adventure",
+        "published_at": "2025-12-12T16:45:00Z",
+        "time_ago": "4 days ago"
+      },
+      {
+        "id": 4,
+        "type": "gallery",
+        "source": "Gallery",
+        "label": "New Art",
+        "title": "Character Concept: Aria the Wanderer",
+        "series_title": null,
+        "url": "/galleries",
+        "published_at": "2025-12-10T09:20:00Z",
+        "time_ago": "6 days ago"
+      },
+      {
+        "id": 5,
+        "type": "chapter",
+        "source": "Patreon",
+        "label": "Early Access",
+        "title": "Chapter 25: Beyond the Veil (Patreon Exclusive)",
+        "series_title": "The Shattered Realms",
+        "url": "https://www.patreon.com/cw/oc_wanderer",
+        "published_at": "2025-12-15T12:00:00Z",
+        "time_ago": "1 day ago"
+      }
+    ],
+    "tools": [
+      {
+        "id": 1,
+        "title": "Character Generator",
+        "description": "Create random fantasy characters with detailed backstories",
+        "icon": "🎭",
+        "link": "/litrpg/character-generator"
+      },
+      {
+        "id": 2,
+        "title": "Stat Calculator",
+        "description": "Calculate RPG stats and progression for your characters",
+        "icon": "📊",
+        "link": "/litrpg/stats"
+      },
+      {
+        "id": 3,
+        "title": "World Map",
+        "description": "Interactive map of The Shattered Realms universe",
+        "icon": "🗺️",
+        "link": "/litrpg/map"
+      },
+      {
+        "id": 4,
+        "title": "Magic System",
+        "description": "Explore the rules and mechanics of dimensional magic",
+        "icon": "✨",
+        "link": "/litrpg/magic"
+      }
+    ],
+    "socials": {
+      "royalroad": "https://www.royalroad.com/fiction/120420/destiny-among-the-stars-scifi-litrpg-adventure",
+      "patreon": "https://www.patreon.com/cw/oc_wanderer",
+      "twitter": "https://twitter.com",
+      "discord": "https://discord.gg"
+    }
+  },
+  "blog": {
+    "posts": [
+      {
+        "id": 1,
+        "title": "Worldbuilding: Creating Believable Magic Systems",
+        "slug": "worldbuilding-magic-systems",
+        "excerpt": "Explore the core principles behind designing magic systems that feel both wondrous and grounded in your fictional worlds.",
+        "content_html": "<h2>The Foundation of Magic</h2><p>When building a magic system, the key is establishing clear rules and limitations. Magic should solve problems, but it should also create them. In my work on <em>The Shattered Realms</em>, dimensional magic comes at a cost - each time reality is bent, it weakens the barriers between worlds.</p><h2>Three Core Principles</h2><p><strong>1. Cost and Consequence:</strong> Every magical action should require something from the user. Energy, time, materials, or even memories.</p><p><strong>2. Consistent Rules:</strong> Once you establish how magic works, stick to it. Readers will notice if you break your own rules.</p><p><strong>3. Limitations Breed Creativity:</strong> The best magic systems are those with clear boundaries. When characters can't simply wave their hands and solve everything, they must be clever.</p><h2>Examples in Practice</h2><p>In the Echoes universe, memory manipulation requires direct physical contact and leaves the manipulator vulnerable to experiencing the victim's memories. This creates tension and raises the stakes for every use of the power.</p>",
+        "cover_image": "/images/mock/mock-blog-cover-1.webp",
+        "category_id": 1,
+        "category_name": "Worldbuilding",
+        "category_slug": "worldbuilding",
+        "tags": ["magic systems", "worldbuilding", "writing tips"],
+        "status": "published",
+        "published_at": "2025-12-13T10:00:00Z",
+        "created_at": "2025-12-13T09:00:00Z",
+        "updated_at": "2025-12-13T10:00:00Z",
+        "view_count": 342,
+        "like_count": 28,
+        "comment_count": 5,
+        "reading_time": 5,
+        "author_name": "Ocean Wanderer"
+      },
+      {
+        "id": 2,
+        "title": "Character Development: Writing Flawed Heroes",
+        "slug": "character-development-flawed-heroes",
+        "excerpt": "Why perfect protagonists fall flat and how to craft characters with meaningful imperfections.",
+        "content_html": "<h2>The Problem with Perfect</h2><p>Nobody wants to read about characters who always make the right choice, never struggle, and effortlessly overcome every obstacle. Flaws make characters relatable and their victories meaningful.</p><h2>Types of Character Flaws</h2><p><strong>Fatal Flaws:</strong> These are deep-seated issues that drive the character's arc. Aria's inability to trust others stems from abandonment in her past.</p><p><strong>Quirky Flaws:</strong> These add personality without necessarily driving plot. Maybe your detective has an obsessive need to organize everything by color.</p><p><strong>Evolving Flaws:</strong> The best character arcs show growth. A cowardly character learning bravery, or a loner learning to work with others.</p><h2>Balancing Strengths and Weaknesses</h2><p>Your protagonist should have clear strengths that make readers root for them, but their flaws should create genuine obstacles. Marcus Chen is brilliant at solving cases, but his obsession with finding truth makes him blind to when he's being manipulated.</p>",
+        "cover_image": "/images/mock/mock-blog-cover-2.webp",
+        "category_id": 2,
+        "category_name": "Writing Craft",
+        "category_slug": "writing-craft",
+        "tags": ["character development", "protagonists", "writing advice"],
+        "status": "published",
+        "published_at": "2025-12-10T14:30:00Z",
+        "created_at": "2025-12-10T13:00:00Z",
+        "updated_at": "2025-12-10T14:30:00Z",
+        "view_count": 289,
+        "like_count": 34,
+        "comment_count": 8,
+        "reading_time": 6,
+        "author_name": "Ocean Wanderer"
+      },
+      {
+        "id": 3,
+        "title": "Behind the Scenes: Designing The Shattered Realms",
+        "slug": "behind-scenes-shattered-realms",
+        "excerpt": "A deep dive into the creative process behind my most ambitious fantasy series yet.",
+        "content_html": "<h2>The Genesis</h2><p>The Shattered Realms began as a simple question: What if parallel universes weren't just alternate timelines, but fragments of a single broken reality?</p><h2>Building the World</h2><p>Each realm in the story has its own magic system, culture, and rules of physics. The challenge was making them feel distinct while maintaining a cohesive underlying logic.</p><ul><li><strong>The Crystalline Realm:</strong> A world frozen in eternal twilight where time moves differently</li><li><strong>The Void Between:</strong> The dangerous space between realms where reality breaks down</li><li><strong>The Origin Point:</strong> The mythical place where all realities once converged</li></ul><h2>Character Inspirations</h2><p>Aria wasn't originally the protagonist. She started as a side character, but her voice was so strong that she demanded to tell this story. Sometimes characters know better than their authors.</p>",
+        "cover_image": "/images/mock/mock-blog-cover-3.webp",
+        "category_id": 3,
+        "category_name": "Behind the Scenes",
+        "category_slug": "behind-scenes",
+        "tags": ["the shattered realms", "worldbuilding", "creative process"],
+        "status": "published",
+        "published_at": "2025-12-08T11:15:00Z",
+        "created_at": "2025-12-08T10:00:00Z",
+        "updated_at": "2025-12-08T11:15:00Z",
+        "view_count": 456,
+        "like_count": 52,
+        "comment_count": 12,
+        "reading_time": 7,
+        "author_name": "Ocean Wanderer"
+      },
+      {
+        "id": 4,
+        "title": "Writing Advice: Finding Your Voice",
+        "slug": "writing-advice-finding-voice",
+        "excerpt": "Discover techniques to develop your unique writing style and authentic narrative voice.",
+        "content_html": "<h2>What is Voice?</h2><p>Your voice is the unique way you tell stories - your word choices, sentence rhythms, and perspective. It's what makes your work recognizably yours.</p><h2>Exercises to Discover Your Voice</h2><p><strong>1. Free Writing:</strong> Write for 15 minutes without stopping or editing. Your natural voice emerges when you stop overthinking.</p><p><strong>2. Rewrite a Scene:</strong> Take a classic scene from literature and rewrite it in your style. Notice what changes you make naturally.</p><p><strong>3. Read Your Work Aloud:</strong> Does it sound like you? If you wouldn't say it out loud, maybe it's not your voice.</p><h2>Voice vs. Style</h2><p>Voice is who you are as a writer. Style is how you tell a particular story. Your voice stays consistent across projects, but your style can adapt to different genres and tones.</p>",
+        "cover_image": "/images/mock/mock-blog-cover-4.webp",
+        "category_id": 2,
+        "category_name": "Writing Craft",
+        "category_slug": "writing-craft",
+        "tags": ["writing advice", "author voice", "writing tips"],
+        "status": "published",
+        "published_at": "2025-12-05T09:00:00Z",
+        "created_at": "2025-12-05T08:00:00Z",
+        "updated_at": "2025-12-05T09:00:00Z",
+        "view_count": 198,
+        "like_count": 19,
+        "comment_count": 4,
+        "reading_time": 4,
+        "author_name": "Ocean Wanderer"
+      },
+      {
+        "id": 5,
+        "title": "Sci-Fi Worldbuilding: Making Future Tech Believable",
+        "slug": "scifi-worldbuilding-future-tech",
+        "excerpt": "How to create futuristic technology that feels both advanced and grounded in reality.",
+        "content_html": "<h2>The Balance of Wonder and Logic</h2><p>Science fiction walks a tightrope between imagination and plausibility. Your tech should feel revolutionary but not magical.</p><h2>Grounding Your Technology</h2><p>In Starborn Protocol, faster-than-light travel isn't instant. Ships must navigate gravitational currents, and the journey takes months. This creates stakes and prevents the story from becoming too convenient.</p><h2>Consequences of Technology</h2><p>Every advancement has side effects. Memory storage technology in Echoes in the Void enables justice and preservation of knowledge, but it also enables theft and manipulation.</p><h2>Research and Inspiration</h2><p>Read current scientific journals. The most believable future tech often extrapolates from real cutting-edge research. Quantum entanglement, neural interfaces, and genetic engineering are happening now in primitive forms.</p>",
+        "cover_image": "/images/mock/mock-blog-cover-5.webp",
+        "category_id": 1,
+        "category_name": "Worldbuilding",
+        "category_slug": "worldbuilding",
+        "tags": ["sci-fi", "technology", "worldbuilding"],
+        "status": "published",
+        "published_at": "2025-12-02T13:45:00Z",
+        "created_at": "2025-12-02T12:00:00Z",
+        "updated_at": "2025-12-02T13:45:00Z",
+        "view_count": 267,
+        "like_count": 31,
+        "comment_count": 7,
+        "reading_time": 5,
+        "author_name": "Ocean Wanderer"
+      },
+      {
+        "id": 6,
+        "title": "The Art of Chapter Endings: Hooks That Keep Readers Reading",
+        "slug": "art-chapter-endings",
+        "excerpt": "Master the techniques for crafting chapter endings that make it impossible to put your book down.",
+        "content_html": "<h2>Why Chapter Endings Matter</h2><p>The end of each chapter is a decision point for your reader. Give them a reason to turn the page.</p><h2>Types of Chapter Hooks</h2><p><strong>The Cliffhanger:</strong> End mid-action or revelation. 'The door swung open, revealing—'</p><p><strong>The Question:</strong> Pose a mystery that demands answers. 'How did Marcus know she would be there?'</p><p><strong>The Revelation:</strong> Drop a bombshell that recontextualizes everything. 'The artifact wasn't ancient. It was from the future.'</p><p><strong>The Emotional Beat:</strong> Leave characters in emotional turmoil. 'She had never felt so alone.'</p><h2>Pacing Your Hooks</h2><p>Not every chapter needs a massive cliffhanger. Mix different types of hooks to create rhythm. Three subtle hooks, then a major cliffhanger. Keep readers engaged but not exhausted.</p>",
+        "cover_image": "/images/mock/mock-blog-cover-6.webp",
+        "category_id": 2,
+        "category_name": "Writing Craft",
+        "category_slug": "writing-craft",
+        "tags": ["pacing", "chapter structure", "writing tips"],
+        "status": "published",
+        "published_at": "2025-11-28T10:30:00Z",
+        "created_at": "2025-11-28T09:00:00Z",
+        "updated_at": "2025-11-28T10:30:00Z",
+        "view_count": 412,
+        "like_count": 47,
+        "comment_count": 9,
+        "reading_time": 6,
+        "author_name": "Ocean Wanderer"
+      }
+    ],
+    "categories": [
+      {
+        "id": 1,
+        "name": "Worldbuilding",
+        "slug": "worldbuilding",
+        "description": "Craft immersive worlds with depth and consistency",
+        "post_count": 2
+      },
+      {
+        "id": 2,
+        "name": "Writing Craft",
+        "slug": "writing-craft",
+        "description": "Techniques and advice for improving your writing",
+        "post_count": 3
+      },
+      {
+        "id": 3,
+        "name": "Behind the Scenes",
+        "slug": "behind-scenes",
+        "description": "Insights into my creative process and story development",
+        "post_count": 1
+      }
+    ],
+    "tags": [
+      { "name": "magic systems", "slug": "magic-systems", "post_count": 1 },
+      { "name": "worldbuilding", "slug": "worldbuilding", "post_count": 3 },
+      { "name": "writing tips", "slug": "writing-tips", "post_count": 3 },
+      { "name": "character development", "slug": "character-development", "post_count": 1 },
+      { "name": "protagonists", "slug": "protagonists", "post_count": 1 },
+      { "name": "writing advice", "slug": "writing-advice", "post_count": 2 },
+      { "name": "the shattered realms", "slug": "the-shattered-realms", "post_count": 1 },
+      { "name": "creative process", "slug": "creative-process", "post_count": 1 },
+      { "name": "author voice", "slug": "author-voice", "post_count": 1 },
+      { "name": "sci-fi", "slug": "scifi", "post_count": 1 },
+      { "name": "technology", "slug": "technology", "post_count": 1 },
+      { "name": "pacing", "slug": "pacing", "post_count": 1 },
+      { "name": "chapter structure", "slug": "chapter-structure", "post_count": 1 }
+    ]
+  },
+  "storytime": {
+    "stories": [
+      {
+        "id": 1,
+        "slug": "shattered-realms",
+        "title": "The Shattered Realms",
+        "blurb": "An epic fantasy adventure following a young mage who discovers she's the key to preventing the collapse of multiple realities.",
+        "cover": "/images/mock/mock-story-cover-1.webp",
+        "genres": ["Epic Fantasy", "Adventure", "Magic", "Portal"],
+        "chapter_count": 3,
+        "status": "ongoing",
+        "rating": 4.8,
+        "total_views": 12543,
+        "total_likes": 892
+      },
+      {
+        "id": 2,
+        "slug": "echoes-void",
+        "title": "Echoes in the Void",
+        "blurb": "A psychological mystery where a detective investigates impossible crimes in a city where memories can be stolen.",
+        "cover": "/images/mock/mock-story-cover-2.webp",
+        "genres": ["Mystery", "Thriller", "Sci-Fi", "Noir"],
+        "chapter_count": 3,
+        "status": "ongoing",
+        "rating": 4.7,
+        "total_views": 9821,
+        "total_likes": 654
+      },
+      {
+        "id": 3,
+        "slug": "starborn-protocol",
+        "title": "Starborn Protocol",
+        "blurb": "Humanity's first contact with aliens reveals we're part of a galactic experiment gone wrong.",
+        "cover": "/images/mock/mock-story-cover-3.webp",
+        "genres": ["Sci-Fi", "Space Opera", "First Contact", "Adventure"],
+        "chapter_count": 3,
+        "status": "ongoing",
+        "rating": 4.9,
+        "total_views": 15234,
+        "total_likes": 1121
+      },
+      {
+        "id": 4,
+        "slug": "wanderers-chronicles",
+        "title": "The Wanderer's Chronicles",
+        "blurb": "A traveling bard discovers ancient songs that can reshape reality itself.",
+        "cover": "/images/mock/mock-story-cover-4.webp",
+        "genres": ["Fantasy", "Music", "Journey", "Slice of Life"],
+        "chapter_count": 3,
+        "status": "ongoing",
+        "rating": 4.6,
+        "total_views": 7890,
+        "total_likes": 523
+      }
+    ],
+    "chapters": {
+      "shattered-realms": [
+        {
+          "num": 1,
+          "title": "The Artifact",
+          "content": "<h1>Chapter 1: The Artifact</h1><p>The marketplace buzzed with life as Aria wove through the crowded stalls. She wasn't looking for anything in particular—or so she told herself. The truth was, she was avoiding her mentor's lecture about \"proper dimensional theory.\"</p><p>That's when she saw it.</p><p>A small crystal, no larger than her thumb, glowing with an inner light that seemed to pulse in rhythm with her heartbeat. The merchant, an old woman with knowing eyes, smiled as Aria approached.</p><p>\"How much?\" Aria asked, unable to look away from the artifact.</p><p>\"For you? Nothing. It's been waiting.\"</p><p>The moment Aria's fingers closed around the crystal, the world fractured. Reality itself seemed to shatter like glass, and through the cracks, she glimpsed other worlds—hundreds, thousands of them, all teetering on the edge of collapse.</p><p>And somehow, she knew: she was the only one who could hold them together.</p>",
+          "slug": "the-artifact",
+          "published_at": "2025-12-01T10:00:00Z",
+          "view_count": 1245,
+          "like_count": 89,
+          "comment_count": 12
+        },
+        {
+          "num": 2,
+          "title": "Between Worlds",
+          "content": "<h1>Chapter 2: Between Worlds</h1><p>Training with the crystal proved harder than anything Aria had attempted before. Her mentor, Master Theron, watched with growing concern as she practiced manipulating the dimensional energies.</p><p>\"You're forcing it,\" he said, shaking his head. \"The realms don't respond to force. They respond to harmony.\"</p><p>But there was no time for harmony. Each day, the fractures grew worse. Aria could feel them now, even without the crystal—reality was bleeding at the edges, worlds pressing against each other like water against a dam.</p><p>Then came the attack.</p><p>Creatures from the Void Between—the space where broken realities went to die—poured through a tear in the marketplace. They were made of shadow and screaming wind, and where they touched, reality simply... stopped.</p><p>Aria didn't think. She just acted. The crystal flared to life in her hand, and for the first time, she felt the true extent of its power. She could see all the worlds at once, feel the threads that connected them.</p><p>And she could weave them together.</p>",
+          "slug": "between-worlds",
+          "published_at": "2025-12-08T10:00:00Z",
+          "view_count": 1103,
+          "like_count": 76,
+          "comment_count": 8
+        },
+        {
+          "num": 3,
+          "title": "The First Mending",
+          "content": "<h1>Chapter 3: The First Mending</h1><p>The battle lasted only minutes, but it changed everything. Aria stood in the center of the restored marketplace, the crystal still glowing in her palm, and understood what she had become.</p><p>Not a student. Not an apprentice.</p><p>A Weaver. Someone who could mend the shattered realities themselves.</p><p>Master Theron approached slowly, his expression unreadable. \"You shouldn't have been able to do that. No one has wielded that kind of power in a thousand years.\"</p><p>\"I didn't have a choice,\" Aria replied. \"They were going to—\"</p><p>\"I know.\" His voice softened. \"But now they know about you too. The things that live in the Void. They'll come for you, Aria. They'll never stop.\"</p><p>She looked down at the crystal, feeling its warmth against her skin. Somewhere out there, countless worlds hung by a thread. And she was the only one who could hold them together.</p><p>\"Then I guess I'd better get stronger,\" she said.</p><p>The real journey was about to begin.</p>",
+          "slug": "the-first-mending",
+          "published_at": "2025-12-15T10:00:00Z",
+          "view_count": 987,
+          "like_count": 65,
+          "comment_count": 15
+        }
+      ],
+      "echoes-void": [
+        {
+          "num": 1,
+          "title": "The Impossible Murder",
+          "content": "<h1>Chapter 1: The Impossible Murder</h1><p>Detective Marcus Chen stared at the body that shouldn't exist.</p><p>According to every record in the city database, Sarah Mitchell died three years ago in a car accident. Her death certificate was filed, her funeral attended, her apartment leased to someone else.</p><p>Yet here she was, dead again. This time in an alley downtown, with no apparent cause of death.</p><p>\"What do you think?\" his partner, Rodriguez, asked quietly.</p><p>Marcus knelt beside the body. No wounds. No signs of struggle. Sarah's eyes were open, staring at nothing, her expression one of absolute terror.</p><p>\"I think,\" Marcus said slowly, \"we're not dealing with a normal case.\"</p><p>His phone buzzed. A message from an unknown number: <em>She remembered dying the first time. That's why they killed her again.</em></p><p>Marcus looked up at the empty alley. Somewhere in this city, someone was stealing more than lives. They were stealing memories.</p><p>And the dead were starting to remember.</p>",
+          "slug": "the-impossible-murder",
+          "published_at": "2025-12-03T10:00:00Z",
+          "view_count": 892,
+          "like_count": 67,
+          "comment_count": 9
+        },
+        {
+          "num": 2,
+          "title": "Memory Thieves",
+          "content": "<h1>Chapter 2: Memory Thieves</h1><p>The deeper Marcus dug, the stranger things became.</p><p>Sarah Mitchell wasn't the only one. Over the past six months, seventeen people had died who were already listed as deceased in city records. All natural causes. All with the same expression of terror.</p><p>The mysterious messages kept coming, leading him through the city's underbelly. Finally, they led him to a woman sitting alone in a closed café.</p><p>\"You want to know about the memory thieves,\" she said. It wasn't a question.</p><p>Marcus sat across from her. \"Who are they?\"</p><p>\"We are.\" She smiled sadly. \"Or we were. The technology was supposed to preserve memories for people with dementia. But some of us discovered we could do more. We could take memories. Store them. Sell them.\"</p><p>\"And when people remember things they shouldn't?\"</p><p>\"Then they become dangerous. Loose ends.\" She pushed a small device across the table. \"This contains Sarah's real memories. All of them. What was taken and what was given. Be careful, Detective. Some truths are dangerous to know.\"</p><p>She was gone before Marcus could stop her.</p>",
+          "slug": "memory-thieves",
+          "published_at": "2025-12-10T10:00:00Z",
+          "view_count": 743,
+          "like_count": 54,
+          "comment_count": 6
+        },
+        {
+          "num": 3,
+          "title": "The Truth in the Void",
+          "content": "<h1>Chapter 3: The Truth in the Void</h1><p>Marcus plugged the device into his neural port against every instinct screaming at him not to.</p><p>Sarah's memories flooded his mind.</p><p>He saw her death—both of them. The first was real: a car accident, quick and painless. But then came the second life, the false one, implanted memories of a life she never lived. She was made to forget her death, to believe she had survived.</p><p>And the people who did this... they were everywhere. In the police force. In the government. Using stolen and fabricated memories to control narratives, to hide crimes, to puppet-master the city itself.</p><p>When Sarah started to remember the truth—started to glitch between her real memories and the implanted ones—she became a liability.</p><p>Marcus pulled the device free, gasping. His hands were shaking.</p><p>Rodriguez found him like that, minutes later. \"Marcus? You okay?\"</p><p>He looked up at his partner, really looked at him, and wondered: were Rodriguez's memories real? Were his own?</p><p>\"I need to make a call,\" Marcus said quietly. \"And then we need to burn this entire operation to the ground.\"</p><p>The void between truth and lies had opened. And Marcus was going to drag everything into the light.</p>",
+          "slug": "the-truth-in-the-void",
+          "published_at": "2025-12-17T10:00:00Z",
+          "view_count": 621,
+          "like_count": 48,
+          "comment_count": 11
+        }
+      ],
+      "starborn-protocol": [
+        {
+          "num": 1,
+          "title": "First Signal",
+          "content": "<h1>Chapter 1: First Signal</h1><p>Dr. Elena Vasquez had been listening to the stars for fifteen years. She'd heard pulsars and quasars, cosmic background radiation and solar wind. She'd never heard anything like this.</p><p>\"Run it again,\" she told her team.</p><p>The signal played through the speakers: a complex series of mathematical patterns that spelled out one unmistakable message in seventeen different languages, including three that humanity had never seen before.</p><p><em>YOU WERE NOT SUPPOSED TO SURVIVE.</em></p><p>The room fell silent.</p><p>\"It's on repeat,\" her colleague Marcus whispered. \"Broadcasting on every frequency we can detect. It's not trying to hide. It wants us to hear this.\"</p><p>Elena's hands trembled as she typed commands into her terminal. \"Get me the Director. And someone contact the UN. Whatever this is...\"</p><p>The signal shifted. New words scrolled across her screen.</p><p><em>THE EXPERIMENT FAILED. PROTOCOLS MUST BE ENACTED. HUMAN EVOLUTIONARY ANOMALY MUST BE CORRECTED.</em></p><p>\"Oh god,\" Marcus breathed. \"We're the experiment.\"</p>",
+          "slug": "first-signal",
+          "published_at": "2025-12-05T10:00:00Z",
+          "view_count": 1432,
+          "like_count": 98,
+          "comment_count": 14
+        },
+        {
+          "num": 2,
+          "title": "The Archive",
+          "content": "<h1>Chapter 2: The Archive</h1><p>Within forty-eight hours, the world knew. The signal had gone public when a dozen independent observatories detected it simultaneously. Panic swept across the globe.</p><p>But Elena wasn't panicking. She was listening.</p><p>Buried in the repeating message was something else—a compressed data packet containing what appeared to be... instructions. A map. Coordinates pointing to a location in deep space, and something on Earth.</p><p>Antarctica. Three kilometers below the ice.</p><p>The international team assembled faster than Elena thought possible. Politics vanished when faced with potential extinction. Within a week, she was descending into an ice shaft that shouldn't exist, toward a structure that predated human civilization.</p><p>The Archive, as they came to call it, was vast. Alien, but comprehensible. And it told a story humanity had never known.</p><p>Humans weren't natural. They were designed, engineered from primitive hominids as part of a galactic project to create a species capable of surviving anything. An experiment in rapid evolution.</p><p>An experiment that went catastrophically wrong.</p><p>\"We were supposed to die out,\" Elena realized, staring at the data. \"We were too successful. Too dangerous.\"</p><p>And now the creators wanted to fix their mistake.</p>",
+          "slug": "the-archive",
+          "published_at": "2025-12-12T10:00:00Z",
+          "view_count": 1287,
+          "like_count": 87,
+          "comment_count": 10
+        },
+        {
+          "num": 3,
+          "title": "Protocol Override",
+          "content": "<h1>Chapter 3: Protocol Override</h1><p>Elena stood before the Archive's central interface, the weight of humanity's future pressing down on her shoulders.</p><p>The data was clear: ships were coming. Automated protocol enforcers designed to \"correct\" the human anomaly. In their cold alien logic, humanity's rapid evolution and adaptability made them a threat to galactic stability.</p><p>But the Archive held another secret.</p><p>The original scientists who created humanity had left a failsafe. Not out of kindness—their notes made it clear they viewed humans as little more than experimental subjects—but as a safeguard against their own protocols. A way to halt the correction sequence if the experiment yielded interesting results.</p><p>\"We have to prove we're worth keeping,\" Elena said to the assembled leaders watching via satellite. \"Not just that we can survive, but that we offer something unique to the galaxy.\"</p><p>Marcus pulled up the interface. \"There's a test. A series of challenges designed to measure a species' value. Problem-solving, creativity, cooperation...\"</p><p>\"And we have three months before the first ship arrives.\"</p><p>Elena activated the protocol override sequence. Across the world, Archive sites began awakening, presenting humanity with puzzles that would determine their right to exist.</p><p>\"Then we'd better not waste time,\" she said. \"We've been defying expectations since we climbed down from the trees. Let's show them what humans do best.\"</p><p>Survive.</p>",
+          "slug": "protocol-override",
+          "published_at": "2025-12-19T10:00:00Z",
+          "view_count": 1098,
+          "like_count": 76,
+          "comment_count": 18
+        }
+      ],
+      "wanderers-chronicles": [
+        {
+          "num": 1,
+          "title": "The Song of Beginnings",
+          "content": "<h1>Chapter 1: The Song of Beginnings</h1><p>Finn's fingers danced across the lute strings, and the small crowd in the tavern fell silent.</p><p>He didn't plan to play that song. Didn't even know where he'd learned it. But the melody poured out of him like water from a spring, ancient and pure and impossibly beautiful.</p><p>As the last note faded, Finn opened his eyes to find the tavern transformed. The worn wooden walls gleamed like new. The tired faces of the patrons shone with youth and wonder. Even the fire in the hearth burned brighter, as if remembering what it was to be newly kindled.</p><p>Then reality snapped back, and everything was as it had been.</p><p>\"What was that?\" the barkeep whispered.</p><p>Finn stared at his lute, his hands trembling. \"I... I don't know.\"</p><p>But he did know, somewhere deep inside. The song wasn't just music. It was older than music. It was the universe's memory of what things could be.</p><p>That night, dreams came to Finn of roads that stretched between worlds, and songs that could unmake and remake reality itself.</p><p>When he woke, he knew he had to follow them.</p>",
+          "slug": "the-song-of-beginnings",
+          "published_at": "2025-12-07T10:00:00Z",
+          "view_count": 654,
+          "like_count": 45,
+          "comment_count": 7
+        },
+        {
+          "num": 2,
+          "title": "The Road Between",
+          "content": "<h1>Chapter 2: The Road Between</h1><p>The old woman at the crossroads looked exactly like Finn expected her to. White hair, knowing eyes, staff made of wood that seemed to shift between states—sometimes oak, sometimes ash, sometimes something that had no name in this world.</p><p>\"You're hearing the Lost Songs,\" she said without preamble. \"I wondered when another one would come.\"</p><p>\"Another?\" Finn set down his pack. \"There are others?\"</p><p>\"Were. Most gave up. The Lost Songs are dangerous, you see. They're not meant to be played in any single world. They're meant for the roads between—the places where reality is thin and possibility thick.\"</p><p>She tapped her staff against the ground, and Finn saw it: another path, one that hadn't been there before, leading off into a mist that smelled of starlight and dreams.</p><p>\"You want to learn them? Then you walk the roads. Each song is hidden in a different between-place. And each one will change you.\"</p><p>Finn looked back at the ordinary road, the one that led to ordinary towns with ordinary people. A safe life. A simple life.</p><p>Then he looked at his lute and remembered the way reality had sung when he played that first song.</p><p>\"Which way to the next one?\" he asked.</p><p>The old woman smiled.</p>",
+          "slug": "the-road-between",
+          "published_at": "2025-12-14T10:00:00Z",
+          "view_count": 589,
+          "like_count": 41,
+          "comment_count": 5
+        },
+        {
+          "num": 3,
+          "title": "Harmonic Convergence",
+          "content": "<h1>Chapter 3: Harmonic Convergence</h1><p>The road between worlds was stranger than Finn imagined. Time moved differently here—or didn't move at all. He walked for what felt like days without growing tired or hungry.</p><p>And everywhere, he heard fragments of songs.</p><p>They hung in the air like half-remembered melodies, woven into the fabric of the space itself. When Finn plucked a string on his lute, the fragments responded, drawing closer, showing him their patterns.</p><p>The second Lost Song revealed itself in pieces: a chord progression in the way mist swirled, a rhythm in the pulse of distant stars, lyrics written in the patterns of unfallen rain.</p><p>When Finn finally played it, the road between worlds sang with him.</p><p>And he understood.</p><p>The Lost Songs weren't just music. They were the fundamental harmonics of reality itself. Play them right, and you could tune the world like an instrument. Change its key. Shift its tempo. Rewrite its melody.</p><p>The old woman appeared beside him as the song faded. \"You're learning quickly. But remember, wanderer: with each song you master, you become less of your world and more of the between. Eventually, you'll have to choose.\"</p><p>\"Choose what?\"</p><p>\"Whether to return home, or to walk these roads forever.\"</p><p>Finn looked down at his lute, then out at the infinite paths stretching before him.</p><p>\"I think,\" he said quietly, \"I'll walk a little further first.\"</p>",
+          "slug": "harmonic-convergence",
+          "published_at": "2025-12-21T10:00:00Z",
+          "view_count": 512,
+          "like_count": 38,
+          "comment_count": 9
+        }
+      ]
+    }
+  },
+  "galleries": {
+    "collections": [
+      {
+        "id": 1,
+        "slug": "mock-landscapes",
+        "title": "Landscape Collection",
+        "description": "Beautiful scenery and environments from various stories and worlds",
+        "themes": ["Nature", "Fantasy", "Sci-Fi"],
+        "cover_hero": "/images/mock/mock-collection-landscapes.webp",
+        "status": "published",
+        "sort_order": 1,
+        "gallery_count": 1
+      },
+      {
+        "id": 2,
+        "slug": "mock-characters",
+        "title": "Character Collection",
+        "description": "Character portraits and concept art from the author's works",
+        "themes": ["Characters", "Portraits", "Concept Art"],
+        "cover_hero": "/images/mock/mock-collection-characters.webp",
+        "status": "published",
+        "sort_order": 2,
+        "gallery_count": 1
+      }
+    ],
+    "galleries": [
+      {
+        "id": 1,
+        "slug": "mock-world-landscapes",
+        "title": "World Landscapes",
+        "description": "Breathtaking vistas and environments from The Shattered Realms",
+        "rating": "PG",
+        "image_count": 1,
+        "like_count": 24,
+        "comment_count": 3,
+        "collection_id": 1,
+        "collection_slug": "mock-landscapes",
+        "hero_thumb": "/images/mock/mock-image-landscape-1-thumb.webp",
+        "hero_width": 400,
+        "hero_height": 300,
+        "status": "published"
+      },
+      {
+        "id": 2,
+        "slug": "mock-character-portraits",
+        "title": "Character Portraits",
+        "description": "Meet the characters from The Shattered Realms and Echoes in the Void",
+        "rating": "PG",
+        "image_count": 1,
+        "like_count": 42,
+        "comment_count": 7,
+        "collection_id": 2,
+        "collection_slug": "mock-characters",
+        "hero_thumb": "/images/mock/mock-image-character-1-thumb.webp",
+        "hero_width": 300,
+        "hero_height": 400,
+        "status": "published"
+      }
+    ],
+    "images": {
+      "mock-world-landscapes": [
+        {
+          "id": 1,
+          "src": "/images/mock/mock-image-landscape-1.webp",
+          "thumb": "/images/mock/mock-image-landscape-1-thumb.webp",
+          "title": "The Crystalline Realm",
+          "prompt": "A vast crystalline landscape with floating islands and ethereal light, fantasy world environment",
+          "parameters": "Steps: 30, CFG: 7.5, Sampler: DPM++ 2M Karras",
+          "checkpoint": "DreamShaper XL",
+          "loras": ["fantasy_environments_v2"],
+          "width": 1024,
+          "height": 768,
+          "media_type": "image",
+          "mime_type": "image/webp"
+        }
+      ],
+      "mock-character-portraits": [
+        {
+          "id": 2,
+          "src": "/images/mock/mock-image-character-1.webp",
+          "thumb": "/images/mock/mock-image-character-1-thumb.webp",
+          "title": "Aria the Wanderer",
+          "prompt": "Portrait of a young mage with glowing eyes holding a crystal artifact, fantasy character concept art",
+          "parameters": "Steps: 25, CFG: 7, Sampler: Euler a",
+          "checkpoint": "RealVisXL",
+          "loras": ["character_portraits_v3", "fantasy_lighting"],
+          "width": 768,
+          "height": 1024,
+          "media_type": "image",
+          "mime_type": "image/webp"
+        }
+      ]
+    },
+    "socials": {
+      "twitter": "https://twitter.com",
+      "instagram": "https://instagram.com",
+      "patreon": "https://www.patreon.com/cw/oc_wanderer"
+    },
+    "author_profile": {
+      "name": "Ocean Wanderer",
+      "bio": "Author & Worldbuilder",
+      "site_domain": "example.com",
+      "gallery_rating_filter": "auto"
+    }
+  }
+}
