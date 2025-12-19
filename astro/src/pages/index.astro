@@ -31,6 +31,14 @@ const tools = homepageData?.tools || [];
 const socials = homepageData?.socials || {};
 
 const brandColor = settings.brand_color_dark || '#10b981';
+
+// Helper to ensure image URLs are absolute
+function absoluteUrl(url: string | undefined): string {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  if (url.startsWith('/')) return `${API_URL}${url}`;
+  return `${API_URL}/${url}`;
+}
 ---
 
 <BaseLayout 
@@ -43,7 +51,7 @@ const brandColor = settings.brand_color_dark || '#10b981';
     <!-- Background -->
     <div 
       class="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
-      style={`background-image: url('${profile.background_image_dark || '/images/lofi_bg.webp'}'); background-color: #0a0a0a;`}
+      style={`background-image: url('${absoluteUrl(profile.background_image_dark) || '/images/lofi_bg.webp'}'); background-color: #0a0a0a;`}
     ></div>
     <div class="fixed inset-0 z-[1] bg-black/40 pointer-events-none"></div>
 
@@ -144,7 +152,7 @@ const brandColor = settings.brand_color_dark || '#10b981';
               {featured_story.cover_image && (
                 <a href={`/storytime/story/${featured_story.slug}`} class="relative h-40 w-28 flex-shrink-0 rounded-xl overflow-hidden shadow-lg">
                   <img 
-                    src={featured_story.cover_image} 
+                    src={absoluteUrl(featured_story.cover_image)} 
                     alt={featured_story.title} 
                     class="h-full w-full object-cover hover:scale-[1.03] transition-transform duration-200"
                     loading="lazy"
@@ -191,7 +199,7 @@ const brandColor = settings.brand_color_dark || '#10b981';
                   {story.cover_image && (
                     <a href={`/storytime/story/${story.slug}`} class="h-32 w-24 flex-shrink-0 rounded-xl overflow-hidden">
                       <img 
-                        src={story.cover_image} 
+                        src={absoluteUrl(story.cover_image)} 
                         alt={story.title} 
                         class="h-full w-full object-cover group-hover:scale-[1.03] transition-transform duration-200"
                         loading="lazy"

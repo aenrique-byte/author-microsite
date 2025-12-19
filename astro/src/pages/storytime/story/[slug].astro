@@ -59,6 +59,14 @@ try {
 
 // Sort chapters by chapter number
 chapters.sort((a, b) => (a.chapter_number || 0) - (b.chapter_number || 0));
+
+// Helper to ensure image URLs are absolute
+function absoluteUrl(url: string | undefined): string {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  if (url.startsWith('/')) return `${API_URL}${url}`;
+  return `${API_URL}/${url}`;
+}
 ---
 
 <StoryLayout 
@@ -74,7 +82,7 @@ chapters.sort((a, b) => (a.chapter_number || 0) - (b.chapter_number || 0));
       <div class="flex flex-col sm:flex-row gap-6">
         {story.cover_image && (
           <img 
-            src={story.cover_image} 
+            src={absoluteUrl(story.cover_image)} 
             alt={story.title}
             class="w-40 h-56 object-cover rounded-xl shadow-2xl mx-auto sm:mx-0"
           />
