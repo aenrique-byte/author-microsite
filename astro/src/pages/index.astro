@@ -257,8 +257,96 @@ const darkBackgrounds = [
         </section>
       )}
 
+      <!-- Social Icons Section -->
+      {Object.keys(socials).length > 0 && (
+        <section class="mt-12">
+          <div class="flex flex-wrap items-center justify-center gap-3">
+            {socials.twitter && (
+              <a href={socials.twitter} target="_blank" rel="noopener noreferrer" aria-label="Twitter/X"
+                class="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/5 p-3 hover:bg-white/10 transition-colors">
+                <svg viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor">
+                  <path d="M18.244 2H21.5l-7.51 8.574L22.5 22h-6.555l-5.12-6.023L4.8 22H1.54l8.05-9.19L1 2h6.69l4.64 5.44L18.244 2Zm-1.148 17.262h1.79L7.01 4.65H5.1l11.996 14.612Z" />
+                </svg>
+              </a>
+            )}
+            {socials.instagram && (
+              <a href={socials.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram"
+                class="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/5 p-3 hover:bg-white/10 transition-colors">
+                <svg viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor">
+                  <path d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5Zm0 2a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3H7Zm5 3.5A5.5 5.5 0 1 1 6.5 13 5.5 5.5 0 0 1 12 7.5Zm0 2A3.5 3.5 0 1 0 15.5 13 3.5 3.5 0 0 0 12 9.5Zm5.75-3a1.25 1.25 0 1 1-1.25 1.25 1.25 1.25 0 0 1 1.25-1.25Z" />
+                </svg>
+              </a>
+            )}
+            {socials.discord && (
+              <a href={socials.discord} target="_blank" rel="noopener noreferrer" aria-label="Discord"
+                class="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/5 p-3 hover:bg-white/10 transition-colors">
+                <svg viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor">
+                  <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z"/>
+                </svg>
+              </a>
+            )}
+            {socials.patreon && (
+              <a href={socials.patreon} target="_blank" rel="noopener noreferrer" aria-label="Patreon"
+                class="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/5 p-3 hover:bg-white/10 transition-colors">
+                <svg viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor">
+                  <path d="M15.386.524c-4.764 0-8.64 3.876-8.64 8.64c0 4.75 3.876 8.613 8.64 8.613c4.75 0 8.614-3.864 8.614-8.613C24 4.4 20.136.524 15.386.524M.003 23.537h4.22V.524H.003"/>
+                </svg>
+              </a>
+            )}
+            {socials.youtube && (
+              <a href={socials.youtube} target="_blank" rel="noopener noreferrer" aria-label="YouTube"
+                class="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/5 p-3 hover:bg-white/10 transition-colors">
+                <svg viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor">
+                  <path d="M23.499 6.203a3.004 3.004 0 0 0-2.115-2.127C19.6 3.5 12 3.5 12 3.5s-7.6 0-9.384.576A3.004 3.004 0 0 0 .5 6.203 31.21 31.21 0 0 0 0 12a31.21 31.21 0 0 0 .5 5.797 3.004 3.004 0 0 0 2.115 2.127C4.4 20.5 12 20.5 12 20.5s7.6 0 9.384-.576a3.004 3.004 0 0 0 2.115-2.127A31.21 31.21 0 0 0 24 12a31.21 31.21 0 0 0-.501-5.797ZM9.75 15.568V8.432L15.818 12 9.75 15.568Z" />
+                </svg>
+              </a>
+            )}
+            {socials.tiktok && (
+              <a href={socials.tiktok} target="_blank" rel="noopener noreferrer" aria-label="TikTok"
+                class="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/5 p-3 hover:bg-white/10 transition-colors">
+                <svg viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor">
+                  <path d="M12.53.02C13.84 0 15.14.01 16.44 0c.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/>
+                </svg>
+              </a>
+            )}
+            {socials.github && (
+              <a href={socials.github} target="_blank" rel="noopener noreferrer" aria-label="GitHub"
+                class="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/5 p-3 hover:bg-white/10 transition-colors">
+                <svg viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor">
+                  <path d="M12 1.5a10.5 10.5 0 0 0-3.32 20.468c.526.097.72-.228.72-.508 0-.25-.01-1.082-.015-1.963-2.933.637-3.552-1.257-3.552-1.257-.48-1.22-1.172-1.545-1.172-1.545-.957-.654.073-.64.073-.64 1.06.075 1.619 1.088 1.619 1.088.94 1.611 2.466 1.145 3.067.875.095-.681.367-1.145.668-1.409-2.342-.266-4.804-1.171-4.804-5.209 0-1.151.41-2.093 1.082-2.832-.108-.267-.469-1.344.102-2.802 0 0 .883-.283 2.894 1.081A10.07 10.07 0 0 1 12 6.844a10.06 10.06 0 0 1 2.636.355c2.01-1.364 2.892-1.08 2.892-1.08.573 1.457.212 2.535.104 2.802.673.74 1.08 1.682 1.08 2.833 0 4.05-2.466 4.94-4.813 5.202.377.326.714.968.714 1.95 0 1.409-.013 2.546-.013 2.894 0 .282.19.61.727.506A10.503 10.503 0 0 0 12 1.5Z" />
+                </svg>
+              </a>
+            )}
+            {socials.linkedin && (
+              <a href={socials.linkedin} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"
+                class="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/5 p-3 hover:bg-white/10 transition-colors">
+                <svg viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor">
+                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                </svg>
+              </a>
+            )}
+            {socials.facebook && (
+              <a href={socials.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook"
+                class="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/5 p-3 hover:bg-white/10 transition-colors">
+                <svg viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor">
+                  <path d="M22 12a10 10 0 1 0-11.563 9.875v-6.984H7.898V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.463h-1.26c-1.242 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.984A10.002 10.002 0 0 0 22 12Z" />
+                </svg>
+              </a>
+            )}
+            {socials.website && (
+              <a href={socials.website} target="_blank" rel="noopener noreferrer" aria-label="Website"
+                class="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/5 p-3 hover:bg-white/10 transition-colors">
+                <svg viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                </svg>
+              </a>
+            )}
+          </div>
+        </section>
+      )}
+
       <!-- Footer -->
-      <footer class="mt-12 border-t border-white/10 pt-6 text-center text-xs text-neutral-200">
+      <footer class="mt-8 border-t border-white/10 pt-6 text-center text-xs text-neutral-200">
         <p>© {new Date().getFullYear()} {profile.name}. All rights reserved.</p>
         <p class="mt-2 opacity-60">
           <span>Owner of this site? </span>
