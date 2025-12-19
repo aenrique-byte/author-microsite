@@ -39,6 +39,15 @@ function absoluteUrl(url: string | undefined): string {
   if (url.startsWith('/')) return `${API_URL}${url}`;
   return `${API_URL}/${url}`;
 }
+
+// Random backgrounds from the React version
+const darkBackgrounds = [
+  '/images/lofi_bg.webp',
+  '/images/lofi_bg2.webp',
+  '/images/lofi_bg3.webp',
+  '/images/lofi_bg4.webp',
+  '/images/lofi_bg5.webp'
+];
 ---
 
 <BaseLayout 
@@ -48,12 +57,34 @@ function absoluteUrl(url: string | undefined): string {
   brandColor={brandColor}
 >
   <div class="relative min-h-screen">
-    <!-- Background -->
+    <!-- Background (randomized on client) -->
     <div 
-      class="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
-      style={`background-image: url('${absoluteUrl(profile.background_image_dark) || '/images/lofi_bg.webp'}'); background-color: #0a0a0a;`}
+      id="dynamic-bg"
+      class="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat transition-opacity duration-500"
+      style="background-color: #0a0a0a;"
     ></div>
     <div class="fixed inset-0 z-[1] bg-black/40 pointer-events-none"></div>
+
+    <!-- Client-side background randomization -->
+    <script define:vars={{ darkBackgrounds, API_URL, customBg: profile.background_image_dark }}>
+      // Random backgrounds - use custom from DB or pick random from defaults
+      const backgrounds = darkBackgrounds.map(bg => `${API_URL}${bg}`);
+      const customBackground = customBg ? (customBg.startsWith('http') ? customBg : `${API_URL}${customBg}`) : null;
+      
+      // Pick a random background or use custom
+      const bgElement = document.getElementById('dynamic-bg');
+      if (bgElement) {
+        let selectedBg;
+        if (customBackground) {
+          // If there's a custom background, use that
+          selectedBg = customBackground;
+        } else {
+          // Pick random from defaults
+          selectedBg = backgrounds[Math.floor(Math.random() * backgrounds.length)];
+        }
+        bgElement.style.backgroundImage = `url('${selectedBg}')`;
+      }
+    </script>
 
     <!-- Page Content -->
     <div class="relative z-10 max-w-6xl mx-auto px-4 pb-24">
