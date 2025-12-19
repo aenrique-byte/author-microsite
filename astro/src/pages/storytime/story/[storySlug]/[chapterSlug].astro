@@ -1,0 +1,160 @@
+---
+/**
+ * Dynamic Chapter Page
+ * Generates a page for each published chapter at build time
+ */
+import StoryLayout from '../../../../layouts/StoryLayout.astro';
+import { marked } from 'marked';
+
+const API_URL = import.meta.env.API_URL || 'https://aenrique.com';
+
+// Generate static paths for all published chapters
+export async function getStaticPaths() {
+  const API_URL = import.meta.env.API_URL || 'https://aenrique.com';
+  const paths: any[] = [];
+  
+  try {
+    const storiesRes = await fetch(`${API_URL}/api/stories/list.php`);
+    if (!storiesRes.ok) return [];
+    
+    const storiesData = await storiesRes.json();
+    const stories = (storiesData.data || storiesData.stories || []).filter((s: any) => s.status === 'published');
+    
+    for (const story of stories) {
+      const chaptersRes = await fetch(`${API_URL}/api/chapters/list.php?story_id=${story.id}`);
+      if (!chaptersRes.ok) continue;
+      
+      const chaptersData = await chaptersRes.json();
+      const chapters = (chaptersData.data || chaptersData.chapters || [])
+        .filter((c: any) => c.status === 'published')
+        .sort((a: any, b: any) => (a.chapter_number || 0) - (b.chapter_number || 0));
+      
+      for (let i = 0; i < chapters.length; i++) {
+        const chapter = chapters[i];
+        paths.push({
+          params: { 
+            storySlug: story.slug, 
+            chapterSlug: chapter.slug 
+          },
+          props: { 
+            story, 
+            chapter,
+            prevChapter: i > 0 ? chapters[i - 1] : null,
+            nextChapter: i < chapters.length - 1 ? chapters[i + 1] : null
+          }
+        });
+      }
+    }
+  } catch (e) {
+    console.warn('Could not fetch chapters for static paths:', e);
+  }
+  
+  return paths;
+}
+
+interface Props {
+  story: any;
+  chapter: any;
+  prevChapter: any | null;
+  nextChapter: any | null;
+}
+
+const { story, chapter, prevChapter, nextChapter } = Astro.props;
+
+// Fetch author info
+let authorName = 'Author';
+try {
+  const authorRes = await fetch(`${API_URL}/api/author/get.php`);
+  if (authorRes.ok) {
+    const data = await authorRes.json();
+    authorName = data.profile?.name || authorName;
+  }
+} catch (e) {}
+
+// Render markdown content
+const htmlContent = marked(chapter.content || '');
+---
+
+<StoryLayout 
+  title={`Chapter ${chapter.chapter_number}: ${chapter.title} - ${story.title} | ${authorName}`}
+  description={chapter.content?.substring(0, 160)?.replace(/[#*_~`]/g, '') || story.description}
+  image={story.cover_image}
+  type="article"
+  storyTitle={story.title}
+>
+  <article>
+    <!-- Chapter Header -->
+    <header class="text-center mb-8 pb-8 border-b border-white/10">
+      <a 
+        href={`/storytime/story/${story.slug}`}
+        class="text-sm text-neutral-400 hover:text-white transition-colors"
+      >
+        {story.title}
+      </a>
+      <h1 class="text-2xl md:text-3xl font-bold text-white mt-2">
+        Chapter {chapter.chapter_number}: {chapter.title}
+      </h1>
+      {chapter.word_count && (
+        <p class="text-sm text-neutral-500 mt-2">
+          {chapter.word_count.toLocaleString()} words · {Math.ceil(chapter.word_count / 250)} min read
+        </p>
+      )}
+    </header>
+
+    <!-- Chapter Content -->
+    <div 
+      class="prose prose-lg prose-invert max-w-none
+             prose-headings:text-white 
+             prose-p:text-neutral-200 
+             prose-p:leading-relaxed
+             prose-a:brand-text
+             prose-strong:text-white
+             prose-blockquote:border-l-4 prose-blockquote:border-brand-500 prose-blockquote:text-neutral-300
+             prose-code:text-brand-400 prose-code:bg-neutral-800/50 prose-code:px-1 prose-code:rounded"
+      set:html={htmlContent}
+    />
+
+    <!-- Chapter Navigation -->
+    <nav class="mt-12 pt-8 border-t border-white/10">
+      <div class="flex justify-between items-center gap-4">
+        {prevChapter ? (
+          <a 
+            href={`/storytime/story/${story.slug}/${prevChapter.slug}`}
+            class="flex-1 p-4 rounded-xl bg-neutral-900/50 border border-white/10 hover:border-white/20 transition-colors text-left group"
+          >
+            <span class="text-xs text-neutral-500 block">← Previous</span>
+            <span class="text-white group-hover:brand-text transition-colors">
+              Ch. {prevChapter.chapter_number}: {prevChapter.title}
+            </span>
+          </a>
+        ) : (
+          <div class="flex-1"></div>
+        )}
+        
+        <a 
+          href={`/storytime/story/${story.slug}`}
+          class="p-4 rounded-xl bg-white/10 hover:bg-white/20 transition-colors text-center"
+          title="All Chapters"
+        >
+          <span class="text-white">☰</span>
+        </a>
+        
+        {nextChapter ? (
+          <a 
+            href={`/storytime/story/${story.slug}/${nextChapter.slug}`}
+            class="flex-1 p-4 rounded-xl bg-neutral-900/50 border border-white/10 hover:border-white/20 transition-colors text-right group"
+          >
+            <span class="text-xs text-neutral-500 block">Next →</span>
+            <span class="text-white group-hover:brand-text transition-colors">
+              Ch. {nextChapter.chapter_number}: {nextChapter.title}
+            </span>
+          </a>
+        ) : (
+          <div class="flex-1 p-4 text-right">
+            <span class="text-neutral-500 text-sm">End of story (so far!)</span>
+          </div>
+        )}
+      </div>
+    </nav>
+  </article>
+</StoryLayout>

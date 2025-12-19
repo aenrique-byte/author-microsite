@@ -1,0 +1,92 @@
+---
+/**
+ * Stories Listing Page
+ * Shows all published stories
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const API_URL = import.meta.env.API_URL || 'https://aenrique.com';
+
+// Fetch stories at build time
+let stories: any[] = [];
+let authorName = 'Author';
+
+try {
+  const [storiesRes, authorRes] = await Promise.all([
+    fetch(`${API_URL}/api/stories/list.php`),
+    fetch(`${API_URL}/api/author/get.php`)
+  ]);
+  
+  if (storiesRes.ok) {
+    const data = await storiesRes.json();
+    stories = (data.data || data.stories || []).filter((s: any) => s.status === 'published');
+  }
+  
+  if (authorRes.ok) {
+    const data = await authorRes.json();
+    authorName = data.profile?.name || authorName;
+  }
+} catch (e) {
+  console.warn('Could not fetch stories:', e);
+}
+---
+
+<BaseLayout 
+  title={`Stories | ${authorName}`}
+  description={`Read stories by ${authorName}. Science fiction, fantasy, and LitRPG adventures.`}
+>
+  <div class="min-h-screen bg-neutral-950">
+    <!-- Header -->
+    <header class="border-b border-white/10">
+      <div class="max-w-4xl mx-auto px-4 py-6 flex items-center justify-between">
+        <a href="/" class="text-sm font-semibold brand-text">← Home</a>
+        <h1 class="text-lg font-bold text-white">Stories</h1>
+        <div class="w-12"></div>
+      </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 py-8">
+      {stories.length === 0 ? (
+        <p class="text-neutral-400">No stories published yet.</p>
+      ) : (
+        <div class="space-y-6">
+          {stories.map((story) => (
+            <a 
+              href={`/storytime/story/${story.slug}`}
+              class="flex gap-6 bg-neutral-900/50 rounded-2xl p-5 border border-white/10 hover:border-white/20 transition-colors group"
+            >
+              {story.cover_image && (
+                <img 
+                  src={story.cover_image} 
+                  alt={story.title} 
+                  class="w-24 h-32 object-cover rounded-lg flex-shrink-0 group-hover:scale-[1.02] transition-transform"
+                  loading="lazy"
+                />
+              )}
+              <div class="flex-1 min-w-0">
+                <h2 class="text-xl font-bold text-white group-hover:brand-text transition-colors">
+                  {story.title}
+                </h2>
+                {story.tagline && (
+                  <p class="text-sm brand-text mt-1">{story.tagline}</p>
+                )}
+                <p class="text-neutral-300 mt-2 line-clamp-3">
+                  {story.description}
+                </p>
+                {story.genres && story.genres.length > 0 && (
+                  <div class="flex flex-wrap gap-2 mt-3">
+                    {story.genres.slice(0, 4).map((genre: string) => (
+                      <span class="text-xs px-2 py-1 rounded-full bg-white/10 text-neutral-300">
+                        {genre}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </a>
+          ))}
+        </div>
+      )}
+    </main>
+  </div>
+</BaseLayout>

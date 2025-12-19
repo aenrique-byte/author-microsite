@@ -1,0 +1,92 @@
+---
+/**
+ * BaseLayout - Shared HTML structure for all pages
+ * Includes SEO meta tags, Open Graph, Twitter Cards
+ */
+
+interface Props {
+  title: string;
+  description?: string;
+  image?: string;
+  type?: 'website' | 'article' | 'book';
+  brandColor?: string;
+}
+
+const { 
+  title, 
+  description = '', 
+  image = '', 
+  type = 'website',
+  brandColor = '#10b981'
+} = Astro.props;
+
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+
+// Fetch author info at build time for site-wide data
+const API_URL = import.meta.env.API_URL || 'https://aenrique.com';
+let authorName = 'O.C. Wanderer';
+let siteDomain = 'aenrique.com';
+
+try {
+  const authorRes = await fetch(`${API_URL}/api/author/get.php`);
+  if (authorRes.ok) {
+    const { profile } = await authorRes.json();
+    authorName = profile?.name || authorName;
+    siteDomain = profile?.site_domain || siteDomain;
+  }
+} catch (e) {
+  console.warn('Could not fetch author profile:', e);
+}
+---
+
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- Primary Meta Tags -->
+    <title>{title}</title>
+    {description && <meta name="description" content={description} />}
+    <link rel="canonical" href={canonicalURL} />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content={type} />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:title" content={title} />
+    {description && <meta property="og:description" content={description} />}
+    {image && <meta property="og:image" content={image} />}
+    <meta property="og:site_name" content={authorName} />
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content={image ? "summary_large_image" : "summary"} />
+    <meta name="twitter:url" content={canonicalURL} />
+    <meta name="twitter:title" content={title} />
+    {description && <meta name="twitter:description" content={description} />}
+    {image && <meta name="twitter:image" content={image} />}
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/icon/favicon.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icon/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icon/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icon/favicon-16x16.png" />
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+    
+    <!-- Dynamic Brand Color -->
+    <style define:vars={{ brandColor }}>
+      :root {
+        --brand-color: var(--brandColor);
+      }
+      .brand-bg { background-color: var(--brand-color); }
+      .brand-text { color: var(--brand-color); }
+      .brand-border { border-color: var(--brand-color); }
+    </style>
+  </head>
+  <body class="bg-neutral-950 text-white min-h-screen font-sans antialiased">
+    <slot />
+  </body>
+</html>

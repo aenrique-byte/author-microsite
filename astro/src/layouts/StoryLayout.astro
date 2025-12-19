@@ -1,0 +1,66 @@
+---
+/**
+ * StoryLayout - Reading-focused layout for stories and chapters
+ * Narrow content width, optimized typography
+ */
+import BaseLayout from './BaseLayout.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  image?: string;
+  type?: 'article' | 'book';
+  storyTitle?: string;
+  brandColor?: string;
+}
+
+const { 
+  title, 
+  description, 
+  image, 
+  type = 'article',
+  storyTitle,
+  brandColor = '#10b981'
+} = Astro.props;
+---
+
+<BaseLayout 
+  title={title}
+  description={description}
+  image={image}
+  type={type}
+  brandColor={brandColor}
+>
+  <div class="min-h-screen bg-neutral-950">
+    <!-- Simple reading navbar -->
+    <nav class="border-b border-white/10 bg-neutral-900/50 backdrop-blur-sm sticky top-0 z-50">
+      <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
+        <a href="/" class="text-sm font-semibold brand-text">
+          ← Back to Home
+        </a>
+        {storyTitle && (
+          <span class="text-sm text-neutral-400 truncate ml-4">
+            {storyTitle}
+          </span>
+        )}
+      </div>
+    </nav>
+
+    <!-- Content area - optimized for reading -->
+    <main class="max-w-3xl mx-auto px-4 py-8 md:py-12">
+      <slot />
+    </main>
+
+    <!-- Simple footer -->
+    <footer class="max-w-3xl mx-auto px-4 py-8 border-t border-white/10">
+      <div class="flex justify-between items-center text-sm text-neutral-400">
+        <a href="/storytime" class="hover:text-white transition-colors">
+          ← All Stories
+        </a>
+        <a href="/" class="hover:text-white transition-colors">
+          Home
+        </a>
+      </div>
+    </footer>
+  </div>
+</BaseLayout>

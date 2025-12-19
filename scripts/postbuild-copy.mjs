@@ -57,6 +57,12 @@ async function main() {
   const srcHtaccess = path.join(ROOT, "public", ".htaccess");
   const destHtaccess = path.join(DIST, ".htaccess");
 
+  const srcBotEntry = path.join(ROOT, "public", "bot-entry.php");
+  const destBotEntry = path.join(DIST, "bot-entry.php");
+
+  const srcPrerender = path.join(ROOT, "public", "prerender");
+  const destPrerender = path.join(DIST, "prerender");
+
   // Copy API folder (for hosts with PHP support)
   if (await pathExists(srcApi)) {
     await copyDir(srcApi, destApi);
@@ -75,6 +81,18 @@ async function main() {
   if (await pathExists(srcHtaccess)) {
     await copyFile(srcHtaccess, destHtaccess);
     console.log("[postbuild] Copied .htaccess to dist/");
+  }
+
+  // Copy bot-entry.php for SEO bot detection
+  if (await pathExists(srcBotEntry)) {
+    await copyFile(srcBotEntry, destBotEntry);
+    console.log("[postbuild] Copied bot-entry.php to dist/");
+  }
+
+  // Copy prerender directory for SEO static pages
+  if (await pathExists(srcPrerender)) {
+    await copyDir(srcPrerender, destPrerender);
+    console.log("[postbuild] Copied prerender/ to dist/prerender");
   }
 
   console.log("[postbuild] Author CMS build complete.");

@@ -252,10 +252,48 @@ function AdminHome() {
   } | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
   const [statsError, setStatsError] = useState<string | null>(null);
+  
+  // SEO Prerender state
+  const [seoLoading, setSeoLoading] = useState(false);
+  const [seoResult, setSeoResult] = useState<{
+    success: boolean;
+    message: string;
+    stats?: {
+      total: number;
+      homepage: number;
+      stories: number;
+      chapters: number;
+      galleries: number;
+      blog: number;
+    };
+  } | null>(null);
 
   useEffect(() => {
     fetchQuickStats();
   }, []);
+
+  const regenerateSeoPages = async () => {
+    setSeoLoading(true);
+    setSeoResult(null);
+    
+    try {
+      const response = await fetch('/api/admin/regenerate-prerender.php', {
+        method: 'POST',
+        credentials: 'same-origin'
+      });
+      
+      const data = await response.json();
+      setSeoResult(data);
+    } catch (error) {
+      console.error('SEO regeneration error:', error);
+      setSeoResult({
+        success: false,
+        message: 'Network error - failed to regenerate SEO pages'
+      });
+    } finally {
+      setSeoLoading(false);
+    }
+  };
 
   const fetchQuickStats = async () => {
     try {
@@ -415,6 +453,67 @@ function AdminHome() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* SEO Tools Section */}
+        <div className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+          <h3 className="text-sm font-medium text-green-900 dark:text-green-300 mb-3">🔍 SEO Tools</h3>
+          <p className="text-sm text-green-700 dark:text-green-400 mb-4">
+            Regenerate pre-rendered HTML pages for search engines and social media crawlers. 
+            Run this after publishing new content.
+          </p>
+          
+          <div className="flex items-center gap-4">
+            <button
+              onClick={regenerateSeoPages}
+              disabled={seoLoading}
+              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {seoLoading ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Regenerating...
+                </>
+              ) : (
+                <>🔄 Regenerate SEO Pages</>
+              )}
+            </button>
+          </div>
+          
+          {seoResult && (
+            <div className={`mt-4 p-3 rounded-md ${
+              seoResult.success 
+                ? 'bg-green-100 dark:bg-green-800/30 text-green-800 dark:text-green-200' 
+                : 'bg-red-100 dark:bg-red-800/30 text-red-800 dark:text-red-200'
+            }`}>
+              <p className="font-medium">{seoResult.message}</p>
+              {seoResult.stats && (
+                <div className="mt-2 grid grid-cols-3 md:grid-cols-6 gap-2 text-sm">
+                  <div>
+                    <span className="font-semibold">Total:</span> {seoResult.stats.total}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Stories:</span> {seoResult.stats.stories}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Chapters:</span> {seoResult.stats.chapters}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Galleries:</span> {seoResult.stats.galleries}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Blog:</span> {seoResult.stats.blog}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Homepage:</span> {seoResult.stats.homepage}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

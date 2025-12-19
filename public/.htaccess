@@ -10,9 +10,14 @@ RewriteRule ^sitemap\.xml$ /api/sitemap.xml.php [L]
 RewriteRule ^api/ - [L]
 
 # Handle static files - don't rewrite these
-RewriteRule ^(assets|images)/ - [L]
+RewriteRule ^(assets|images|icon|prerender)/ - [L]
 
-# Handle all other routes - send to index.html for React Router
+# Don't rewrite actual files (JS, CSS, images, etc.)
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule . - [L]
+
+# Bot detection for all other routes - route through PHP
+# This serves pre-rendered HTML to bots, React SPA to users
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule . /index.html [L]
+RewriteRule . /bot-entry.php [L]
