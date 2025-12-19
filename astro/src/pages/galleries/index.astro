@@ -1,0 +1,111 @@
+---
+/**
+ * Galleries Listing Page
+ * Shows all published galleries
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const API_URL = import.meta.env.API_URL || 'https://aenrique.com';
+
+// Fetch galleries at build time
+let galleries: any[] = [];
+let authorName = 'Author';
+
+try {
+  const [galleriesRes, authorRes] = await Promise.all([
+    fetch(`${API_URL}/api/galleries/list.php`),
+    fetch(`${API_URL}/api/author/get.php`)
+  ]);
+  
+  if (galleriesRes.ok) {
+    const data = await galleriesRes.json();
+    galleries = (data.galleries || data.data || []).filter((g: any) => g.status !== 'draft');
+  }
+  
+  if (authorRes.ok) {
+    const data = await authorRes.json();
+    authorName = data.profile?.name || authorName;
+  }
+} catch (e) {
+  console.warn('Could not fetch galleries:', e);
+}
+
+// Helper to ensure image URLs are absolute
+function absoluteUrl(url: string | undefined): string {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  if (url.startsWith('/')) return `${API_URL}${url}`;
+  return `${API_URL}/${url}`;
+}
+---
+
+<BaseLayout 
+  title={`Galleries | ${authorName}`}
+  description={`Browse image galleries and artwork by ${authorName}.`}
+>
+  <div class="min-h-screen bg-neutral-950">
+    <!-- Header -->
+    <header class="border-b border-white/10">
+      <div class="max-w-6xl mx-auto px-4 py-6 flex items-center justify-between">
+        <a href="/" class="text-sm font-semibold brand-text">← Home</a>
+        <h1 class="text-lg font-bold text-white">Galleries</h1>
+        <div class="w-12"></div>
+      </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 py-8">
+      {galleries.length === 0 ? (
+        <p class="text-neutral-400 text-center py-12">No galleries found.</p>
+      ) : (
+        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {galleries.map((gallery) => {
+            const heroImage = gallery.hero_thumb || gallery.hero_image;
+            const heroWidth = Number(gallery.hero_width) || 0;
+            const heroHeight = Number(gallery.hero_height) || 0;
+            const isUltrawide = heroWidth && heroHeight && (heroWidth / heroHeight >= 2.2);
+            
+            return (
+              <a 
+                href={`/galleries/${gallery.slug}`}
+                class={`group rounded-2xl overflow-hidden border border-white/10 bg-neutral-900/50 hover:border-white/20 transition-colors ${isUltrawide ? 'sm:col-span-2 lg:col-span-3' : ''}`}
+              >
+                <div class={`relative w-full overflow-hidden bg-neutral-800 ${isUltrawide ? 'aspect-[21/9]' : 'aspect-[4/3]'}`}>
+                  {heroImage ? (
+                    <img
+                      src={absoluteUrl(heroImage)}
+                      alt={gallery.title}
+                      class={`h-full w-full transition-transform duration-300 group-hover:scale-105 ${isUltrawide ? 'object-contain' : 'object-cover'}`}
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div class="h-full w-full grid place-items-center text-neutral-500">
+                      No image
+                    </div>
+                  )}
+                  {gallery.rating === "X" && (
+                    <span class="absolute top-2 right-2 rounded-md bg-red-600/90 px-2 py-1 text-xs font-semibold text-white">
+                      🔞
+                    </span>
+                  )}
+                </div>
+                <div class="p-4 space-y-2">
+                  <h2 class="font-semibold text-white group-hover:brand-text transition-colors">
+                    {gallery.title}
+                  </h2>
+                  {gallery.description && (
+                    <p class="text-sm text-neutral-300 line-clamp-2">{gallery.description}</p>
+                  )}
+                  <div class="flex items-center gap-4 text-xs text-neutral-400">
+                    <span>📷 {gallery.image_count || 0}</span>
+                    <span>❤️ {gallery.like_count || 0}</span>
+                    <span>💬 {gallery.comment_count || 0}</span>
+                  </div>
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      )}
+    </main>
+  </div>
+</BaseLayout>
