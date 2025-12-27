@@ -1217,6 +1217,12 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
           {(Object.keys(character.attributes) as Attribute[]).map((attr) => {
             const pendingInvestment = getPendingAttributeInvestment(attr);
+            const classBonus = getClassOnlyBonus(attr);
+            const professionBonus = getProfessionOnlyBonus(attr);
+            const baseValue = getMinAttributeValue(attr);
+            // Total = base + pending investment + class bonus + profession bonus
+            const totalValue = baseValue + pendingInvestment + classBonus + professionBonus;
+            const hasBonuses = pendingInvestment > 0 || classBonus > 0 || professionBonus > 0;
             return (
               <div key={attr} className={`flex items-center justify-between p-2 rounded ${theme === 'light' ? 'bg-slate-100/50 border-slate-200' : 'bg-slate-800/50 border-slate-700'} border`}>
                 <div className="flex flex-col">
@@ -1230,23 +1236,17 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = ({ character, updat
                 </div>
                 <div className="flex items-center gap-1">
                   <button onClick={() => handleAttributeChange(attr, -1)} className={`w-5 h-5 flex items-center justify-center rounded ${theme === 'light' ? 'bg-slate-200 hover:bg-slate-300' : 'bg-slate-700 hover:bg-slate-600'} ${textSecondary} disabled:opacity-30 text-xs`} disabled={character.attributes[attr] <= getMinAttributeValue(attr)}>-</button>
-                  <div className="flex items-center gap-0.5 min-w-[60px] justify-center">
-                    <span className={`font-mono font-bold text-sm ${textPrimary}`}>{character.attributes[attr]}</span>
-                    {pendingInvestment > 0 && (
-                      <span className="text-[10px] font-bold text-pink-300" title="Unbanked level-up points">
-                        +{pendingInvestment}
-                      </span>
-                    )}
-                    {/* Show class bonus in orange */}
-                    {getClassOnlyBonus(attr) > 0 && (
-                      <span className="text-[10px] font-bold text-orange-400" title="Class bonus">
-                        +{getClassOnlyBonus(attr)}
-                      </span>
-                    )}
-                    {/* Show profession bonus in blue */}
-                    {getProfessionOnlyBonus(attr) > 0 && (
-                      <span className="text-[10px] font-bold text-blue-400" title="Profession bonus">
-                        +{getProfessionOnlyBonus(attr)}
+                  <div className="flex items-center gap-0.5 min-w-[80px] justify-center">
+                    {/* Show TOTAL value (base + pending + class + profession bonuses) */}
+                    <span className={`font-mono font-bold text-sm ${textPrimary}`}>{totalValue}</span>
+                    {/* Show breakdown if there are any bonuses */}
+                    {hasBonuses && (
+                      <span className={`text-[9px] ${textMuted}`} title={`Base: ${baseValue}${pendingInvestment > 0 ? ` + ${pendingInvestment} pending` : ''}${classBonus > 0 ? ` + ${classBonus} class` : ''}${professionBonus > 0 ? ` + ${professionBonus} profession` : ''}`}>
+                        ({baseValue}
+                        {pendingInvestment > 0 && <span className="text-pink-300">+{pendingInvestment}</span>}
+                        {classBonus > 0 && <span className="text-orange-400">+{classBonus}</span>}
+                        {professionBonus > 0 && <span className="text-blue-400">+{professionBonus}</span>}
+                        )
                       </span>
                     )}
                   </div>

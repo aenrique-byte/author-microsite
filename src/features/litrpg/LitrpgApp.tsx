@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, Save, Users, RefreshCw, ChevronLeft, Database, Plus, X } from 'lucide-react';
+import { Upload, Save, Users, RefreshCw, ChevronLeft, Database, Plus, X, HardDrive } from 'lucide-react';
 import { Character, ClassName, Attribute, Monster, Quest, SaveData } from './types';
 import { CharacterSheet } from './components/CharacterSheet';
 import { listCharacters, updateCharacter as apiUpdateCharacter, createCharacter as apiCreateCharacter, LitrpgCharacter, getCachedClasses, getCachedAbilities, getCachedProfessions, getCachedMonsters, LitrpgMonster } from './utils/api-litrpg';
@@ -75,7 +75,20 @@ const LitrpgApp: React.FC = () => {
   const [newCharacterName, setNewCharacterName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   
+  // Browser save state
+  const [browserSaveMessage, setBrowserSaveMessage] = useState<string | null>(null);
+  const [hasBrowserSave, setHasBrowserSave] = useState(false);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // LocalStorage key for browser saves
+  const BROWSER_SAVE_KEY = 'litrpg_character_save';
+
+  // Check for browser save on mount
+  useEffect(() => {
+    const savedData = localStorage.getItem(BROWSER_SAVE_KEY);
+    setHasBrowserSave(!!savedData);
+  }, []);
 
   // Load characters from database on mount
   useEffect(() => {
@@ -410,6 +423,114 @@ const LitrpgApp: React.FC = () => {
     setTimeout(() => setSaveMessage(null), 3000);
   };
 
+  // --- Browser Save Handlers ---
+  const handleSaveToBrowser = async () => {
+    try {
+      // Bank all bonuses into base stats (same logic as database save)
+      const dbClasses = await getCachedClasses();
+      const dbProfessions = await getCachedProfessions();
+      
+      // Calculate current class bonus: (level - activated_at_level) × stat_bonuses
+      const classBonus: Record<string, number> = {};
+      const currentClass = dbClasses.find(c => c.name === character.className);
+      if (currentClass?.stat_bonuses) {
+        const levelsSinceActivation = Math.max(0, character.level - (character.classActivatedAtLevel || 1));
+        for (const [stat, bonusPerLevel] of Object.entries(currentClass.stat_bonuses)) {
+          classBonus[stat] = (bonusPerLevel as number) * levelsSinceActivation;
+        }
+      }
+      
+      // Calculate current profession bonus: (level - activated_at_level) × stat_bonuses
+      const professionBonus: Record<string, number> = {};
+      if (character.professionName && character.professionActivatedAtLevel) {
+        const currentProfession = dbProfessions.find(p => p.name === character.professionName);
+        if (currentProfession?.stat_bonuses) {
+          const levelsSinceActivation = Math.max(0, character.level - character.professionActivatedAtLevel);
+          for (const [stat, bonusPerLevel] of Object.entries(currentProfession.stat_bonuses)) {
+            professionBonus[stat] = (bonusPerLevel as number) * levelsSinceActivation;
+          }
+        }
+      }
+      
+      // Create banked stats: current attributes + class bonus + profession bonus
+      const bankedStats = {
+        [Attribute.STR]: character.attributes[Attribute.STR] + (classBonus['STR'] || 0) + (professionBonus['STR'] || 0),
+        [Attribute.PER]: character.attributes[Attribute.PER] + (classBonus['PER'] || 0) + (professionBonus['PER'] || 0),
+        [Attribute.DEX]: character.attributes[Attribute.DEX] + (classBonus['DEX'] || 0) + (professionBonus['DEX'] || 0),
+        [Attribute.MEM]: character.attributes[Attribute.MEM] + (classBonus['MEM'] || 0) + (professionBonus['MEM'] || 0),
+        [Attribute.INT]: character.attributes[Attribute.INT] + (classBonus['INT'] || 0) + (professionBonus['INT'] || 0),
+        [Attribute.CHA]: character.attributes[Attribute.CHA] + (classBonus['CHA'] || 0) + (professionBonus['CHA'] || 0)
+      };
+
+      // Calculate points spent from unspent pool
+      const pointsSpent = (Object.keys(character.attributes) as Attribute[]).reduce((total, attr) => {
+        const current = character.attributes[attr];
+        const base = character.baseStats?.[attr] ?? current;
+        return total + Math.max(0, current - base);
+      }, 0);
+      const newUnspentPoints = Math.max(0, character.unspentAttributePoints - pointsSpent);
+
+      // Create banked character with reset activation levels
+      const bankedCharacter: Character = {
+        ...character,
+        attributes: bankedStats,
+        baseStats: bankedStats,
+        unspentAttributePoints: newUnspentPoints,
+        classActivatedAtLevel: character.level, // Reset - bonuses now banked
+        professionActivatedAtLevel: character.professionName ? character.level : undefined // Reset - bonuses now banked
+      };
+
+      const data: SaveData = {
+        version: '1.0',
+        timestamp: Date.now(),
+        character: bankedCharacter,
+        quests
+      };
+      localStorage.setItem(BROWSER_SAVE_KEY, JSON.stringify(data));
+      
+      // Update local state to reflect banked values
+      setCharacter(bankedCharacter);
+      
+      setHasBrowserSave(true);
+      setBrowserSaveMessage('Saved to Browser!');
+      setTimeout(() => setBrowserSaveMessage(null), 3000);
+    } catch (error) {
+      setBrowserSaveMessage('Save failed: ' + String(error));
+      setTimeout(() => setBrowserSaveMessage(null), 3000);
+    }
+  };
+
+  const handleLoadFromBrowser = () => {
+    try {
+      const savedData = localStorage.getItem(BROWSER_SAVE_KEY);
+      if (!savedData) {
+        setBrowserSaveMessage('No browser save found');
+        setTimeout(() => setBrowserSaveMessage(null), 3000);
+        return;
+      }
+      
+      const data: SaveData = JSON.parse(savedData);
+      if (data.character) {
+        if (confirm(`Load browser save for ${data.character.name} (Level ${data.character.level})? This will overwrite current progress.`)) {
+          setCharacter(data.character);
+          setQuests(data.quests || []);
+          if (data.monsters) {
+            setMonsters(data.monsters);
+          }
+          setSelectedDbCharacterId(null); // Disconnect from DB
+          setBrowserSaveMessage('Loaded from Browser!');
+          setTimeout(() => setBrowserSaveMessage(null), 3000);
+        }
+      } else {
+        setBrowserSaveMessage('Invalid save data');
+        setTimeout(() => setBrowserSaveMessage(null), 3000);
+      }
+    } catch (error) {
+      setBrowserSaveMessage('Load failed: ' + String(error));
+      setTimeout(() => setBrowserSaveMessage(null), 3000);
+    }
+  };
+
   // --- Handlers ---
   const handleExportData = () => {
     const data: SaveData = {
@@ -587,8 +708,8 @@ const LitrpgApp: React.FC = () => {
           </div>
 
           {/* Right side - Actions */}
-          <div className="flex items-center gap-2">
-              {/* Admin Save Button */}
+          <div className="flex items-center gap-2 flex-wrap">
+              {/* Admin Save to Database Button */}
               {isAdmin && selectedDbCharacterId && (
                 <button 
                   onClick={handleSaveToDatabase}
@@ -596,7 +717,7 @@ const LitrpgApp: React.FC = () => {
                   className="flex items-center gap-2 px-3 py-1 bg-green-600/20 hover:bg-green-600/30 text-green-400 hover:text-green-300 rounded border border-green-600/30 hover:border-green-500 text-xs font-medium transition-colors disabled:opacity-50"
                 >
                   {isSaving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
-                  Save to Database
+                  Save to DB
                 </button>
               )}
               
@@ -605,8 +726,35 @@ const LitrpgApp: React.FC = () => {
                   {saveMessage}
                 </span>
               )}
+
+              {/* Browser Save/Load - Available to all users */}
+              <button
+                onClick={handleSaveToBrowser}
+                className="flex items-center gap-2 px-3 py-1 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 hover:text-purple-300 rounded border border-purple-600/30 hover:border-purple-500 text-xs font-medium transition-colors"
+                title="Save character to browser storage (localStorage)"
+              >
+                <HardDrive size={14} />
+                Save Local
+              </button>
               
-              <span className={`text-xs ${textMuted} uppercase tracking-widest font-bold mr-2`}>System IO</span>
+              {hasBrowserSave && (
+                <button
+                  onClick={handleLoadFromBrowser}
+                  className="flex items-center gap-2 px-3 py-1 bg-purple-600/10 hover:bg-purple-600/20 text-purple-400 hover:text-purple-300 rounded border border-purple-600/20 hover:border-purple-500 text-xs font-medium transition-colors"
+                  title="Load character from browser storage"
+                >
+                  <Upload size={14} />
+                  Load Local
+                </button>
+              )}
+              
+              {browserSaveMessage && (
+                <span className={`text-xs ${browserSaveMessage.includes('Saved') || browserSaveMessage.includes('Loaded') ? 'text-purple-400' : 'text-red-400'}`}>
+                  {browserSaveMessage}
+                </span>
+              )}
+              
+              <span className={`text-xs ${textMuted} uppercase tracking-widest font-bold mr-2 ml-2`}>File IO</span>
               <input
                 type="file"
                 ref={fileInputRef}
