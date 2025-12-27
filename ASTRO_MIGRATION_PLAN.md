@@ -1,6 +1,34 @@
 # Astro Migration Plan for Author CMS
 
-## Overview
+> ## ⚠️ PROJECT STATUS: UNFINISHED / ON HOLD
+> 
+> **Date:** December 19, 2025  
+> **Decision:** Keep current React/PHP setup instead
+> 
+> ### Reasons for Pause:
+> 1. **Too much hassle** - Requires webhook setup, manual rebuilds, and complex hosting
+> 2. **Too many credits to implement** - Full migration requires significant dev time
+> 3. **Missing features** - Comments don't work (need React), backgrounds require additional config
+> 4. **Admin integration** - No easy way to trigger rebuilds from website admin
+> 
+> ### What Was Completed:
+> - ✅ Basic Astro project setup (`astro/` folder)
+> - ✅ Homepage, storytime pages, galleries pages, blog pages created
+> - ✅ Deployed to Vercel as proof-of-concept
+> 
+> ### What Would Still Be Needed:
+> - ❌ Comments (React client components)
+> - ❌ Dynamic backgrounds (need proper asset hosting)
+> - ❌ Admin rebuild button with deploy webhook
+> - ❌ Social icons integration fixes
+> - ❌ Full testing and QA
+> 
+> ### Current Solution:
+> Keep using the React SPA + PHP API at `ocwanderer.com`. The PHP prerender system provides basic SEO for search bots.
+> 
+> ---
+
+## Overview (Historical Reference)
 
 This document outlines the plan to migrate the public-facing pages of Author CMS from React SPA to Astro for improved SEO and performance, while keeping the admin panel as a React SPA.
 

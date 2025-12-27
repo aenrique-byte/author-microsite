@@ -155,13 +155,14 @@ function getUserAgentHash() {
 }
 
 // Session management with security hardening
+// Use SameSite=None for OAuth flows (Discord callback needs cookies to work)
 session_set_cookie_params([
     'lifetime' => 0,              // Expires when browser closes
     'path'     => '/',
     'domain'   => '',             // Current domain
     'secure'   => true,           // HTTPS only (set to false for local dev)
     'httponly' => true,           // Prevent JavaScript access
-    'samesite' => 'Lax',          // CSRF protection ('Strict' if feasible)
+    'samesite' => 'None',         // Allow cross-site cookies for OAuth (changed from Lax)
 ]);
 session_name('authorcms');        // Non-default session name
 session_start();

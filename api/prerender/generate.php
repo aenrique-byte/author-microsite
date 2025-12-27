@@ -14,12 +14,12 @@ if (php_sapi_name() !== 'cli') {
     require_once __DIR__ . '/../bootstrap.php';
     requireAuth();
     header('Content-Type: application/json');
-}
-
-// CLI mode setup
-if (php_sapi_name() === 'cli') {
+    // Use the $pdo from bootstrap.php
+    global $pdo;
+} else {
+    // CLI mode setup
     require_once __DIR__ . '/../config.php';
-    
+
     // Database connection for CLI
     try {
         $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET;

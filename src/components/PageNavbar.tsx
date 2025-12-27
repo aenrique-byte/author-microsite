@@ -57,6 +57,7 @@ export default function PageNavbar({ breadcrumbs, showBreadcrumbs = true }: Page
     { label: 'Blog', path: '/blog' },
     { label: 'Galleries', path: '/galleries' },
     { label: 'Tools', path: '/litrpg' },
+    { label: 'Critique Room', path: '/critiqueroom' },
   ]
 
   const isActive = (path: string) => {

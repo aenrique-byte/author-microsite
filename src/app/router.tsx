@@ -6,6 +6,7 @@ import { StorytimeRoute } from '../features/storytime'
 import { LitrpgRoute } from '../features/litrpg'
 import { ShoutoutsRoute } from '../features/shoutouts'
 import { BlogRoute } from '../features/blog'
+import { CritiqueRoomRoute } from '../features/critiqueroom'
 import UnifiedAdminDashboard from '../components/admin/UnifiedAdminDashboard'
 import UniversePortalHomepage from '../components/UniversePortalHomepage'
 import { analytics } from '../lib/analytics'
@@ -33,6 +34,7 @@ export function Router() {
         <Route path="/blog/*" element={<BlogRoute />} />
         <Route path="/litrpg/*" element={<LitrpgRoute />} />
         <Route path="/shoutouts/*" element={<ShoutoutsRoute />} />
+        <Route path="/critiqueroom/*" element={<CritiqueRoomRoute />} />
         <Route path="/admin/*" element={<UnifiedAdminDashboard />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

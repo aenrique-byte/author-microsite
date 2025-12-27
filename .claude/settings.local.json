@@ -4,7 +4,12 @@
       "Bash(npm run build)",
       "Bash(test:*)",
       "Bash(curl -s https://ocwanderer.com/api/shoutouts/config.php)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(cat:*)",
+      "Bash(xargs cat:*)",
+      "Bash(xargs:*)",
+      "Bash(php -r:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": [],
     "ask": []
